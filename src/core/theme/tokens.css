@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  /* === Brand palette === */
+  --color-salesly-navy: #0A3D8F;
+  --color-salesly-blue: #1A5FA8;
+  --color-salesly-teal: #2DD4BF;
+  --color-salesly-green: #16A34A;
+  --color-salesly-amber: #D97706;
+  --color-salesly-red: #DC2626;
+  --color-sidebar-navy: #0A1A33;
+
+  /* === Light surfaces === */
+  --color-surface-white: #FFFFFF;
+  --color-surface-50: #F4F6FA;
+  --color-surface-100: #F2F4F8;
+
+  /* === Dark surfaces === */
+  --color-dark-900: #151922;
+  --color-dark-950: #0B0E15;
+
+  /* === Typography === */
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* === Radii === */
+  --radius-card: 14px;
+  --radius-btn: 10px;
+  --radius-pill: 20px;
+}
+
+/* Semantic CSS custom properties (light mode defaults) */
+:root {
+  --bg-app: #F4F6FA;
+  --bg-surface: #FFFFFF;
+  --bg-surface-raised: #F2F4F8;
+  --bg-sidebar: #0A1A33;
+  --bg-topbar: #FFFFFF;
+  --text-primary: #0A1A33;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --text-on-dark: #E8EEF6;
+  --border-default: #E5E7EB;
+  --border-subtle: #F3F4F6;
+  --accent-primary: #0A3D8F;
+  --accent-blue: #1A5FA8;
+  --accent-teal: #2DD4BF;
+  --accent-green: #16A34A;
+  --accent-amber: #D97706;
+  --accent-red: #DC2626;
+  --shadow-sm: 0 1px 3px rgba(10,26,51,0.08);
+  --shadow-card: 0 2px 12px rgba(10,26,51,0.1);
+  --shadow-modal: 0 8px 40px rgba(10,26,51,0.18);
+}
+
+.dark {
+  --bg-app: #0B0E15;
+  --bg-surface: #151922;
+  --bg-surface-raised: #1E2433;
+  --bg-sidebar: #090D18;
+  --bg-topbar: #151922;
+  --text-primary: #E8EEF6;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --border-default: #1E2433;
+  --border-subtle: #252D3D;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.4);
+  --shadow-modal: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+/* Splash spinner */
+@keyframes salesly-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Base resets */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading, 'Plus Jakarta Sans', sans-serif);
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
