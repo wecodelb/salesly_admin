@@ -22,6 +22,9 @@ export const ENDPOINTS = {
   // Suppliers
   SUPPLIERS: '/suppliers',
 
+  // Company users (admin management)
+  USERS: '/users',           // GET/POST /api/v1/users, GET/PATCH/DELETE /api/v1/users/{id}
+
   // Mobile-sync (internal)
   APP: {
     ITEMS: '/app/items',
