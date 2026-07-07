@@ -64,6 +64,15 @@ export function LoginPage() {
       // in usePermissions(), so their (empty) permissions list is fine.
       const role = user.role?.name ?? 'owner'
       const permissions = user.permissions ?? user.role?.permissions ?? []
+
+      // The admin console is for owners/admins/managers only. Salesmen use the
+      // Salesly mobile app — block them from the web console entirely.
+      if (role === 'salesman') {
+        setError('Salesmen use the Salesly mobile app. This admin console is for managers and owners.')
+        setLoading(false)
+        return
+      }
+
       setAuth(
         token,
         { id: String(user.id), name: user.name, email: user.email, avatar: user.image },
