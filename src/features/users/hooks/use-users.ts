@@ -1,0 +1,50 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { createUser, deleteUser, fetchUsers, updateUser } from '../api/users-api'
+import type { CreateUserPayload, UpdateUserPayload } from '../types'
+
+const USERS_KEY = ['users'] as const
+
+export function useUsers() {
+  return useQuery({
+    queryKey: USERS_KEY,
+    queryFn: () => fetchUsers(),
+  })
+}
+
+export function useCreateUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CreateUserPayload) => createUser(payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
+  })
+}
+
+export function useUpdateUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateUserPayload }) =>
+      updateUser(id, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
+  })
+}
+
+export function useDeleteUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => deleteUser(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
+  })
+}
+
+// Extract the first human-readable validation message from a Laravel error
+// response (mirrors the shape the LoginPage already handles).
+export function apiErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
+  const e = err as {
+    response?: { data?: { errors?: Record<string, string[]>; data?: Record<string, string[]>; message?: string } }
+  }
+  const resData = e?.response?.data
+  if (!e?.response) return 'Cannot reach server. Make sure the backend is running.'
+  if (resData?.errors) return (Object.values(resData.errors).flat()[0] as string) ?? fallback
+  if (resData?.data) return (Object.values(resData.data).flat()[0] as string) ?? fallback
+  return resData?.message ?? fallback
+}
