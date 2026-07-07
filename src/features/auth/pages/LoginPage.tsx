@@ -4,13 +4,15 @@ import { Zap, Eye, EyeOff } from 'lucide-react'
 import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
 import { useAuthStore } from '@/core/auth/auth-store'
-import { ROLE_PERMISSIONS } from '@/core/auth/permissions'
+import type { Permission } from '@/core/auth/permissions'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
 import { SplashScreen } from '@/shared/components/SplashScreen/SplashScreen'
 import { useSplashStore } from '@/shared/components/SplashScreen/splash-store'
 
 // Backend response: { status, message, data: { token, user } }
+// The user object carries role + permissions resolved from the user's
+// company membership (see backend AuthRepository::userResourceWithRole).
 interface LoginResponse {
   status: string
   message: string
@@ -22,6 +24,8 @@ interface LoginResponse {
       email: string
       image?: string
       companies: unknown[]
+      role?: { name: string; permissions: Permission[] }
+      permissions?: Permission[]
     }
   }
 }
@@ -45,12 +49,26 @@ export function LoginPage() {
       const response = await apiClient.post<LoginResponse>(ENDPOINTS.AUTH.LOGIN, { email, password })
       const { token, user } = response.data.data
 
-      // Backend has no RBAC yet — all admin console users get owner-level access
+      // This is the per-company admin console, so every screen is scoped to a
+      // company. The platform super-admin (admin@admin.com) has no company
+      // membership and would 401 on every company screen — catch that here and
+      // explain it, instead of letting them in only to be bounced to /login.
+      if (!user.companies || user.companies.length === 0) {
+        setError('This account isn\'t linked to a company. Sign in with a company owner or manager account.')
+        setLoading(false)
+        return
+      }
+
+      // Consume the real role + permissions the backend resolves from the
+      // user's company membership. Admin/owner roles bypass permission checks
+      // in usePermissions(), so their (empty) permissions list is fine.
+      const role = user.role?.name ?? 'owner'
+      const permissions = user.permissions ?? user.role?.permissions ?? []
       setAuth(
         token,
         { id: String(user.id), name: user.name, email: user.email, avatar: user.image },
-        'owner',
-        ROLE_PERMISSIONS['owner'],
+        role,
+        permissions,
       )
 
       // Show post-login splash before navigating
@@ -140,10 +158,12 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {/* Dev hint */}
+          {/* Dev hint — this is the COMPANY admin console, so use a company
+              account (owner/manager), not the platform super-admin
+              (admin@admin.com has no company and 401s on company screens). */}
           <div className="mt-5 px-3 py-2.5 rounded-btn bg-(--bg-surface-raised) border border-(--border-default) text-xs text-center text-(--text-secondary)">
             <span className="font-semibold">Test account:</span>{' '}
-            <span className="font-mono">admin@admin.com</span>{' '}
+            <span className="font-mono">demo@demo.com</span>{' '}
             / <span className="font-mono">123456</span>
           </div>
         </div>
