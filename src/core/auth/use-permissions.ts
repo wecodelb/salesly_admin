@@ -3,7 +3,8 @@ import type { Permission } from './permissions'
 
 export function usePermissions() {
   const { role, permissions } = useAuthStore()
-  const isAdmin = role === 'owner' || role === 'admin'
+  // Admin is the highest role (there is no "owner"); admins bypass permission checks.
+  const isAdmin = role === 'admin'
 
   const can = (permission: Permission): boolean => {
     if (isAdmin) return true
