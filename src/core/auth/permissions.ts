@@ -21,6 +21,9 @@ export const PERMISSIONS = {
   REPORTS_VIEW: 'reports.view',
   LEADERBOARD_VIEW: 'leaderboard.view',
   PRODUCTS_VIEW: 'products.view',
+  USERS_VIEW: 'users.view',
+  USERS_EDIT: 'users.edit',
+  USERS_REMOVE: 'users.remove',
 } as const
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]

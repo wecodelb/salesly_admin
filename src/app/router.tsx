@@ -35,14 +35,24 @@ const WhatsappPage     = lazy(() => import('@/features/whatsapp/pages/WhatsappPa
 const AuditPage        = lazy(() => import('@/features/audit/pages/AuditPage').then(m => ({ default: m.AuditPage })))
 
 // Component-factory: returns a React component (no JSX at module scope)
-function makePage(Page: React.ComponentType, permission?: Permission): React.ComponentType {
+function makePage(
+  Page: React.ComponentType,
+  permission?: Permission,
+  roles?: string[],
+): React.ComponentType {
   return function PageRoute() {
     const inner = (
       <Suspense fallback={<LoadingSkeleton />}>
         <Page />
       </Suspense>
     )
-    return permission ? <ProtectedRoute permission={permission}>{inner}</ProtectedRoute> : inner
+    return permission || roles ? (
+      <ProtectedRoute permission={permission} roles={roles}>
+        {inner}
+      </ProtectedRoute>
+    ) : (
+      inner
+    )
   }
 }
 
@@ -82,7 +92,7 @@ export const router = createBrowserRouter([
       { path: 'promotions',   Component: makePage(PromotionsPage) },
       { path: 'reports',      Component: makePage(ReportsPage, P.REPORTS_VIEW) },
       { path: 'leaderboard',  Component: makePage(LeaderboardPage, P.LEADERBOARD_VIEW) },
-      { path: 'users',        Component: makePage(UsersPage) },
+      { path: 'users',        Component: makePage(UsersPage, P.USERS_VIEW) },
       { path: 'subscription', Component: makePage(SubscriptionPage) },
       { path: 'api-keys',     Component: makePage(ApiKeysPage) },
       { path: 'settings',     Component: makePage(SettingsPage) },
