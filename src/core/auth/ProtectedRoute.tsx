@@ -7,10 +7,12 @@ import type { ReactNode } from 'react'
 
 interface Props {
   permission?: Permission
+  /** Restrict this route to these roles (e.g. Users is admin/manager only). */
+  roles?: string[]
   children: ReactNode
 }
 
-export function ProtectedRoute({ permission, children }: Props) {
+export function ProtectedRoute({ permission, roles, children }: Props) {
   const token = useAuthStore((s) => s.token)
   const role = useAuthStore((s) => s.role)
   const hasHydrated = useAuthStore((s) => s.hasHydrated)
@@ -30,6 +32,7 @@ export function ProtectedRoute({ permission, children }: Props) {
 
   if (!token || isSalesman) return <Navigate to="/login" replace />
   if (permission && !can(permission)) return <Navigate to="/dashboard" replace />
+  if (roles && (!role || !roles.includes(role))) return <Navigate to="/dashboard" replace />
 
   return <>{children}</>
 }

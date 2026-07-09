@@ -54,21 +54,21 @@ export function LoginPage() {
       // membership and would 401 on every company screen — catch that here and
       // explain it, instead of letting them in only to be bounced to /login.
       if (!user.companies || user.companies.length === 0) {
-        setError('This account isn\'t linked to a company. Sign in with a company owner or manager account.')
+        setError('This account isn\'t linked to a company. Sign in with a company admin or manager account.')
         setLoading(false)
         return
       }
 
       // Consume the real role + permissions the backend resolves from the
-      // user's company membership. Admin/owner roles bypass permission checks
-      // in usePermissions(), so their (empty) permissions list is fine.
-      const role = user.role?.name ?? 'owner'
+      // user's company membership. Admin (the highest role) bypasses permission
+      // checks in usePermissions(), so its (empty) permissions list is fine.
+      const role = user.role?.name ?? 'admin'
       const permissions = user.permissions ?? user.role?.permissions ?? []
 
-      // The admin console is for owners/admins/managers only. Salesmen use the
-      // Salesly mobile app — block them from the web console entirely.
+      // The admin console is for admins/managers only. Salesmen use the Salesly
+      // mobile app — block them from the web console entirely.
       if (role === 'salesman') {
-        setError('Salesmen use the Salesly mobile app. This admin console is for managers and owners.')
+        setError('Salesmen use the Salesly mobile app. This admin console is for admins and managers.')
         setLoading(false)
         return
       }
@@ -167,9 +167,8 @@ export function LoginPage() {
             </Button>
           </form>
 
-          {/* Dev hint — this is the COMPANY admin console, so use a company
-              account (owner/manager), not the platform super-admin
-              (admin@admin.com has no company and 401s on company screens). */}
+          {/* Dev hint — this is the company admin console, so sign in with an
+              admin or manager account. Salesmen use the Salesly mobile app. */}
           <div className="mt-5 px-3 py-2.5 rounded-btn bg-(--bg-surface-raised) border border-(--border-default) text-xs text-center text-(--text-secondary)">
             <span className="font-semibold">Test account:</span>{' '}
             <span className="font-mono">demo@demo.com</span>{' '}
