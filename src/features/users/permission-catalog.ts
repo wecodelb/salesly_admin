@@ -77,10 +77,27 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: PERMISSIONS.PRODUCTS_VIEW, label: 'View products' },
     ],
   },
+  {
+    label: 'Users',
+    items: [
+      { key: PERMISSIONS.USERS_VIEW, label: 'View users' },
+      { key: PERMISSIONS.USERS_EDIT, label: 'Create & edit users' },
+      { key: PERMISSIONS.USERS_REMOVE, label: 'Remove users' },
+    ],
+  },
 ]
 
 // Every permission key, flat. Used for the admin/manager "grant everything" preset.
 const ALL_PERMISSIONS = Object.values(PERMISSIONS) as Permission[]
+
+// Permissions a salesman never gets by default — company-wide visibility
+// (reports) and the ability to manage other users' accounts.
+const SALESMAN_EXCLUDED: Permission[] = [
+  PERMISSIONS.REPORTS_VIEW,
+  PERMISSIONS.USERS_VIEW,
+  PERMISSIONS.USERS_EDIT,
+  PERMISSIONS.USERS_REMOVE,
+]
 
 // Client-side mirror of the backend App\Support\Permissions::DEFAULTS_BY_ROLE.
 // Picking a role in the form pre-fills these; the admin can still toggle
@@ -88,7 +105,7 @@ const ALL_PERMISSIONS = Object.values(PERMISSIONS) as Permission[]
 export const ROLE_PRESETS: Record<AssignableRole, Permission[]> = {
   admin: ALL_PERMISSIONS,
   manager: ALL_PERMISSIONS,
-  salesman: ALL_PERMISSIONS.filter((p) => p !== PERMISSIONS.REPORTS_VIEW),
+  salesman: ALL_PERMISSIONS.filter((p) => !SALESMAN_EXCLUDED.includes(p)),
 }
 
 export const ROLE_OPTIONS: { value: AssignableRole; label: string }[] = [
