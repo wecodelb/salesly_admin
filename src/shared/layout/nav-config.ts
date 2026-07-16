@@ -6,6 +6,8 @@ export interface NavItem {
   icon: string
   path: string
   permission?: Permission
+  /** Restrict to these roles (in addition to any permission check). */
+  roles?: string[]
   group?: string
 }
 
@@ -65,7 +67,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Administration',
     items: [
-      { key: 'users', label: 'Users', icon: 'UserCog', path: '/users' },
+      { key: 'users', label: 'Users', icon: 'UserCog', path: '/users', roles: ['admin', 'manager'] },
       { key: 'subscription', label: 'Subscription', icon: 'CreditCard', path: '/subscription' },
       { key: 'api-keys', label: 'API Keys', icon: 'Key', path: '/api-keys' },
       { key: 'whatsapp', label: 'WhatsApp', icon: 'MessageCircle', path: '/whatsapp' },

@@ -21,7 +21,7 @@ interface Props {
 }
 
 export function Sidebar({ collapsed, onCollapse }: Props) {
-  const { can } = usePermissions()
+  const { can, role } = usePermissions()
   return (
     <aside
       className={[
@@ -43,9 +43,11 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-4 scrollbar-none">
         {NAV_GROUPS.map((group) => {
-          const visible = group.items.filter(
-            (item) => !item.permission || can(item.permission as Permission),
-          )
+          const visible = group.items.filter((item) => {
+            const permOk = !item.permission || can(item.permission as Permission)
+            const roleOk = !item.roles || (role != null && item.roles.includes(role))
+            return permOk && roleOk
+          })
           if (visible.length === 0) return null
           return (
             <div key={group.label}>
