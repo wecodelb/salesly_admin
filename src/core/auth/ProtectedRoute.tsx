@@ -14,10 +14,11 @@ interface Props {
 
 export function ProtectedRoute({ permission, roles, children }: Props) {
   const token = useAuthStore((s) => s.token)
-  const role = useAuthStore((s) => s.role)
   const hasHydrated = useAuthStore((s) => s.hasHydrated)
   const clearAuth = useAuthStore((s) => s.clearAuth)
-  const { can } = usePermissions()
+  // usePermissions lowercases the stored role, so comparisons here share the
+  // same vocabulary regardless of the backend's 'Admin'/'Salesman' casing.
+  const { can, role } = usePermissions()
 
   // Salesmen belong in the mobile app, not this console. If a salesman session
   // was ever persisted, clear it so they can't linger in the admin.

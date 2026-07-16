@@ -62,7 +62,9 @@ export function LoginPage() {
       // Consume the real role + permissions the backend resolves from the
       // user's company membership. Admin (the highest role) bypasses permission
       // checks in usePermissions(), so its (empty) permissions list is fine.
-      const role = user.role?.name ?? 'admin'
+      // Backend Role names are capitalized ('Admin') — normalize to lowercase,
+      // the vocabulary every role check in this app uses.
+      const role = (user.role?.name ?? 'admin').toLowerCase()
       const permissions = user.permissions ?? user.role?.permissions ?? []
 
       // The admin console is for admins/managers only. Salesmen use the Salesly
