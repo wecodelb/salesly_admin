@@ -27,11 +27,33 @@ interface CustomersListData {
   }
 }
 
+/** Guard against a malformed `last_page` spinning this forever. */
+const MAX_PAGES = 50
+
+/**
+ * Every customer in the company, across all pages.
+ *
+ * The manager scope is "all customers", so stopping at page 1 would silently
+ * hide the tail of the book — the KPI counts and the unassigned filter would
+ * both be quietly wrong for any company past `perPage` customers.
+ */
 export async function fetchCustomers(perPage = 200): Promise<AdminCustomer[]> {
-  const res = await apiClient.get<Envelope<CustomersListData>>(ENDPOINTS.CUSTOMERS, {
-    params: { per_page: perPage },
-  })
-  return res.data.data.data
+  const all: AdminCustomer[] = []
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const res = await apiClient.get<Envelope<CustomersListData>>(ENDPOINTS.CUSTOMERS, {
+      params: { per_page: perPage, page },
+    })
+
+    const body = res.data.data
+    const rows = body?.data ?? []
+    all.push(...rows)
+
+    const lastPage = body?.pagination?.last_page ?? page
+    if (rows.length === 0 || page >= lastPage) break
+  }
+
+  return all
 }
 
 /** PATCH /customers/{id} — manager scope. Backend part 1 adds salesman_id and
