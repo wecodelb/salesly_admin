@@ -13,7 +13,7 @@ import type { SalesmanOption } from '../types'
 // true  → serve the mock store (backend part 1 is with the backend developer).
 // false → real API: GET/PATCH /customers + salesmen from GET /users.
 // Flipping this single flag is the only step left to wire the page.
-export const USE_MOCK_DATA = true
+export const USE_MOCK_DATA = false
 
 const CUSTOMERS_KEY = ['admin-customers'] as const
 const SALESMEN_KEY = ['salesmen-options'] as const
