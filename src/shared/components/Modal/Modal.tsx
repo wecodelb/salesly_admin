@@ -30,6 +30,9 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: P
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className={[
           'relative w-full bg-[var(--bg-surface)] rounded-[var(--radius-card)] shadow-[var(--shadow-modal)]',
           'flex flex-col max-h-[90vh]',
@@ -39,7 +42,11 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: P
         {title && (
           <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)]">
             <h2 className="text-base font-semibold text-[var(--text-primary)] font-heading">{title}</h2>
-            <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+            >
               <X size={18} />
             </button>
           </div>
