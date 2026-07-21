@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -49,11 +49,25 @@ export function CustomersPage() {
 
   // Deep link from the dashboard: /customers navigated with { customerId }
   // in router state opens that customer's detail drawer once data is in.
+  //
+  // Keyed on the router-state object, not just the id: every navigation makes
+  // a fresh state object, so arriving twice for the same customer still
+  // opens the drawer. A plain refetch leaves state identity untouched, which
+  // is what stops an assign or credit-limit save — both of which hand back a
+  // new `customers` array — from yanking a dismissed drawer back open.
+  const handledDeepLink = useRef<unknown>(null)
   useEffect(() => {
-    const id = (location.state as { customerId?: number } | null)?.customerId
+    const state = location.state
+    if (handledDeepLink.current === state) return
+
+    const id = (state as { customerId?: number } | null)?.customerId
     if (!id || customers.length === 0) return
+
     const target = customers.find((c) => c.id === id)
-    if (target) setDetail(target)
+    if (!target) return
+
+    handledDeepLink.current = state
+    setDetail(target)
   }, [location.state, customers])
 
   const filtered = useMemo(() => {
