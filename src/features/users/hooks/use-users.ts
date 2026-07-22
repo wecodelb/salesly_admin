@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createUser, deleteUser, fetchUsers, updateUser } from '../api/users-api'
-import type { CreateUserPayload, UpdateUserPayload } from '../types'
+import type { CompanyUser, CreateUserPayload, UpdateUserPayload } from '../types'
 
 const USERS_KEY = ['users'] as const
 
@@ -24,7 +24,25 @@ export function useUpdateUser() {
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: UpdateUserPayload }) =>
       updateUser(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
+    // Optimistically apply the change (e.g. status active/suspended) so the
+    // row reflects it immediately, then reconcile with the server on settle.
+    // Without this, a reactivate could look like "nothing happened" until the
+    // background refetch lands.
+    onMutate: async ({ id, payload }) => {
+      await qc.cancelQueries({ queryKey: USERS_KEY })
+      const previous = qc.getQueryData<CompanyUser[]>(USERS_KEY)
+      if (previous) {
+        qc.setQueryData<CompanyUser[]>(
+          USERS_KEY,
+          previous.map((u) => (u.id === id ? { ...u, ...payload } : u)),
+        )
+      }
+      return { previous }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(USERS_KEY, ctx.previous)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: USERS_KEY }),
   })
 }
 
