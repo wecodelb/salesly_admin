@@ -22,7 +22,15 @@ export function SideDrawer({ open, onClose, title, children, footer, width = 'w-
       {open && (
         <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       )}
+      {/* Stays mounted so the slide transition can run, which means that when
+          closed its content is still in the DOM — `inert` keeps it out of the
+          tab order and away from screen readers until it's actually open. */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        aria-hidden={!open}
+        inert={!open}
         className={[
           'fixed right-0 top-0 bottom-0 z-50',
           'bg-[var(--bg-surface)] shadow-[var(--shadow-modal)]',
@@ -33,7 +41,11 @@ export function SideDrawer({ open, onClose, title, children, footer, width = 'w-
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-default)]">
           <h2 className="text-base font-semibold text-[var(--text-primary)] font-heading">{title}</h2>
-          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          >
             <X size={18} />
           </button>
         </div>
