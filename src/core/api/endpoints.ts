@@ -13,6 +13,9 @@ export const ENDPOINTS = {
   ITEMS: '/items',           // GET/POST/PATCH/DELETE /api/v1/items
   WAREHOUSES: '/warehouses',
   UOMS: '/uoms',
+  CATEGORIES: '/categories', // GET/POST/PATCH/DELETE /api/v1/categories
+  PROMOTIONS: '/promotions', // GET(+?scope=all)/POST/PATCH/DELETE
+  PRICE_LISTS: '/price-lists',// GET/POST/PATCH/DELETE
 
   // Sales
   CUSTOMERS: '/customers',
