@@ -21,6 +21,9 @@ export interface AdminCustomer {
   balance: number
   latitude?: number | null
   longitude?: number | null
+  /** Price lists manually assigned to this customer (on top of the company's
+   *  default list). */
+  price_lists?: { id: number; name: string; is_default: boolean }[]
   created_at?: string
   updated_at?: string
 }
