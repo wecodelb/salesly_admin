@@ -21,6 +21,8 @@ export const PERMISSIONS = {
   REPORTS_VIEW: 'reports.view',
   LEADERBOARD_VIEW: 'leaderboard.view',
   PRODUCTS_VIEW: 'products.view',
+  EXCHANGE_RATES_VIEW: 'exchange_rates.view',
+  EXCHANGE_RATES_MANAGE: 'exchange_rates.manage',
   USERS_VIEW: 'users.view',
   USERS_EDIT: 'users.edit',
   USERS_REMOVE: 'users.remove',
@@ -50,6 +52,8 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.REPORTS_VIEW,
     PERMISSIONS.LEADERBOARD_VIEW,
     PERMISSIONS.PRODUCTS_VIEW,
+    PERMISSIONS.EXCHANGE_RATES_VIEW,
+    PERMISSIONS.EXCHANGE_RATES_MANAGE,
   ],
   supervisor: [
     PERMISSIONS.CUSTOMERS_VIEW,
