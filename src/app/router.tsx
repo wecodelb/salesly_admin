@@ -25,6 +25,7 @@ const CustomersPage    = lazy(() => import('@/features/customers/pages/Customers
 const ProductsPage     = lazy(() => import('@/features/products/pages/ProductsPage').then(m => ({ default: m.ProductsPage })))
 const PriceListsPage   = lazy(() => import('@/features/price-lists/pages/PriceListsPage').then(m => ({ default: m.PriceListsPage })))
 const PromotionsPage   = lazy(() => import('@/features/promotions/pages/PromotionsPage').then(m => ({ default: m.PromotionsPage })))
+const ExchangeRatesPage = lazy(() => import('@/features/exchange-rates/pages/ExchangeRatesPage').then(m => ({ default: m.ExchangeRatesPage })))
 const ReportsPage      = lazy(() => import('@/features/reports/pages/ReportsPage').then(m => ({ default: m.ReportsPage })))
 const LeaderboardPage  = lazy(() => import('@/features/leaderboard/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })))
 const UsersPage        = lazy(() => import('@/features/users/pages/UsersPage').then(m => ({ default: m.UsersPage })))
@@ -90,6 +91,7 @@ export const router = createBrowserRouter([
       { path: 'products',     Component: makePage(ProductsPage, P.PRODUCTS_VIEW) },
       { path: 'price-lists',  Component: makePage(PriceListsPage) },
       { path: 'promotions',   Component: makePage(PromotionsPage) },
+      { path: 'exchange-rates', Component: makePage(ExchangeRatesPage, P.EXCHANGE_RATES_VIEW) },
       { path: 'reports',      Component: makePage(ReportsPage, P.REPORTS_VIEW) },
       { path: 'leaderboard',  Component: makePage(LeaderboardPage, P.LEADERBOARD_VIEW) },
       { path: 'users',        Component: makePage(UsersPage, P.USERS_VIEW) },
