@@ -14,8 +14,11 @@ export const ENDPOINTS = {
   WAREHOUSES: '/warehouses',
   UOMS: '/uoms',
   CATEGORIES: '/categories', // GET/POST/PATCH/DELETE /api/v1/categories
+  BRANDS: '/brands',         // GET/POST/PATCH/DELETE
   PROMOTIONS: '/promotions', // GET(+?scope=all)/POST/PATCH/DELETE
   PRICE_LISTS: '/price-lists',// GET/POST/PATCH/DELETE
+  CURRENCIES: '/currencies', // GET/POST/PATCH/DELETE
+  EXCHANGE_RATES: '/exchange-rates', // GET(+?currency_id)/POST/DELETE (no update)
 
   // Sales
   CUSTOMERS: '/customers',
