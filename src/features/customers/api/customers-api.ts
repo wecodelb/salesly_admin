@@ -64,3 +64,15 @@ export async function updateCustomer(
 ): Promise<void> {
   await apiClient.patch(`${ENDPOINTS.CUSTOMERS}/${id}`, payload)
 }
+
+/** POST /customers/{id}/price-lists — idempotent attach. */
+export async function assignPriceList(customerId: number, priceListId: number): Promise<void> {
+  await apiClient.post(`${ENDPOINTS.CUSTOMERS}/${customerId}/price-lists`, {
+    price_list_id: priceListId,
+  })
+}
+
+/** DELETE /customers/{id}/price-lists/{priceListId}. */
+export async function unassignPriceList(customerId: number, priceListId: number): Promise<void> {
+  await apiClient.delete(`${ENDPOINTS.CUSTOMERS}/${customerId}/price-lists/${priceListId}`)
+}
