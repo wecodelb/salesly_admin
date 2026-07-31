@@ -22,6 +22,7 @@ export const ENDPOINTS = {
 
   // Sales
   CUSTOMERS: '/customers',
+  AREAS: '/areas',           // GET/POST/PATCH/DELETE — sales territories
   DELIVERIES: '/deliveries',
   INVOICES: '/deliveries/invoices',
 

@@ -20,12 +20,17 @@ const CollectionsPage  = lazy(() => import('@/features/collections/pages/Collect
 const VisitsPage       = lazy(() => import('@/features/visits/pages/VisitsPage').then(m => ({ default: m.VisitsPage })))
 const RoutesPage       = lazy(() => import('@/features/routes/pages/RoutesPage').then(m => ({ default: m.RoutesPage })))
 const TasksPage        = lazy(() => import('@/features/tasks/pages/TasksPage').then(m => ({ default: m.TasksPage })))
-const SalesmenPage     = lazy(() => import('@/features/salesmen/pages/SalesmenPage').then(m => ({ default: m.SalesmenPage })))
 const CustomersPage    = lazy(() => import('@/features/customers/pages/CustomersPage').then(m => ({ default: m.CustomersPage })))
 const ProductsPage     = lazy(() => import('@/features/products/pages/ProductsPage').then(m => ({ default: m.ProductsPage })))
 const PriceListsPage   = lazy(() => import('@/features/price-lists/pages/PriceListsPage').then(m => ({ default: m.PriceListsPage })))
 const PromotionsPage   = lazy(() => import('@/features/promotions/pages/PromotionsPage').then(m => ({ default: m.PromotionsPage })))
-const ExchangeRatesPage = lazy(() => import('@/features/exchange-rates/pages/ExchangeRatesPage').then(m => ({ default: m.ExchangeRatesPage })))
+const CurrenciesPage = lazy(() => import('@/features/currencies/pages/CurrenciesPage').then(m => ({ default: m.CurrenciesPage })))
+const CustomerDetailPage = lazy(() => import('@/features/customers/pages/CustomerDetailPage').then(m => ({ default: m.CustomerDetailPage })))
+const ProductDetailPage  = lazy(() => import('@/features/products/pages/ProductDetailPage').then(m => ({ default: m.ProductDetailPage })))
+const CategoriesPage   = lazy(() => import('@/features/categories/pages/CategoriesPage').then(m => ({ default: m.CategoriesPage })))
+const BrandsPage       = lazy(() => import('@/features/brands/pages/BrandsPage').then(m => ({ default: m.BrandsPage })))
+const AreasPage        = lazy(() => import('@/features/areas/pages/AreasPage').then(m => ({ default: m.AreasPage })))
+const UomsPage         = lazy(() => import('@/features/uoms/pages/UomsPage').then(m => ({ default: m.UomsPage })))
 const ReportsPage      = lazy(() => import('@/features/reports/pages/ReportsPage').then(m => ({ default: m.ReportsPage })))
 const LeaderboardPage  = lazy(() => import('@/features/leaderboard/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })))
 const UsersPage        = lazy(() => import('@/features/users/pages/UsersPage').then(m => ({ default: m.UsersPage })))
@@ -86,12 +91,19 @@ export const router = createBrowserRouter([
       { path: 'visits',       Component: makePage(VisitsPage, P.VISITS_CHECKIN) },
       { path: 'routes',       Component: makePage(RoutesPage, P.ROUTE_VIEW) },
       { path: 'tasks',        Component: makePage(TasksPage, P.TASKS_VIEW) },
-      { path: 'salesmen',     Component: makePage(SalesmenPage) },
       { path: 'customers',    Component: makePage(CustomersPage, P.CUSTOMERS_VIEW) },
+      { path: 'customers/:id', Component: makePage(CustomerDetailPage, P.CUSTOMERS_VIEW) },
       { path: 'products',     Component: makePage(ProductsPage, P.PRODUCTS_VIEW) },
+      { path: 'products/:id', Component: makePage(ProductDetailPage, P.PRODUCTS_VIEW) },
       { path: 'price-lists',  Component: makePage(PriceListsPage) },
       { path: 'promotions',   Component: makePage(PromotionsPage) },
-      { path: 'exchange-rates', Component: makePage(ExchangeRatesPage, P.EXCHANGE_RATES_VIEW) },
+      { path: 'currencies', Component: makePage(CurrenciesPage, P.EXCHANGE_RATES_VIEW) },
+      // Preferences — shared reference data. Reads follow the screen each one
+      // feeds; editing is gated by preferences.manage inside the page.
+      { path: 'categories',   Component: makePage(CategoriesPage, P.PRODUCTS_VIEW) },
+      { path: 'brands',       Component: makePage(BrandsPage, P.PRODUCTS_VIEW) },
+      { path: 'areas',        Component: makePage(AreasPage, P.CUSTOMERS_VIEW) },
+      { path: 'uoms',         Component: makePage(UomsPage, P.PRODUCTS_VIEW) },
       { path: 'reports',      Component: makePage(ReportsPage, P.REPORTS_VIEW) },
       { path: 'leaderboard',  Component: makePage(LeaderboardPage, P.LEADERBOARD_VIEW) },
       { path: 'users',        Component: makePage(UsersPage, P.USERS_VIEW) },
