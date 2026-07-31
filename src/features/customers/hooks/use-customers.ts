@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchUsers } from '@/features/users/api/users-api'
-import { fetchCustomers, updateCustomer } from '../api/customers-api'
+import {
+  assignPriceList,
+  fetchCustomers,
+  unassignPriceList,
+  updateCustomer,
+} from '../api/customers-api'
 import {
   mockAssignSalesman,
   mockFetchCustomers,
@@ -57,6 +62,24 @@ export function useSetCreditLimit() {
       USE_MOCK_DATA
         ? mockSetCreditLimit(id, creditLimit)
         : updateCustomer(id, { credit_limit: creditLimit }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
+  })
+}
+
+export function useAssignPriceList() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ customerId, priceListId }: { customerId: number; priceListId: number }) =>
+      assignPriceList(customerId, priceListId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
+  })
+}
+
+export function useUnassignPriceList() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ customerId, priceListId }: { customerId: number; priceListId: number }) =>
+      unassignPriceList(customerId, priceListId),
     onSuccess: () => qc.invalidateQueries({ queryKey: CUSTOMERS_KEY }),
   })
 }
