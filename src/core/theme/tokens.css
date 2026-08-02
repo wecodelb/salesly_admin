@@ -49,6 +49,12 @@
   --accent-green: #16A34A;
   --accent-amber: #D97706;
   --accent-red: #DC2626;
+  /* Form-section headings in the drawers. Its own token because --accent-primary
+     is a deep navy that has no dark-mode step — used directly it would sit at
+     roughly 1.3:1 against the dark surface and disappear. The glow is a soft
+     halo behind the text, not an outline. */
+  --heading-accent: #0A3D8F;
+  --heading-glow: rgba(10, 61, 143, 0.22);
   /* Role-badge identity hues (Users page). Chosen + validated (CVD ΔE, contrast)
      to stay distinct from each other AND from the status colors above, so a role
      badge is never confusable with a status pill in the same row. */
@@ -71,6 +77,10 @@
   --text-muted: #64748B;
   --border-default: #1E2433;
   --border-subtle: #252D3D;
+  /* Lifted well clear of the navy so headings stay legible on #151922, and the
+     halo reads as light rather than as a smudge. */
+  --heading-accent: #6BA8F5;
+  --heading-glow: rgba(107, 168, 245, 0.30);
   /* Re-stepped for the dark surface (not the light hex dimmed) — validated
      separately so protanopia/deuteranopia separation still clears the CVD
      floor against this app's dark background. */
