@@ -31,6 +31,7 @@ const CategoriesPage   = lazy(() => import('@/features/categories/pages/Categori
 const BrandsPage       = lazy(() => import('@/features/brands/pages/BrandsPage').then(m => ({ default: m.BrandsPage })))
 const AreasPage        = lazy(() => import('@/features/areas/pages/AreasPage').then(m => ({ default: m.AreasPage })))
 const UomsPage         = lazy(() => import('@/features/uoms/pages/UomsPage').then(m => ({ default: m.UomsPage })))
+const CustomerStatusesPage = lazy(() => import('@/features/customer-statuses/pages/CustomerStatusesPage').then(m => ({ default: m.CustomerStatusesPage })))
 const ReportsPage      = lazy(() => import('@/features/reports/pages/ReportsPage').then(m => ({ default: m.ReportsPage })))
 const LeaderboardPage  = lazy(() => import('@/features/leaderboard/pages/LeaderboardPage').then(m => ({ default: m.LeaderboardPage })))
 const UsersPage        = lazy(() => import('@/features/users/pages/UsersPage').then(m => ({ default: m.UsersPage })))
@@ -103,6 +104,7 @@ export const router = createBrowserRouter([
       { path: 'categories',   Component: makePage(CategoriesPage, P.PRODUCTS_VIEW) },
       { path: 'brands',       Component: makePage(BrandsPage, P.PRODUCTS_VIEW) },
       { path: 'areas',        Component: makePage(AreasPage, P.CUSTOMERS_VIEW) },
+      { path: 'customer-statuses', Component: makePage(CustomerStatusesPage, P.CUSTOMERS_VIEW) },
       { path: 'uoms',         Component: makePage(UomsPage, P.PRODUCTS_VIEW) },
       { path: 'reports',      Component: makePage(ReportsPage, P.REPORTS_VIEW) },
       { path: 'leaderboard',  Component: makePage(LeaderboardPage, P.LEADERBOARD_VIEW) },

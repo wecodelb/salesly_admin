@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useCreateArea, useUpdateArea } from '../hooks/use-areas'
 import type { Area, UpdateAreaPayload } from '../types'
 
@@ -22,7 +21,7 @@ const EMPTY: FormState = { name: '', code: '' }
 
 export function AreaFormDrawer({ open, onClose, area }: Props) {
   const isEdit = !!area
-  const toast = useToast()
+  const { run } = useActionProgress()
   const createArea = useCreateArea()
   const updateArea = useUpdateArea()
 
@@ -52,27 +51,31 @@ export function AreaFormDrawer({ open, onClose, area }: Props) {
     const name = form.name.trim()
     const code = form.code.trim()
 
-    try {
-      if (isEdit && area) {
-        // Only what actually moved goes up, so an untouched code is never
-        // re-submitted against the per-company uniqueness rule.
-        const payload: UpdateAreaPayload = {}
-        if (name !== area.name) payload.name = name
-        if (code !== area.code) payload.code = code
-        if (Object.keys(payload).length === 0) {
-          onClose()
-          return
-        }
-        await updateArea.mutateAsync({ id: area.id, payload })
-      } else {
-        await createArea.mutateAsync({ name, code })
+    // Only what actually moved goes up, so an untouched code is never
+    // re-submitted against the per-company uniqueness rule.
+    const payload: UpdateAreaPayload = {}
+    if (isEdit && area) {
+      if (name !== area.name) payload.name = name
+      if (code !== area.code) payload.code = code
+      if (Object.keys(payload).length === 0) {
+        onClose()
+        return
       }
-
-      toast.success(isEdit ? 'Area updated' : 'Area created', `${name} has been saved.`)
-      onClose()
-    } catch (err) {
-      toast.error(isEdit ? 'Update failed' : 'Create failed', apiErrorMessage(err))
     }
+
+    const saved = await run(
+      {
+        label: isEdit ? 'Saving area' : 'Creating area',
+        detail: name,
+        success: `${name} has been saved.`,
+      },
+      () =>
+        isEdit && area
+          ? updateArea.mutateAsync({ id: area.id, payload })
+          : createArea.mutateAsync({ name, code }),
+    )
+
+    if (saved !== null) onClose()
   }
 
   const saving = createArea.isPending || updateArea.isPending

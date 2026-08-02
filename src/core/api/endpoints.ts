@@ -23,6 +23,7 @@ export const ENDPOINTS = {
   // Sales
   CUSTOMERS: '/customers',
   AREAS: '/areas',           // GET/POST/PATCH/DELETE — sales territories
+  CUSTOMER_STATUSES: '/customer-statuses', // GET/POST/PATCH/DELETE — company's own status vocabulary
   DELIVERIES: '/deliveries',
   INVOICES: '/deliveries/invoices',
 
