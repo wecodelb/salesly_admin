@@ -3,6 +3,7 @@ import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
+import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
 import { useCreateCategory, useUpdateCategory } from '../hooks/use-categories'
 import type { Category, UpdateCategoryPayload } from '../types'
 
@@ -45,7 +46,10 @@ export function CategoryFormDrawer({ open, onClose, category }: Props) {
   }
 
   const handleSubmit = async () => {
-    if (!validate()) return
+    if (!validate()) {
+      reportInvalidForm()
+      return
+    }
 
     const name = form.name.trim()
     const code = form.code.trim()

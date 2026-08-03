@@ -3,6 +3,7 @@ import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
+import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
 import { useCreateBrand, useUpdateBrand } from '../hooks/use-brands'
 import type { Brand } from '../types'
 
@@ -45,7 +46,10 @@ export function BrandFormDrawer({ open, onClose, brand }: Props) {
   }
 
   const handleSubmit = async () => {
-    if (!validate()) return
+    if (!validate()) {
+      reportInvalidForm()
+      return
+    }
 
     const payload = {
       name: form.name.trim(),
