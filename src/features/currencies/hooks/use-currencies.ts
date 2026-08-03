@@ -48,6 +48,16 @@ export function useSetBaseCurrency() {
   })
 }
 
+/**
+ * Every rate the company has recorded, newest first — what the Exchange rates
+ * panel on the Currencies screen lists. `useExchangeRates` below is the
+ * per-currency history the details drawer shows; both share a key prefix, so
+ * adding a rate refreshes whichever is on screen.
+ */
+export function useAllExchangeRates() {
+  return useQuery({ queryKey: [...RATES_KEY, 'all'], queryFn: () => fetchExchangeRates() })
+}
+
 export function useExchangeRates(currencyId: number | null) {
   return useQuery({
     queryKey: [...RATES_KEY, currencyId ?? 'none'],

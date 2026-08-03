@@ -20,6 +20,8 @@ const customer = (over: Partial<AdminCustomer> = {}): AdminCustomer => ({
   salesman_name: null,
   credit_limit: null,
   balance: 0,
+  is_active: true,
+  is_verified: true,
   ...over,
 })
 

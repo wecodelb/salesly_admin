@@ -14,7 +14,14 @@ export const MOCK_SALESMEN: SalesmanOption[] = [
   { id: 14, name: 'Sara Fares' },
 ]
 
-let customers: AdminCustomer[] = [
+// The fixtures below predate the lifecycle columns and describe only what
+// each row is *interesting* for. Everything else takes the same default the
+// database would give it, applied once at the bottom rather than repeated
+// twenty-five times.
+type CustomerSeed = Omit<AdminCustomer, 'is_active' | 'is_verified'> &
+  Partial<Pick<AdminCustomer, 'is_active' | 'is_verified'>>
+
+const SEED: CustomerSeed[] = [
   {
     id: 1, code: 'C-0142', name: 'Al Watan Grocery',
     phone1: '+961 3 456 789', phone2: '', email: 'alwatan@shops.lb',
@@ -166,6 +173,12 @@ let customers: AdminCustomer[] = [
     credit_limit: 3500, balance: 1420,
   },
 ]
+
+let customers: AdminCustomer[] = SEED.map((c) => ({
+  is_active: true,
+  is_verified: true,
+  ...c,
+}))
 
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms))
 
