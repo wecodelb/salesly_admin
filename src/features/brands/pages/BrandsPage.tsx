@@ -11,16 +11,15 @@ import { EntityBadge } from '@/shared/components/EntityBadge/EntityBadge'
 import { CodeChip } from '@/shared/components/CodeChip/CodeChip'
 import { UsageBar } from '@/shared/components/UsageBar/UsageBar'
 import { StatStrip } from '@/shared/components/StatStrip/StatStrip'
-import { useToast } from '@/shared/hooks/use-toast'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
 import { BrandFormDrawer } from '../components/BrandFormDrawer'
 import { useBrands, useDeleteBrand } from '../hooks/use-brands'
 import type { Brand } from '../types'
 
 export function BrandsPage() {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const { can } = usePermissions()
   const canManage = can(PERMISSIONS.PREFERENCES_MANAGE)
 
@@ -40,17 +39,20 @@ export function BrandsPage() {
     )
   }, [brands, search])
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting) return
-    deleteBrand.mutate(deleting.id, {
-      onSuccess: () => {
-        toast.success('Brand deleted', `${deleting.name} was removed.`)
-        setDeleting(null)
+    const target = deleting
+    // Closed first: leaving the confirm modal under the progress dialog
+    // would put two overlays on screen at once.
+    setDeleting(null)
+    await run(
+      {
+        label: 'Deleting brand',
+        detail: target.name,
+        success: `${target.name} was removed.`,
       },
-      // A 409 here means products still carry the brand — the server message
-      // says how many, so surface it as-is.
-      onError: (err) => toast.error('Delete failed', apiErrorMessage(err)),
-    })
+      () => deleteBrand.mutateAsync(target.id),
+    )
   }
 
   // Bars are only comparable if they share a scale, so the biggest brand sets

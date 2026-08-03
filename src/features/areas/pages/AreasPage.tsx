@@ -11,17 +11,16 @@ import { EntityBadge } from '@/shared/components/EntityBadge/EntityBadge'
 import { CodeChip } from '@/shared/components/CodeChip/CodeChip'
 import { UsageBar } from '@/shared/components/UsageBar/UsageBar'
 import { StatStrip } from '@/shared/components/StatStrip/StatStrip'
-import { useToast } from '@/shared/hooks/use-toast'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
 import { AreaFormDrawer } from '../components/AreaFormDrawer'
 import { useAreas, useDeleteArea } from '../hooks/use-areas'
 import type { Area } from '../types'
 
 export function AreasPage() {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const { can } = usePermissions()
   const canManage = can(PERMISSIONS.PREFERENCES_MANAGE)
 
@@ -47,15 +46,20 @@ export function AreasPage() {
   // the confirm button is held shut rather than sent into a certain error.
   const deleteBlocked = (deleting?.customers_count ?? 0) > 0
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting || deleteBlocked) return
-    deleteArea.mutate(deleting.id, {
-      onSuccess: () => {
-        toast.success('Area deleted', `${deleting.name} was removed.`)
-        setDeleting(null)
+    const target = deleting
+    // Closed first: leaving the confirm modal under the progress dialog
+    // would put two overlays on screen at once.
+    setDeleting(null)
+    await run(
+      {
+        label: 'Deleting area',
+        detail: target.name,
+        success: `${target.name} was removed.`,
       },
-      onError: (err) => toast.error('Delete failed', apiErrorMessage(err)),
-    })
+      () => deleteArea.mutateAsync(target.id),
+    )
   }
 
   // Bars are only comparable if they share a scale, so the busiest territory

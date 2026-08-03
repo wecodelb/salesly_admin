@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useCreateBrand, useUpdateBrand } from '../hooks/use-brands'
 import type { Brand } from '../types'
 
@@ -22,7 +21,7 @@ const EMPTY: FormState = { code: '', name: '' }
 
 export function BrandFormDrawer({ open, onClose, brand }: Props) {
   const isEdit = !!brand
-  const toast = useToast()
+  const { run } = useActionProgress()
   const createBrand = useCreateBrand()
   const updateBrand = useUpdateBrand()
 
@@ -53,17 +52,20 @@ export function BrandFormDrawer({ open, onClose, brand }: Props) {
       code: form.code.trim() || null,
     }
 
-    try {
-      if (isEdit && brand) {
-        await updateBrand.mutateAsync({ id: brand.id, payload })
-      } else {
-        await createBrand.mutateAsync(payload)
-      }
-      toast.success(isEdit ? 'Brand updated' : 'Brand created', `${payload.name} has been saved.`)
-      onClose()
-    } catch (err) {
-      toast.error(isEdit ? 'Update failed' : 'Create failed', apiErrorMessage(err))
-    }
+    const saved = await run(
+      {
+        label: isEdit ? 'Saving brand' : 'Creating brand',
+        detail: payload.name,
+        success: `${payload.name} has been saved.`,
+      },
+      async () => {
+        if (isEdit && brand) await updateBrand.mutateAsync({ id: brand.id, payload })
+        else await createBrand.mutateAsync(payload)
+        return true
+      },
+    )
+
+    if (saved !== null) onClose()
   }
 
   const saving = createBrand.isPending || updateBrand.isPending

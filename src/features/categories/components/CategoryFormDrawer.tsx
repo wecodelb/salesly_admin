@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useCreateCategory, useUpdateCategory } from '../hooks/use-categories'
 import type { Category, UpdateCategoryPayload } from '../types'
 
@@ -22,7 +21,7 @@ const EMPTY: FormState = { name: '', code: '' }
 
 export function CategoryFormDrawer({ open, onClose, category }: Props) {
   const isEdit = !!category
-  const toast = useToast()
+  const { run } = useActionProgress()
   const createCategory = useCreateCategory()
   const updateCategory = useUpdateCategory()
 
@@ -51,27 +50,31 @@ export function CategoryFormDrawer({ open, onClose, category }: Props) {
     const name = form.name.trim()
     const code = form.code.trim()
 
-    try {
-      if (isEdit && category) {
-        const payload: UpdateCategoryPayload = {}
-        if (name !== category.name) payload.name = name
-        if (code !== (category.code ?? '')) payload.code = code || null
+    const payload: UpdateCategoryPayload = {}
+    if (isEdit && category) {
+      if (name !== category.name) payload.name = name
+      if (code !== (category.code ?? '')) payload.code = code || null
 
-        // Nothing typed over — skip the round trip rather than PATCH an empty body.
-        if (Object.keys(payload).length === 0) {
-          onClose()
-          return
-        }
-        await updateCategory.mutateAsync({ id: category.id, payload })
-      } else {
-        await createCategory.mutateAsync({ name, ...(code ? { code } : {}) })
+      // Nothing typed over — skip the round trip rather than PATCH an empty body.
+      if (Object.keys(payload).length === 0) {
+        onClose()
+        return
       }
-
-      toast.success(isEdit ? 'Category updated' : 'Category created', `${name} has been saved.`)
-      onClose()
-    } catch (err) {
-      toast.error(isEdit ? 'Update failed' : 'Create failed', apiErrorMessage(err))
     }
+
+    const saved = await run(
+      {
+        label: isEdit ? 'Saving category' : 'Creating category',
+        detail: name,
+        success: `${name} has been saved.`,
+      },
+      () =>
+        isEdit && category
+          ? updateCategory.mutateAsync({ id: category.id, payload })
+          : createCategory.mutateAsync({ name, ...(code ? { code } : {}) }),
+    )
+
+    if (saved !== null) onClose()
   }
 
   const saving = createCategory.isPending || updateCategory.isPending
