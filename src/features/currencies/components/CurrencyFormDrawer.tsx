@@ -3,11 +3,9 @@ import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
 import { Select } from '@/shared/components/Select'
 import { Button } from '@/shared/components/Button'
-import { useToast } from '@/shared/hooks/use-toast'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
-import { useCreateCurrency, useCreateExchangeRate, useUpdateCurrency } from '../hooks/use-currencies'
+import { useCreateCurrency, useUpdateCurrency } from '../hooks/use-currencies'
 import type {
   CreateCurrencyPayload,
   Currency,
@@ -19,8 +17,6 @@ interface Props {
   open: boolean
   onClose: () => void
   currency?: Currency | null // null/undefined = create mode
-  /** Code of the company's local currency, for the "1 USD = ___" rate label. */
-  baseCode?: string
 }
 
 interface FormState {
@@ -30,12 +26,7 @@ interface FormState {
   decimalPlaces: string
   symbolPosition: SymbolPosition
   isBase: boolean
-  rate: string
-  effectiveFrom: string
-  effectiveTo: string
 }
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 const EMPTY: FormState = {
   code: '',
@@ -44,18 +35,13 @@ const EMPTY: FormState = {
   decimalPlaces: '2',
   symbolPosition: 'before',
   isBase: false,
-  rate: '',
-  effectiveFrom: '',
-  effectiveTo: '',
 }
 
-export function CurrencyFormDrawer({ open, onClose, currency, baseCode }: Props) {
+export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
   const isEdit = !!currency
-  const toast = useToast()
   const { run } = useActionProgress()
   const createCurrency = useCreateCurrency()
   const updateCurrency = useUpdateCurrency()
-  const createRate = useCreateExchangeRate()
 
   const [form, setForm] = useState<FormState>(EMPTY)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -70,14 +56,9 @@ export function CurrencyFormDrawer({ open, onClose, currency, baseCode }: Props)
         decimalPlaces: String(currency.decimal_places ?? 2),
         symbolPosition: currency.symbol_position ?? 'before',
         isBase: currency.is_base,
-        // A rate typed here is always a new history entry, never an edit of an
-        // existing one — so it starts blank even in edit mode.
-        rate: '',
-        effectiveFrom: today(),
-        effectiveTo: '',
       })
     } else {
-      setForm({ ...EMPTY, effectiveFrom: today() })
+      setForm(EMPTY)
     }
     setErrors({})
   }, [open, currency])
@@ -95,17 +76,6 @@ export function CurrencyFormDrawer({ open, onClose, currency, baseCode }: Props)
     const dp = Number(form.decimalPlaces)
     if (form.decimalPlaces.trim() === '' || Number.isNaN(dp) || dp < 0 || dp > 6)
       e.decimalPlaces = 'Enter a number between 0 and 6'
-
-    if (!form.isBase) {
-      const wantsRate = !isEdit || form.rate.trim() !== ''
-      if (wantsRate) {
-        if (form.rate.trim() === '' || Number.isNaN(Number(form.rate)) || Number(form.rate) <= 0)
-          e.rate = 'Enter a positive rate'
-        if (!form.effectiveFrom) e.effectiveFrom = 'Pick a start date'
-      }
-      if (form.effectiveTo && form.effectiveFrom && form.effectiveTo < form.effectiveFrom)
-        e.effectiveTo = 'Must be on or after the start date'
-    }
 
     setErrors(e)
     return Object.keys(e).length === 0
@@ -132,48 +102,26 @@ export function CurrencyFormDrawer({ open, onClose, currency, baseCode }: Props)
         success: `${form.name} has been saved.`,
       },
       async () => {
-        let currencyId: number
         if (isEdit && currency) {
           await updateCurrency.mutateAsync({
             id: currency.id,
             payload: shared as UpdateCurrencyPayload,
           })
-          currencyId = currency.id
-        } else {
-          const created = await createCurrency.mutateAsync({
-            ...shared,
-            code: form.code.trim().toUpperCase(),
-          } as CreateCurrencyPayload)
-          currencyId = created.id
+          return currency.id
         }
 
-        // The rate is a second write against a currency that already exists,
-        // so losing it doesn't undo the save — it's a warning, not a failure.
-        if (!form.isBase && form.rate.trim() !== '') {
-          try {
-            await createRate.mutateAsync({
-              currency_id: currencyId,
-              rate: Number(form.rate),
-              effective_at: form.effectiveFrom,
-              effective_to: form.effectiveTo || null,
-            })
-          } catch (rateErr) {
-            toast.warning(
-              'Rate not saved',
-              `${form.name} was saved, but its rate could not be recorded: ${apiErrorMessage(rateErr)}`,
-            )
-          }
-        }
-
-        return currencyId
+        const created = await createCurrency.mutateAsync({
+          ...shared,
+          code: form.code.trim().toUpperCase(),
+        } as CreateCurrencyPayload)
+        return created.id
       },
     )
 
     if (saved !== null) onClose()
   }
 
-  const saving = createCurrency.isPending || updateCurrency.isPending || createRate.isPending
-  const rateLabel = `1 ${baseCode ?? 'local currency'} = ___ ${form.code.trim().toUpperCase() || 'this currency'}`
+  const saving = createCurrency.isPending || updateCurrency.isPending
 
   return (
     <SideDrawer
@@ -273,46 +221,14 @@ export function CurrencyFormDrawer({ open, onClose, currency, baseCode }: Props)
         </section>
 
         {!form.isBase && (
-          <section className="flex flex-col gap-4">
-            <h3 className="text-sm font-semibold tracking-wide text-[var(--heading-accent)]" style={{ textShadow: '0 0 14px var(--heading-glow)' }}>
-              Exchange rate
-            </h3>
-            <Input
-              label={rateLabel}
-              type="number"
-              min={0}
-              step="any"
-              value={form.rate}
-              onChange={(e) => set('rate', e.target.value)}
-              error={errors.rate}
-              placeholder="89500"
-            />
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Input
-                  label="From"
-                  type="date"
-                  value={form.effectiveFrom}
-                  onChange={(e) => set('effectiveFrom', e.target.value)}
-                  error={errors.effectiveFrom}
-                />
-              </div>
-              <div className="flex-1">
-                <Input
-                  label="To (optional)"
-                  type="date"
-                  value={form.effectiveTo}
-                  onChange={(e) => set('effectiveTo', e.target.value)}
-                  error={errors.effectiveTo}
-                />
-              </div>
-            </div>
-            <p className="text-xs text-[var(--text-muted)]">
-              {isEdit
-                ? 'Leave the rate blank to keep the current one. A new rate applies to every item straight away and is added to this currency’s history — it never overwrites a past rate.'
-                : 'The rate applies to every item straight away and is kept as the first entry in this currency’s history.'}
-            </p>
-          </section>
+          // Rates live in their own section on the Currencies screen, not in
+          // here: a rate is a dated entry in a history that keeps growing,
+          // while this drawer describes what the currency *is* — one is edited
+          // once in a while, the other every time the market moves.
+          <p className="text-xs text-[var(--text-muted)] border-t border-[var(--border-default)] pt-4">
+            Exchange rates are set in the Exchange rates panel on the Currencies screen, where each
+            new rate is added to this currency’s history.
+          </p>
         )}
       </div>
     </SideDrawer>
