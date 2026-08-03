@@ -30,11 +30,11 @@ export async function createCurrency(payload: CreateCurrencyPayload): Promise<Cu
 }
 
 export async function updateCurrency(id: number, payload: UpdateCurrencyPayload): Promise<void> {
-  await apiClient.patch(`${ENDPOINTS.CURRENCIES}/${id}`, payload)
+  await apiClient.post(`${ENDPOINTS.CURRENCIES}/${id}`, payload)
 }
 
 export async function setBaseCurrency(id: number): Promise<void> {
-  await apiClient.patch(`${ENDPOINTS.CURRENCIES}/${id}`, { is_base: true })
+  await apiClient.post(`${ENDPOINTS.CURRENCIES}/${id}`, { is_base: true })
 }
 
 export async function fetchExchangeRates(currencyId?: number): Promise<ExchangeRate[]> {

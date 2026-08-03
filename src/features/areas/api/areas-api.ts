@@ -23,7 +23,7 @@ export async function createArea(payload: CreateAreaPayload): Promise<Area> {
 }
 
 export async function updateArea(id: number, payload: UpdateAreaPayload): Promise<Area> {
-  const res = await apiClient.patch<Envelope<{ data: Area }>>(`${ENDPOINTS.AREAS}/${id}`, payload)
+  const res = await apiClient.post<Envelope<{ data: Area }>>(`${ENDPOINTS.AREAS}/${id}`, payload)
   return res.data.data.data
 }
 

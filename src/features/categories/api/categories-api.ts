@@ -27,7 +27,7 @@ export async function updateCategory(
   id: number,
   payload: UpdateCategoryPayload,
 ): Promise<Category> {
-  const res = await apiClient.patch<Envelope<{ data: Category }>>(
+  const res = await apiClient.post<Envelope<{ data: Category }>>(
     `${ENDPOINTS.CATEGORIES}/${id}`,
     payload,
   )

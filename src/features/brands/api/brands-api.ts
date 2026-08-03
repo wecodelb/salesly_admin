@@ -24,7 +24,7 @@ export async function createBrand(payload: CreateBrandPayload): Promise<Brand> {
 }
 
 export async function updateBrand(id: number, payload: UpdateBrandPayload): Promise<void> {
-  await apiClient.patch(`${ENDPOINTS.BRANDS}/${id}`, payload)
+  await apiClient.post(`${ENDPOINTS.BRANDS}/${id}`, payload)
 }
 
 /** 409 when products still reference the brand — the message names the count. */
