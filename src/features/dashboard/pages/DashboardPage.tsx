@@ -36,7 +36,7 @@ export function DashboardPage() {
   const navigate = useNavigate()
 
   const openCustomer = (customerId: number) =>
-    navigate('/customers', { state: { customerId } })
+    navigate(`/customers/${customerId}`)
 
   return (
     <>
