@@ -1,6 +1,11 @@
 import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
-import type { AdminCustomer } from '../types'
+import type {
+  AdminCustomer,
+  CreateCustomerPayload,
+  CustomerAttachment,
+  UpdateCustomerPayload,
+} from '../types'
 
 // ─── READY, NOT WIRED YET ───────────────────────────────────────────────────
 // These call the real backend contract (GET/PATCH /customers). Backend part 1
@@ -56,13 +61,69 @@ export async function fetchCustomers(perPage = 200): Promise<AdminCustomer[]> {
   return all
 }
 
-/** PATCH /customers/{id} — manager scope. Backend part 1 adds salesman_id and
- *  credit_limit to the CustomerRequest validation rules. */
+/** GET /customers/{id} — one customer with addresses, attachments and labels. */
+export async function fetchCustomer(id: number): Promise<AdminCustomer> {
+  const res = await apiClient.get<Envelope<{ data: AdminCustomer }>>(
+    `${ENDPOINTS.CUSTOMERS}/${id}`,
+  )
+  return res.data.data.data
+}
+
+export async function createCustomer(payload: CreateCustomerPayload): Promise<AdminCustomer> {
+  const res = await apiClient.post<Envelope<{ data: AdminCustomer }>>(
+    ENDPOINTS.CUSTOMERS,
+    payload,
+  )
+  return res.data.data.data
+}
+
+/** PATCH /customers/{id} — partial, so send only what changed. */
 export async function updateCustomer(
   id: number,
-  payload: Partial<Pick<AdminCustomer, 'salesman_id' | 'credit_limit'>>,
+  payload: UpdateCustomerPayload,
 ): Promise<void> {
-  await apiClient.patch(`${ENDPOINTS.CUSTOMERS}/${id}`, payload)
+  await apiClient.post(`${ENDPOINTS.CUSTOMERS}/${id}`, payload)
+}
+
+/** DELETE /customers/{id} — a soft delete; the row is restorable. */
+export async function deleteCustomer(id: number): Promise<void> {
+  await apiClient.delete(`${ENDPOINTS.CUSTOMERS}/${id}`)
+}
+
+export async function restoreCustomer(id: number): Promise<void> {
+  await apiClient.post(`${ENDPOINTS.CUSTOMERS}/${id}/restore`)
+}
+
+export async function setCustomerActive(id: number, active: boolean): Promise<void> {
+  await apiClient.post(`${ENDPOINTS.CUSTOMERS}/${id}/${active ? 'activate' : 'deactivate'}`)
+}
+
+/** POST /customers/{id}/verify — needs customers.verify. */
+export async function verifyCustomer(id: number): Promise<void> {
+  await apiClient.post(`${ENDPOINTS.CUSTOMERS}/${id}/verify`)
+}
+
+/**
+ * POST /customers/{id}/attachments — multipart. The backend caps the total at
+ * 2 MB per customer and answers 422 with a message naming the headroom left.
+ */
+export async function uploadAttachments(
+  customerId: number,
+  files: File[],
+): Promise<CustomerAttachment[]> {
+  const form = new FormData()
+  files.forEach((f) => form.append('files[]', f))
+
+  const res = await apiClient.post<Envelope<{ data: CustomerAttachment[] }>>(
+    `${ENDPOINTS.CUSTOMERS}/${customerId}/attachments`,
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  )
+  return res.data.data.data
+}
+
+export async function deleteAttachment(customerId: number, attachmentId: number): Promise<void> {
+  await apiClient.delete(`${ENDPOINTS.CUSTOMERS}/${customerId}/attachments/${attachmentId}`)
 }
 
 /** POST /customers/{id}/price-lists — idempotent attach. */

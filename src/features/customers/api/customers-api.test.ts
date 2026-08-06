@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const get = vi.fn()
-const patch = vi.fn()
+const post = vi.fn()
 
 vi.mock('@/core/api/client', () => ({
   apiClient: {
     get: (...args: unknown[]) => get(...args),
-    patch: (...args: unknown[]) => patch(...args),
+    post: (...args: unknown[]) => post(...args),
   },
 }))
 
@@ -33,7 +33,7 @@ function page(ids: number[], currentPage: number, lastPage: number) {
 
 beforeEach(() => {
   get.mockReset()
-  patch.mockReset()
+  post.mockReset()
 })
 
 describe('fetchCustomers', () => {
@@ -96,30 +96,30 @@ describe('fetchCustomers', () => {
 })
 
 describe('updateCustomer', () => {
-  it('PATCHes salesman_id — the field the Flutter app reads as the assignment', async () => {
-    patch.mockResolvedValueOnce({})
+  it('POSTs salesman_id — the field the Flutter app reads as the assignment', async () => {
+    post.mockResolvedValueOnce({})
 
     await updateCustomer(7, { salesman_id: 12 })
 
-    expect(patch).toHaveBeenCalledWith('/customers/7', { salesman_id: 12 })
+    expect(post).toHaveBeenCalledWith('/customers/7', { salesman_id: 12 })
   })
 
   it('sends an explicit null to unassign rather than omitting the field', async () => {
-    patch.mockResolvedValueOnce({})
+    post.mockResolvedValueOnce({})
 
     await updateCustomer(7, { salesman_id: null })
 
     // Omitting it would leave the customer assigned — the backend would see
     // no change at all.
-    expect(patch).toHaveBeenCalledWith('/customers/7', { salesman_id: null })
+    expect(post).toHaveBeenCalledWith('/customers/7', { salesman_id: null })
   })
 
-  it('PATCHes credit_limit on its own without touching the assignment', async () => {
-    patch.mockResolvedValueOnce({})
+  it('POSTs credit_limit on its own without touching the assignment', async () => {
+    post.mockResolvedValueOnce({})
 
     await updateCustomer(7, { credit_limit: 2500 })
 
-    expect(patch).toHaveBeenCalledWith('/customers/7', { credit_limit: 2500 })
-    expect(patch.mock.calls[0][1]).not.toHaveProperty('salesman_id')
+    expect(post).toHaveBeenCalledWith('/customers/7', { credit_limit: 2500 })
+    expect(post.mock.calls[0][1]).not.toHaveProperty('salesman_id')
   })
 })

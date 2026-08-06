@@ -36,9 +36,9 @@ function sample(c: Currency): string {
 }
 
 // Admin — the company's currencies. One is flagged local; every other one
-// carries a rate typed in as "1 local = ___ of this currency". Rates are
-// append-only: changing one adds a history entry and applies to every item
-// straight away, while past entries stay readable in the details panel.
+// carries a rate read as "1 local = so much of this currency". Rates are
+// append-only: recording one applies to every item straight away and pushes
+// the one it replaced into the history below, where it stays readable.
 export function CurrenciesPage() {
   const { can } = usePermissions()
   const canManage = can(PERMISSIONS.EXCHANGE_RATES_MANAGE)
@@ -53,6 +53,10 @@ export function CurrenciesPage() {
   const [editing, setEditing] = useState<Currency | null>(null)
   const [viewing, setViewing] = useState<Currency | null>(null)
   const [addingRate, setAddingRate] = useState(false)
+  // Set when the rate drawer is opened from one currency's card, so it comes
+  // up already pointed at that currency instead of asking again for something
+  // the click already said.
+  const [rateForCurrency, setRateForCurrency] = useState<number | null>(null)
   const [deletingRate, setDeletingRate] = useState<ExchangeRate | null>(null)
 
   const base = currencies.find((c) => c.is_base)
@@ -75,46 +79,88 @@ export function CurrenciesPage() {
     )
   }
 
+  // The endpoint hands rates back newest first (effective_at then id, both
+  // descending), so the first row carrying a currency is what that currency is
+  // worth today and every later one has already been superseded. Position is
+  // the only trustworthy signal: entries recorded while an end date was still
+  // asked for left `effective_to` null, so that column can't separate the rate
+  // in force from the ones it replaced.
+  const { currentIds, replacedBy } = useMemo(() => {
+    const currentIds = new Set<number>()
+    // A superseded row's id → the row that took over from it, which is where
+    // its window closes.
+    const replacedBy = new Map<number, ExchangeRate>()
+    const lastSeen = new Map<number, ExchangeRate>()
+
+    for (const rate of rates) {
+      const newer = lastSeen.get(rate.currency_id)
+      if (newer) replacedBy.set(rate.id, newer)
+      else currentIds.add(rate.id)
+      lastSeen.set(rate.currency_id, rate)
+    }
+
+    return { currentIds, replacedBy }
+  }, [rates])
+
+  // The list endpoint embeds the currency, but a row can arrive without it —
+  // the company's own list still knows the code.
+  const codeOf = (r: ExchangeRate) =>
+    r.currency?.code ?? currencies.find((c) => c.id === r.currency_id)?.code ?? '—'
+
   const rateColumns: Column<ExchangeRate & Record<string, unknown>>[] = [
-    {
-      key: 'currency',
-      header: 'Currency',
-      sortable: true,
-      render: (r) => (
-        <div className="flex items-center gap-2">
-          <span className="font-medium text-[var(--text-primary)]">
-            {r.currency?.code ?? currencies.find((c) => c.id === r.currency_id)?.code ?? '—'}
-          </span>
-          {base && (
-            <span className="text-xs text-[var(--text-muted)]">from {base.code}</span>
-          )}
-        </div>
-      ),
-    },
     {
       key: 'rate',
       header: 'Rate',
       sortable: true,
+      // Spelled out the same way it is entered, so a figure can be read off
+      // the table without decoding which side of the pair the column is on.
+      // The pill is what separates the rate being charged from the ones it
+      // replaced — they share a table because they are the same history, read
+      // newest first.
       render: (r) => (
-        <span className="font-mono text-sm text-[var(--text-primary)]">
-          {r.rate.toLocaleString()}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-sm text-[var(--text-primary)]">
+            1 {base?.code ?? 'local'} = {r.rate.toLocaleString()} {codeOf(r)}
+          </span>
+          {currentIds.has(r.id) && <StatusPill status="active" label="Current" />}
+        </div>
       ),
     },
     {
       key: 'effective_at',
       header: 'In force',
       sortable: true,
-      // An open-ended entry is the one currently applied, which is worth
-      // saying outright rather than leaving as a blank cell.
-      render: (r) => (
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm text-[var(--text-secondary)]">{r.effective_at ?? '—'}</span>
-          <span className="text-xs text-[var(--text-muted)]">
-            {r.effective_to ? `until ${r.effective_to}` : 'until replaced'}
-          </span>
-        </div>
-      ),
+      // A superseded row's window closes on the day its successor started; the
+      // row's own end date only fills in for entries that carried one. The
+      // current rate has no end — that is what makes it current.
+      render: (r) => {
+        const until = replacedBy.get(r.id)?.effective_at ?? r.effective_to
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm text-[var(--text-secondary)]">{r.effective_at ?? '—'}</span>
+            <span className="text-xs text-[var(--text-muted)]">
+              {until ? `until ${until}` : 'still in force'}
+            </span>
+          </div>
+        )
+      },
+    },
+    {
+      key: 'created_at',
+      header: 'Recorded',
+      render: (r) =>
+        r.created_by_name || r.created_at ? (
+          <div className="flex flex-col gap-0.5">
+            {r.created_by_name && (
+              <span className="text-sm text-[var(--text-secondary)]">{r.created_by_name}</span>
+            )}
+            {r.created_at && (
+              <span className="text-xs text-[var(--text-muted)]">{r.created_at}</span>
+            )}
+          </div>
+        ) : (
+          <span className="text-sm text-[var(--text-muted)]">—</span>
+        ),
     },
     ...(canManage
       ? [
@@ -210,6 +256,17 @@ export function CurrenciesPage() {
               ...(canManage
                 ? [{ label: 'Edit', icon: <Pencil size={14} />, onClick: () => setEditing(c) }]
                 : []),
+              // Where "set the rate for this one" lives now that the rates
+              // panel lists only what has actually been recorded.
+              ...(canManage && !c.is_base
+                ? [
+                    {
+                      label: 'Record rate',
+                      icon: <TrendingUp size={14} />,
+                      onClick: () => setRateForCurrency(c.id),
+                    },
+                  ]
+                : []),
             ]}
           />
         </div>
@@ -260,11 +317,7 @@ export function CurrenciesPage() {
               </p>
             </div>
             {canManage && (
-              <Button
-                variant="secondary"
-                icon={<Plus size={15} />}
-                onClick={() => setCreating(true)}
-              >
+              <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
                 New currency
               </Button>
             )}
@@ -289,14 +342,13 @@ export function CurrenciesPage() {
               </h2>
               <p className="text-xs text-[var(--text-muted)]">
                 {base
-                  ? `What one ${base.code} buys, newest first.`
+                  ? `What one ${base.code} buys, newest first — older entries are history.`
                   : 'Set a local currency to start recording rates.'}
               </p>
             </div>
             {canManage && (
               <Button
-                variant="secondary"
-                icon={<Plus size={15} />}
+                icon={<Plus size={16} />}
                 disabled={!hasConvertible}
                 onClick={() => setAddingRate(true)}
               >
@@ -305,6 +357,10 @@ export function CurrenciesPage() {
             )}
           </div>
 
+          {/* Only rates that were actually recorded. A currency nobody has
+              priced yet has nothing to say here — listing all twenty seeded
+              codes as empty "set a rate" rows buried the two or three figures
+              the screen exists for. */}
           <DataTable
             columns={rateColumns}
             data={rates as (ExchangeRate & Record<string, unknown>)[]}
@@ -318,11 +374,7 @@ export function CurrenciesPage() {
             }
             emptyAction={
               canManage && hasConvertible ? (
-                <Button
-                  variant="secondary"
-                  icon={<Plus size={15} />}
-                  onClick={() => setAddingRate(true)}
-                >
+                <Button icon={<Plus size={16} />} onClick={() => setAddingRate(true)}>
                   Record the first rate
                 </Button>
               ) : undefined
@@ -338,10 +390,14 @@ export function CurrenciesPage() {
         currency={editing}
       />
       <ExchangeRateFormDrawer
-        open={addingRate}
-        onClose={() => setAddingRate(false)}
+        open={addingRate || rateForCurrency !== null}
+        onClose={() => {
+          setAddingRate(false)
+          setRateForCurrency(null)
+        }}
         currencies={currencies}
         baseCode={base?.code}
+        currencyId={rateForCurrency}
       />
       <CurrencyDetailsDrawer
         currency={viewing}

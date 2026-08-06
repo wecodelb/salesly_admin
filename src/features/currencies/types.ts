@@ -11,6 +11,9 @@ export interface ExchangeRate {
   currency?: { id: number; code: string; symbol: string | null } | null
   rate: number
   effective_at: string | null
+  /** Only ever filled in by rows recorded while an end date was still asked
+   *  for; a rate now runs until the next one supersedes it. Kept because the
+   *  API still returns it and the history reads it as a fallback window. */
   effective_to: string | null
   created_by?: number | null
   created_by_name?: string | null
@@ -21,7 +24,6 @@ export interface CreateExchangeRatePayload {
   currency_id: number
   rate: number
   effective_at: string
-  effective_to?: string | null
 }
 
 export interface CreateCurrencyPayload {
