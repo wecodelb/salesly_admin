@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import type { ReactElement } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,6 +20,10 @@ vi.mock('../api/customers-api', async () => {
       'salesman_id' in payload
         ? store.mockAssignSalesman(id, payload.salesman_id as number | null)
         : store.mockSetCreditLimit(id, payload.credit_limit as number | null),
+    // use-customers imports these too; omitting them leaves the hook module
+    // holding undefined bindings and the page blows up on first render.
+    assignPriceList: async () => undefined,
+    unassignPriceList: async () => undefined,
   }
 })
 
@@ -40,6 +44,18 @@ vi.mock('@/features/users/api/users-api', async () => {
   }
 })
 
+// The page and its form drawer both read the company's status vocabulary.
+// Stubbed at the same network edge as the rest — left unmocked it reaches for a
+// real backend, and the failed query settles mid-test.
+vi.mock('@/features/customer-groups/hooks/use-customer-groups', () => ({
+  useCustomerGroups: () => ({
+    data: [
+      { id: 1, company_id: 1, name: 'New', sort_order: 1, customers_count: 0 },
+      { id: 2, company_id: 1, name: 'VIP', sort_order: 2, customers_count: 0 },
+    ],
+  }),
+}))
+
 const { CustomersPage } = await import('./CustomersPage')
 
 function renderPage(
@@ -54,10 +70,18 @@ function renderPage(
     client,
     ...render(
       <QueryClientProvider client={client}>
-        <MemoryRouter initialEntries={[{ pathname: route, state }]}>{ui}</MemoryRouter>
+        <MemoryRouter initialEntries={[{ pathname: route, state }]}>
+          {ui}
+          <LocationProbe />
+        </MemoryRouter>
       </QueryClientProvider>,
     ),
   }
+}
+
+/** Surfaces the current path so navigation can be asserted on. */
+function LocationProbe() {
+  return <span data-testid="location">{useLocation().pathname}</span>
 }
 
 /** Signs in with an exact permission set. Empty = view-only. */
@@ -139,8 +163,10 @@ describe('CustomersPage', () => {
     renderPage()
     await screen.findByText('Al Watan Grocery')
 
-    const [salesmanSelect] = screen.getAllByRole('combobox')
-    await user.selectOptions(salesmanSelect, 'unassigned')
+    // The filter pills are custom listboxes, not native selects: open the
+    // salesman one and pick its option the way a user would.
+    await user.click(screen.getByRole('button', { name: /^salesman:/i }))
+    await user.click(await screen.findByRole('option', { name: /unassigned/i }))
 
     await waitFor(async () => {
       const rows = await customerRows()
@@ -170,69 +196,62 @@ describe('CustomersPage', () => {
   })
 })
 
+// Row actions live behind a three-dots Dropdown that only renders its items
+// while open, so every assertion about them has to open a row's menu first.
+// fireEvent rather than userEvent on purpose: userEvent also dispatches
+// mousedown, which the Dropdown's own outside-click listener races against,
+// making the menu open or not depending on scheduling.
+async function openRowActions(customerName: string) {
+  const trigger = await screen.findByRole('button', { name: `Actions for ${customerName}` })
+  fireEvent.click(trigger)
+}
+
 describe('permission gating', () => {
   it('hides assign and credit actions without customers.edit', async () => {
     signIn([PERMISSIONS.CUSTOMERS_VIEW])
     renderPage()
     await screen.findByText('Al Watan Grocery')
 
-    expect(screen.queryByTitle('Assign salesman')).not.toBeInTheDocument()
-    expect(screen.queryByTitle('Set credit limit')).not.toBeInTheDocument()
+    await openRowActions('Al Watan Grocery')
+
+    expect(screen.queryByRole('button', { name: 'Assign salesman' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Set credit limit' })).not.toBeInTheDocument()
     // Viewing is still allowed.
-    expect(screen.getAllByTitle('View').length).toBeGreaterThan(0)
+    expect(screen.getByRole('button', { name: 'View details' })).toBeInTheDocument()
   })
 
   it('shows them with customers.edit', async () => {
     renderPage()
     await screen.findByText('Al Watan Grocery')
 
-    expect(screen.getAllByTitle('Assign salesman').length).toBeGreaterThan(0)
-    expect(screen.getAllByTitle('Set credit limit').length).toBeGreaterThan(0)
+    await openRowActions('Al Watan Grocery')
+
+    expect(screen.getByRole('button', { name: 'Assign salesman' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Set credit limit' })).toBeInTheDocument()
   })
 })
 
-describe('deep link from the dashboard', () => {
-  // The drawer stays mounted for its slide animation, but aria-hidden keeps
-  // it out of the accessibility tree while closed — so a role query finds it
-  // only when it is genuinely open.
-  const openDrawer = () => screen.queryByRole('dialog', { name: 'Customer' })
-
-  it('opens the detail drawer for the customer in router state', async () => {
-    renderPage(<CustomersPage />, { state: { customerId: 3 } })
-
+// A customer's details used to open in a drawer here AND on their own page,
+// which meant two ways to see the same thing. The drawer is gone; everything
+// routes to /customers/:id.
+describe('opening a customer', () => {
+  it('sends the row menu straight to that customer’s page', async () => {
+    const user = userEvent.setup()
+    renderPage()
     await screen.findByText('Al Watan Grocery')
-    await waitFor(() => expect(openDrawer()).not.toBeNull())
-    expect(within(openDrawer()!).getByText('City Star Supermarket')).toBeInTheDocument()
+
+    await openRowActions('Al Watan Grocery')
+    await user.click(await screen.findByRole('button', { name: 'View details' }))
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/customers/1')
   })
 
-  it('stays closed after the user dismisses it, even when the list refetches',
-    async () => {
-      const user = userEvent.setup()
-      const { client } = renderPage(<CustomersPage />, { state: { customerId: 3 } })
+  it('does the same on a row click', async () => {
+    const user = userEvent.setup()
+    renderPage()
 
-      await screen.findByText('Al Watan Grocery')
-      await waitFor(() => expect(openDrawer()).not.toBeNull())
+    await user.click(await screen.findByText('Al Watan Grocery'))
 
-      await user.click(within(openDrawer()!).getByRole('button', { name: 'Close' }))
-      await waitFor(() => expect(openDrawer()).toBeNull())
-
-      // A refetch that returns identical data is harmless — React Query's
-      // structural sharing keeps the same array reference. The dangerous case
-      // is a refetch whose data genuinely changed, which is exactly what an
-      // assign produces: a new array identity, re-running the deep-link
-      // effect and yanking the drawer back open under the user.
-      await user.click(screen.getAllByTitle('Assign salesman')[0])
-      const modal = await screen.findByRole('dialog', { name: 'Assign salesman' })
-      await user.selectOptions(within(modal).getByRole('combobox'), '12')
-      await user.click(within(modal).getByRole('button', { name: /^assign$/i }))
-
-      // Wait for the mutation and its refetch to fully settle.
-      await waitFor(
-        () => expect(screen.queryByRole('dialog', { name: 'Assign salesman' })).toBeNull(),
-        { timeout: 3000 },
-      )
-      await waitFor(() => expect(client.isFetching()).toBe(0), { timeout: 3000 })
-
-      expect(openDrawer()).toBeNull()
-    })
+    expect(await screen.findByTestId('location')).toHaveTextContent('/customers/1')
+  })
 })
