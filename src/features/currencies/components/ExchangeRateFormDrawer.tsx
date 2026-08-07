@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
 import { SearchableSelect } from '@/shared/components/SearchableSelect/SearchableSelect'
@@ -22,7 +22,6 @@ interface FormState {
   currencyId: string
   rate: string
   effectiveFrom: string
-  effectiveTo: string
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
@@ -31,20 +30,22 @@ const empty = (currencyId?: number | null): FormState => ({
   currencyId: currencyId != null ? String(currencyId) : '',
   rate: '',
   effectiveFrom: today(),
-  effectiveTo: '',
 })
 
 /**
  * Records one exchange rate.
  *
  * Rates are append-only — a new entry never overwrites a past one, so an old
- * invoice can always be reprinted at the rate that produced it. That is why
- * this is its own drawer rather than a field on the currency: the currency is
- * edited rarely, its rate as often as the market moves.
+ * invoice can always be reprinted at the rate that produced it. The newest
+ * entry is the one being applied and it holds until the next replaces it,
+ * which is why only a start date is asked for. That is also why this is its
+ * own drawer rather than a field on the currency: the currency is edited
+ * rarely, its rate as often as the market moves.
  */
 export function ExchangeRateFormDrawer({ open, onClose, currencies, baseCode, currencyId }: Props) {
   const { run } = useActionProgress()
   const createRate = useCreateExchangeRate()
+  const rateErrorId = useId()
 
   const [form, setForm] = useState<FormState>(empty())
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -71,8 +72,6 @@ export function ExchangeRateFormDrawer({ open, onClose, currencies, baseCode, cu
     if (form.rate.trim() === '' || Number.isNaN(Number(form.rate)) || Number(form.rate) <= 0)
       e.rate = 'Enter a positive rate'
     if (!form.effectiveFrom) e.effectiveFrom = 'Pick a start date'
-    if (form.effectiveTo && form.effectiveTo < form.effectiveFrom)
-      e.effectiveTo = 'Must be on or after the start date'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -94,14 +93,15 @@ export function ExchangeRateFormDrawer({ open, onClose, currencies, baseCode, cu
           currency_id: Number(form.currencyId),
           rate: Number(form.rate),
           effective_at: form.effectiveFrom,
-          effective_to: form.effectiveTo || null,
         }),
     )
 
     if (saved !== null) onClose()
   }
 
-  const rateLabel = `1 ${baseCode ?? 'local currency'} = ___ ${selected?.code ?? 'selected currency'}`
+  // The local currency is what the figure is quoted against, so it opens the
+  // expression whether or not one has been marked yet.
+  const localCode = baseCode ?? 'local'
 
   return (
     <SideDrawer
@@ -131,41 +131,65 @@ export function ExchangeRateFormDrawer({ open, onClose, currencies, baseCode, cu
           searchPlaceholder="Search currencies…"
         />
 
-        <Input
-          label={rateLabel}
-          type="number"
-          min={0}
-          step="any"
-          value={form.rate}
-          onChange={(e) => set('rate', e.target.value)}
-          error={errors.rate}
-          placeholder="89500"
-        />
-
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <Input
-              label="From"
-              type="date"
-              value={form.effectiveFrom}
-              onChange={(e) => set('effectiveFrom', e.target.value)}
-              error={errors.effectiveFrom}
-            />
+        {/* The rate is written out as the sentence it is — local currency, the
+            number, then what one of it buys — so there is never a question of
+            which way round the figure goes. The expression is the field's
+            label, hence the aria-label carrying the same reading for anyone
+            who can't see the row. */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm text-[var(--text-primary)] whitespace-nowrap">
+              1 {localCode}
+            </span>
+            <span className="font-mono text-sm text-[var(--text-muted)]">=</span>
+            <div className="flex-1 min-w-0">
+              <Input
+                type="number"
+                min={0}
+                step="any"
+                value={form.rate}
+                onChange={(e) => set('rate', e.target.value)}
+                // A number typed before a currency is picked converts into
+                // nothing, and the half-written expression beside it would
+                // read as nonsense.
+                disabled={!selected}
+                aria-label={`1 ${localCode} = ? ${selected?.code ?? 'currency'}`}
+                aria-describedby={errors.rate ? rateErrorId : undefined}
+                placeholder="89500"
+                className={[
+                  'disabled:opacity-60 disabled:cursor-not-allowed',
+                  errors.rate ? 'border-[var(--accent-red)]' : '',
+                ].join(' ')}
+              />
+            </div>
+            <span
+              className={[
+                'font-mono text-sm whitespace-nowrap',
+                selected ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]',
+              ].join(' ')}
+            >
+              {selected?.code ?? 'currency'}
+            </span>
           </div>
-          <div className="flex-1">
-            <Input
-              label="To (optional)"
-              type="date"
-              value={form.effectiveTo}
-              onChange={(e) => set('effectiveTo', e.target.value)}
-              error={errors.effectiveTo}
-            />
-          </div>
+          {errors.rate && (
+            <p id={rateErrorId} className="text-xs text-[var(--accent-red)]">
+              {errors.rate}
+            </p>
+          )}
         </div>
 
+        <Input
+          label="From"
+          type="date"
+          value={form.effectiveFrom}
+          onChange={(e) => set('effectiveFrom', e.target.value)}
+          error={errors.effectiveFrom}
+        />
+
         <p className="text-xs text-[var(--text-muted)]">
-          Leave the end date empty for a rate that stays in force until the next one replaces it.
-          Past entries are never rewritten — they are what old documents are reprinted from.
+          A rate stays in force until the next one replaces it, so there is no end date to pick —
+          recording a new one moves the current rate into the history. Past entries are never
+          rewritten; they are what old documents are reprinted from.
         </p>
       </div>
     </SideDrawer>

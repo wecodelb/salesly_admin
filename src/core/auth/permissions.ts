@@ -26,6 +26,16 @@ export const PERMISSIONS = {
   REPORTS_VIEW: 'reports.view',
   LEADERBOARD_VIEW: 'leaderboard.view',
   PRODUCTS_VIEW: 'products.view',
+  /** Seeing depot loads, refill requests, and what is in a depot right now. */
+  DEPOT_VIEW: 'depot.view',
+  /** Asking the warehouse for a refill — the salesman's half of a transfer. */
+  DEPOT_REQUEST: 'depot.request',
+  /** Loading a depot, and approving or rejecting a refill request. Held by the
+   *  warehouse side: whoever decides what actually leaves the building. */
+  DEPOT_ISSUE: 'depot.issue',
+  /** Signing for a load that arrived, short counts included. Kept apart from
+   *  issuing so the same person cannot both send and confirm receipt. */
+  DEPOT_ACCEPT: 'depot.accept',
   EXCHANGE_RATES_VIEW: 'exchange_rates.view',
   EXCHANGE_RATES_MANAGE: 'exchange_rates.manage',
   /** Editing the shared reference data: categories, brands, areas, units. */
@@ -61,6 +71,10 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.REPORTS_VIEW,
     PERMISSIONS.LEADERBOARD_VIEW,
     PERMISSIONS.PRODUCTS_VIEW,
+    PERMISSIONS.DEPOT_VIEW,
+    PERMISSIONS.DEPOT_REQUEST,
+    PERMISSIONS.DEPOT_ISSUE,
+    PERMISSIONS.DEPOT_ACCEPT,
     PERMISSIONS.EXCHANGE_RATES_VIEW,
     PERMISSIONS.EXCHANGE_RATES_MANAGE,
     PERMISSIONS.PREFERENCES_MANAGE,

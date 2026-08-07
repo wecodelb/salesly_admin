@@ -19,7 +19,11 @@ interface Props {
  *  and the full history of rate changes. */
 export function CurrencyDetailsDrawer({ currency, onClose, onEdit, canManage, baseCode }: Props) {
   const { data: rates = [], isLoading } = useExchangeRates(currency?.id ?? null)
+  // Newest first, so the head of the list is the rate in force and the tail is
+  // what it replaced — the card below shows the first, the timeline the rest,
+  // and repeating the current one in both would read as two rates at once.
   const current = rates[0]
+  const history = rates.slice(1)
 
   const formatRate = (value: number) =>
     `1 ${baseCode ?? 'local'} = ${value.toLocaleString()} ${currency?.code ?? ''}`
@@ -127,15 +131,22 @@ export function CurrencyDetailsDrawer({ currency, onClose, onEdit, canManage, ba
                 </div>
               ) : (
                 <Timeline
-                  emptyMessage="No rate changes recorded yet."
-                  items={rates.map((r) => ({
-                    id: r.id,
-                    title: formatRate(r.rate),
-                    subtitle: r.effective_to
-                      ? `${r.effective_at} → ${r.effective_to}`
-                      : `From ${r.effective_at}`,
-                    meta: [r.created_by_name, r.created_at].filter(Boolean).join(' · ') || undefined,
-                  }))}
+                  emptyMessage="No earlier rates — the current one is the first recorded."
+                  items={history.map((r, i) => {
+                    // Each entry was replaced by the one directly above it, so
+                    // its window closes where that one opens; `effective_to`
+                    // only fills in for rows that carried an end date.
+                    const until = rates[i].effective_at ?? r.effective_to
+                    return {
+                      id: r.id,
+                      title: formatRate(r.rate),
+                      subtitle: until
+                        ? `${r.effective_at} → ${until}`
+                        : `From ${r.effective_at}`,
+                      meta:
+                        [r.created_by_name, r.created_at].filter(Boolean).join(' · ') || undefined,
+                    }
+                  })}
                 />
               )}
             </div>

@@ -10,7 +10,7 @@ export const ENDPOINTS = {
   COMPANY: '/company/info',  // GET  /api/v1/company/info (public)
 
   // Inventory
-  ITEMS: '/items',           // GET/POST/PATCH/DELETE /api/v1/items
+  ITEMS: '/items',           // GET/POST/PATCH/DELETE /api/v1/items, GET /{id}/distribution
   WAREHOUSES: '/warehouses',
   UOMS: '/uoms',
   CATEGORIES: '/categories', // GET/POST/PATCH/DELETE /api/v1/categories
@@ -19,6 +19,13 @@ export const ENDPOINTS = {
   PRICE_LISTS: '/price-lists',// GET/POST/PATCH/DELETE
   CURRENCIES: '/currencies', // GET/POST/PATCH/DELETE
   EXCHANGE_RATES: '/exchange-rates', // GET(+?currency_id)/POST/DELETE (no update)
+
+  // Depot — loading a salesman's depot from the warehouse, and the evening's
+  // return of what he didn't sell. All three documents (TRR/TRO/TRI) live on
+  // one prefix because they are one flow.
+  DEPOT_TRANSFERS: '/depot-transfers',   // GET/POST, /{id} GET/POST/DELETE, /{id}/issue|cancel|accept
+  REFILL_REQUESTS: '/depot-transfers/requests', // POST, /{id}/approve, /{id}/reject
+  MY_DEPOT: '/my-depot',     // GET(+?warehouse_id) — what a depot holds now
 
   // Sales
   CUSTOMERS: '/customers',

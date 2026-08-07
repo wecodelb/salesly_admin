@@ -21,6 +21,9 @@ const VisitsPage       = lazy(() => import('@/features/visits/pages/VisitsPage')
 const RoutesPage       = lazy(() => import('@/features/routes/pages/RoutesPage').then(m => ({ default: m.RoutesPage })))
 const TasksPage        = lazy(() => import('@/features/tasks/pages/TasksPage').then(m => ({ default: m.TasksPage })))
 const CustomersPage    = lazy(() => import('@/features/customers/pages/CustomersPage').then(m => ({ default: m.CustomersPage })))
+const DepotTransfersPage = lazy(() => import('@/features/my-depot/pages/DepotTransfersPage').then(m => ({ default: m.DepotTransfersPage })))
+const DepotTransferDetailPage = lazy(() => import('@/features/my-depot/pages/DepotTransferDetailPage').then(m => ({ default: m.DepotTransferDetailPage })))
+const DepotStockPage   = lazy(() => import('@/features/my-depot/pages/DepotStockPage').then(m => ({ default: m.DepotStockPage })))
 const ProductsPage     = lazy(() => import('@/features/products/pages/ProductsPage').then(m => ({ default: m.ProductsPage })))
 const PriceListsPage   = lazy(() => import('@/features/price-lists/pages/PriceListsPage').then(m => ({ default: m.PriceListsPage })))
 const PromotionsPage   = lazy(() => import('@/features/promotions/pages/PromotionsPage').then(m => ({ default: m.PromotionsPage })))
@@ -92,6 +95,12 @@ export const router = createBrowserRouter([
       { path: 'visits',       Component: makePage(VisitsPage, P.VISITS_CHECKIN) },
       { path: 'routes',       Component: makePage(RoutesPage, P.ROUTE_VIEW) },
       { path: 'tasks',        Component: makePage(TasksPage, P.TASKS_VIEW) },
+      // Depot. Reading is one key; issuing, accepting and answering requests
+      // are gated inside the screens, since a load's own source decides who may
+      // send it out.
+      { path: 'depot-transfers', Component: makePage(DepotTransfersPage, P.DEPOT_VIEW) },
+      { path: 'depot-transfers/:id', Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },
+      { path: 'depot-stock',  Component: makePage(DepotStockPage, P.DEPOT_VIEW) },
       { path: 'customers',    Component: makePage(CustomersPage, P.CUSTOMERS_VIEW) },
       { path: 'customers/:id', Component: makePage(CustomerDetailPage, P.CUSTOMERS_VIEW) },
       { path: 'products',     Component: makePage(ProductsPage, P.PRODUCTS_VIEW) },
