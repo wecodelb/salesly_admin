@@ -7,8 +7,7 @@ import { Button } from '@/shared/components/Button'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
 import { Modal } from '@/shared/components/Modal/Modal'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { PromotionFormDrawer } from '../components/PromotionFormDrawer'
 import { useDeletePromotion, usePromotions } from '../hooks/use-promotions'
 import { promoAmount, promoScope, type Promotion } from '../types'
@@ -16,7 +15,7 @@ import { promoAmount, promoScope, type Promotion } from '../types'
 // React part 2 — Promotions management. A promotion created here is recomputed
 // server-side and shown in the salesman's Flutter app as a promo chip.
 export function PromotionsPage() {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const { data: promotions = [], isLoading, isError, refetch } = usePromotions()
   const deletePromotion = useDeletePromotion()
 
@@ -33,15 +32,20 @@ export function PromotionsPage() {
     [promotions],
   )
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleting) return
-    deletePromotion.mutate(deleting.id, {
-      onSuccess: () => {
-        toast.success('Promotion deleted', 'It no longer applies.')
-        setDeleting(null)
+    const target = deleting
+    // Closed first: leaving the confirm modal under the progress dialog
+    // would put two overlays on screen at once.
+    setDeleting(null)
+    await run(
+      {
+        label: 'Deleting promotion',
+        detail: target.name ?? undefined,
+        success: 'It no longer applies.',
       },
-      onError: (err) => toast.error('Delete failed', apiErrorMessage(err)),
-    })
+      () => deletePromotion.mutateAsync(target.id),
+    )
   }
 
   const columns: Column<Promotion & Record<string, unknown>>[] = [

@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react'
+import { useId, type InputHTMLAttributes, type ReactNode } from 'react'
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string
@@ -7,11 +7,27 @@ interface Props extends InputHTMLAttributes<HTMLInputElement> {
   rightIcon?: ReactNode
 }
 
-export function Input({ label, error, leftIcon, rightIcon, className = '', ...rest }: Props) {
+export function Input({
+  label,
+  error,
+  leftIcon,
+  rightIcon,
+  className = '',
+  id,
+  ...rest
+}: Props) {
+  // A bare <label> next to an <input> labels nothing: no htmlFor, no accessible
+  // name, and clicking it doesn't focus the field. Generate an id when the
+  // caller hasn't supplied one so every labelled Input is actually labelled.
+  const autoId = useId()
+  const inputId = id ?? autoId
+
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-sm font-medium text-[var(--text-primary)]">{label}</label>
+        <label htmlFor={inputId} className="text-sm font-medium text-[var(--text-primary)]">
+          {label}
+        </label>
       )}
       <div className="relative flex items-center">
         {leftIcon && (
@@ -19,6 +35,8 @@ export function Input({ label, error, leftIcon, rightIcon, className = '', ...re
         )}
         <input
           {...rest}
+          id={inputId}
+          aria-invalid={error ? true : undefined}
           className={[
             'w-full h-10 px-3 text-sm rounded-[var(--radius-btn)]',
             'bg-[var(--bg-surface)] border border-[var(--border-default)]',

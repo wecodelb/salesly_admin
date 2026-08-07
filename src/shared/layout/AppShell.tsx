@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { ToastContainer } from '@/shared/components/Toast/Toast'
+import { ActionProgressDialog } from '@/shared/components/ActionProgress/ActionProgressDialog'
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false)
@@ -22,6 +23,7 @@ export function AppShell() {
         </div>
       </main>
       <ToastContainer />
+      <ActionProgressDialog />
     </div>
   )
 }

@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, Map, Activity, ShoppingCart, FileText, RotateCcw, Banknote,
-  MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent,
+  MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent, Coins,
   BarChart2, Trophy, UserCog, CreditCard, Key, MessageCircle, Shield, Settings,
+  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes,
   ChevronLeft, Zap, type LucideIcon,
 } from 'lucide-react'
 import { NAV_GROUPS } from './nav-config'
@@ -11,8 +12,9 @@ import type { Permission } from '@/core/auth/permissions'
 
 const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard, Map, Activity, ShoppingCart, FileText, RotateCcw, Banknote,
-  MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent,
+  MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent, Coins,
   BarChart2, Trophy, UserCog, CreditCard, Key, MessageCircle, Shield, Settings,
+  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes,
 }
 
 interface Props {

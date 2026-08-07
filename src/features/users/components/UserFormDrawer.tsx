@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Input } from '@/shared/components/Input'
+import { PhoneInput } from '@/shared/components/PhoneInput/PhoneInput'
 import { Select } from '@/shared/components/Select'
 import { Button } from '@/shared/components/Button'
-import { useToast } from '@/shared/hooks/use-toast'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
+import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
 import type { Permission } from '@/core/auth/permissions'
 import { PermissionMatrix } from './PermissionMatrix'
 import { ROLE_OPTIONS, ROLE_PRESETS } from '../permission-catalog'
-import { apiErrorMessage, useCreateUser, useUpdateUser } from '../hooks/use-users'
+import { useCreateUser, useUpdateUser } from '../hooks/use-users'
 import type { AssignableRole, CompanyUser, CreateUserPayload, UpdateUserPayload } from '../types'
 
 interface Props {
@@ -44,7 +46,7 @@ function toAssignableRole(role: string): AssignableRole {
 
 export function UserFormDrawer({ open, onClose, user }: Props) {
   const isEdit = !!user
-  const toast = useToast()
+  const { run } = useActionProgress()
   const createUser = useCreateUser()
   const updateUser = useUpdateUser()
 
@@ -88,8 +90,11 @@ export function UserFormDrawer({ open, onClose, user }: Props) {
     return Object.keys(e).length === 0
   }
 
-  const handleSubmit = () => {
-    if (!validate()) return
+  const handleSubmit = async () => {
+    if (!validate()) {
+      reportInvalidForm()
+      return
+    }
 
     if (isEdit && user) {
       const payload: UpdateUserPayload = {
@@ -101,16 +106,11 @@ export function UserFormDrawer({ open, onClose, user }: Props) {
         permissions: form.permissions,
       }
       if (form.password) payload.password = form.password
-      updateUser.mutate(
-        { id: user.id, payload },
-        {
-          onSuccess: () => {
-            toast.success('User updated', `${form.name} has been saved.`)
-            onClose()
-          },
-          onError: (err) => toast.error('Update failed', apiErrorMessage(err)),
-        },
+      const saved = await run(
+        { label: 'Saving user', detail: form.name, success: `${form.name} has been saved.` },
+        () => updateUser.mutateAsync({ id: user.id, payload }),
       )
+      if (saved !== null) onClose()
     } else {
       const payload: CreateUserPayload = {
         name: form.name.trim(),
@@ -121,13 +121,11 @@ export function UserFormDrawer({ open, onClose, user }: Props) {
         role: form.role,
         permissions: form.permissions,
       }
-      createUser.mutate(payload, {
-        onSuccess: () => {
-          toast.success('User created', `${form.name} can now sign in.`)
-          onClose()
-        },
-        onError: (err) => toast.error('Create failed', apiErrorMessage(err)),
-      })
+      const created = await run(
+        { label: 'Creating user', detail: form.name, success: `${form.name} can now sign in.` },
+        () => createUser.mutateAsync(payload),
+      )
+      if (created !== null) onClose()
     }
   }
 
@@ -153,7 +151,7 @@ export function UserFormDrawer({ open, onClose, user }: Props) {
       <div className="flex flex-col gap-5">
         {/* Profile */}
         <section className="flex flex-col gap-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+          <h3 className="text-sm font-semibold tracking-wide text-[var(--heading-accent)]" style={{ textShadow: '0 0 14px var(--heading-glow)' }}>
             Profile
           </h3>
           <Input
@@ -171,11 +169,11 @@ export function UserFormDrawer({ open, onClose, user }: Props) {
             error={errors.email}
             placeholder="jane@company.com"
           />
-          <Input
+          <PhoneInput
             label="Phone (optional)"
             value={form.phone}
-            onChange={(e) => set('phone', e.target.value)}
-            placeholder="03 000 000"
+            onChange={(v) => set('phone', v)}
+            placeholder="3 000 000"
           />
           <Input
             label="Avatar URL (optional)"
@@ -195,7 +193,7 @@ export function UserFormDrawer({ open, onClose, user }: Props) {
 
         {/* Role */}
         <section className="flex flex-col gap-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+          <h3 className="text-sm font-semibold tracking-wide text-[var(--heading-accent)]" style={{ textShadow: '0 0 14px var(--heading-glow)' }}>
             Role
           </h3>
           <Select
@@ -209,7 +207,7 @@ export function UserFormDrawer({ open, onClose, user }: Props) {
         {/* Permissions */}
         <section className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            <h3 className="text-sm font-semibold tracking-wide text-[var(--heading-accent)]" style={{ textShadow: '0 0 14px var(--heading-glow)' }}>
               Permissions
               <span className="ml-2 font-normal normal-case text-[var(--text-muted)]">
                 {form.permissions.length} selected

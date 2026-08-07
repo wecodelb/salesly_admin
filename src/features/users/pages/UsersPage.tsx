@@ -4,16 +4,16 @@ import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
-import { Select } from '@/shared/components/Select'
+import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
 import { Modal } from '@/shared/components/Modal/Modal'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
-import { useToast } from '@/shared/hooks/use-toast'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { UserFormDrawer } from '../components/UserFormDrawer'
-import { apiErrorMessage, useDeleteUser, useUpdateUser, useUsers } from '../hooks/use-users'
+import { useDeleteUser, useUpdateUser, useUsers } from '../hooks/use-users'
 import { ROLE_OPTIONS } from '../permission-catalog'
 import type { CompanyUser } from '../types'
 
@@ -30,7 +30,7 @@ const roleBadge: Record<string, string> = {
 }
 
 export function UsersPage() {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const { can } = usePermissions()
   const canEdit = can(PERMISSIONS.USERS_EDIT)
   const canRemove = can(PERMISSIONS.USERS_REMOVE)
@@ -66,38 +66,40 @@ export function UsersPage() {
     setDrawerOpen(true)
   }
 
-  const reactivate = (user: CompanyUser) => {
-    updateUser.mutate(
-      { id: user.id, payload: { status: 'active' } },
+  const reactivate = (user: CompanyUser) =>
+    run(
       {
-        onSuccess: () => toast.success('User reactivated', `${user.name} can sign in again.`),
-        onError: (err) => toast.error('Action failed', apiErrorMessage(err)),
+        label: 'Reactivating user',
+        detail: user.name,
+        success: `${user.name} can sign in again.`,
       },
+      () => updateUser.mutateAsync({ id: user.id, payload: { status: 'active' } }),
     )
-  }
 
-  const runConfirm = () => {
+  const runConfirm = async () => {
     if (!confirm) return
     const { kind, user } = confirm
+    // Closed first: leaving the confirm modal under the progress dialog would
+    // put two overlays on screen at once.
+    setConfirm(null)
 
     if (kind === 'delete') {
-      deleteUser.mutate(user.id, {
-        onSuccess: () => {
-          toast.success('User removed', `${user.name} was removed from the company.`)
-          setConfirm(null)
-        },
-        onError: (err) => toast.error('Delete failed', apiErrorMessage(err)),
-      })
-    } else {
-      updateUser.mutate(
-        { id: user.id, payload: { status: 'suspended' } },
+      await run(
         {
-          onSuccess: () => {
-            toast.success('User deactivated', `${user.name} can no longer sign in.`)
-            setConfirm(null)
-          },
-          onError: (err) => toast.error('Action failed', apiErrorMessage(err)),
+          label: 'Removing user',
+          detail: user.name,
+          success: `${user.name} was removed from the company.`,
         },
+        () => deleteUser.mutateAsync(user.id),
+      )
+    } else {
+      await run(
+        {
+          label: 'Deactivating user',
+          detail: user.name,
+          success: `${user.name} can no longer sign in.`,
+        },
+        () => updateUser.mutateAsync({ id: user.id, payload: { status: 'suspended' } }),
       )
     }
   }
@@ -233,13 +235,20 @@ export function UsersPage() {
         search={search}
         onSearch={setSearch}
         searchPlaceholder="Search by name or email…"
+        activeCount={roleFilter ? 1 : 0}
+        onClearFilters={() => setRoleFilter('')}
         filters={
-          <div className="w-44">
-            <Select
+          <div className="w-48">
+            <FilterSelect
+              label="Role"
+              allLabel="All roles"
+              icon={<ShieldCheck size={14} />}
               value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              placeholder="All roles"
-              options={ROLE_OPTIONS}
+              onChange={setRoleFilter}
+              options={ROLE_OPTIONS.map((r) => ({
+                ...r,
+                count: users.filter((u) => u.role === r.value).length,
+              }))}
             />
           </div>
         }

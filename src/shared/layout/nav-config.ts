@@ -43,9 +43,17 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    // Before a salesman can sell anything he has to be loaded up, so the depot
+    // sits above the catalog and beside the field work it belongs to.
+    label: 'Depot',
+    items: [
+      { key: 'depot-transfers', label: 'Depot Loads', icon: 'Truck', path: '/depot-transfers', permission: 'depot.view' },
+      { key: 'depot-stock', label: 'Depot Stock', icon: 'Boxes', path: '/depot-stock', permission: 'depot.view' },
+    ],
+  },
+  {
     label: 'People',
     items: [
-      { key: 'salesmen', label: 'Salesmen', icon: 'Users', path: '/salesmen' },
       { key: 'customers', label: 'Customers', icon: 'Building2', path: '/customers', permission: 'customers.view' },
     ],
   },
@@ -55,6 +63,17 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'products', label: 'Products', icon: 'Package', path: '/products', permission: 'products.view' },
       { key: 'price-lists', label: 'Price Lists', icon: 'Tags', path: '/price-lists' },
       { key: 'promotions', label: 'Promotions', icon: 'Percent', path: '/promotions' },
+    ],
+  },
+  {
+    label: 'Preferences',
+    items: [
+      { key: 'categories', label: 'Categories', icon: 'FolderTree', path: '/categories', permission: 'products.view' },
+      { key: 'brands', label: 'Brands', icon: 'Tag', path: '/brands', permission: 'products.view' },
+      { key: 'areas', label: 'Areas', icon: 'MapPinned', path: '/areas', permission: 'customers.view' },
+      { key: 'customer-groups', label: 'Customer Groups', icon: 'BadgeCheck', path: '/customer-groups', permission: 'customers.view' },
+      { key: 'uoms', label: 'Units', icon: 'Ruler', path: '/uoms', permission: 'products.view' },
+      { key: 'currencies', label: 'Currencies', icon: 'Coins', path: '/currencies', permission: 'exchange_rates.view' },
     ],
   },
   {

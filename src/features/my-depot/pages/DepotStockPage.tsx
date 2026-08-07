@@ -8,8 +8,18 @@ import { StatStrip } from '@/shared/components/StatStrip/StatStrip'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
 import { useDebounce } from '@/shared/hooks/use-debounce'
+import { DepotCapacityPanel } from '../components/DepotCapacityPanel'
 import { useDepotStock, useDepotTransfers, useWarehouseOptions } from '../hooks/use-my-depot'
-import { formatQty, type DepotStockLine } from '../types'
+import {
+  VOLUME_UNIT,
+  WEIGHT_UNIT,
+  formatQty,
+  formatVolume,
+  formatWeight,
+  stockLineVolume,
+  stockLineWeight,
+  type DepotStockLine,
+} from '../types'
 
 /**
  * What a depot is holding right now — the screen somebody checks before loading
@@ -38,13 +48,25 @@ export function DepotStockPage() {
   // Depots first, since this screen is about them; the fixed warehouses stay
   // reachable underneath because the evening's return lands in one.
   const options = useMemo(() => {
+    /** A depot named after its owner says whose it is already. */
+    const nameOf = (w: { name?: string | null; owner_name?: string | null }) => {
+      const name = w.name ?? ''
+      const owner = w.owner_name ?? ''
+      if (!owner) return name
+      return name.toLowerCase().includes(owner.toLowerCase()) ? name : `${name} — ${owner}`
+    }
+
     const depots = warehouses.filter((w) => w.is_depot)
     const fixed = warehouses.filter((w) => !w.is_depot)
 
     return [
       ...depots.map((w) => ({
         value: String(w.id),
-        label: w.owner_name ? `${w.name} — ${w.owner_name}` : (w.name ?? ''),
+        // Whose depot it is only earns a place when the name does not already
+        // say so. Most are named after their owner, and "Ahmad Khalil depot —
+        // Ahmad Khalil" reads as two different things to anyone scanning the
+        // list quickly.
+        label: nameOf(w),
         group: 'Depots',
       })),
       ...fixed.map((w) => ({
@@ -142,6 +164,35 @@ export function DepotStockPage() {
         </span>
       ),
     },
+    // What this line does to the load he is carrying. A dash is not zero: an
+    // item nobody has weighed contributes an unknown amount to a figure the
+    // capacity bars above are drawn from, and saying so is how it gets fixed.
+    {
+      key: 'weight',
+      header: `Weight (${WEIGHT_UNIT})`,
+      align: 'right',
+      render: (line) => {
+        const weight = stockLineWeight(line)
+        return (
+          <span className="font-mono text-sm tabular-nums text-[var(--text-secondary)]">
+            {weight == null ? '—' : formatWeight(weight)}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'volume',
+      header: `Volume (${VOLUME_UNIT})`,
+      align: 'right',
+      render: (line) => {
+        const volume = stockLineVolume(line)
+        return (
+          <span className="font-mono text-sm tabular-nums text-[var(--text-secondary)]">
+            {volume == null ? '—' : formatVolume(volume)}
+          </span>
+        )
+      },
+    },
   ]
 
   // Read off the warehouse's own pivot by the endpoint, so it is right even for
@@ -178,6 +229,11 @@ export function DepotStockPage() {
           ) : undefined
         }
       />
+
+      {/* Above the counts, because the question a depot screen is opened with in
+          the morning is whether there is room for another load — not how many
+          cartons of one product are left. */}
+      <DepotCapacityPanel stock={stock} transfers={transfers} loading={isLoading} />
 
       <StatStrip stats={stats} loading={isLoading} />
 

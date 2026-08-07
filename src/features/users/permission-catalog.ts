@@ -1,9 +1,14 @@
 import { PERMISSIONS, type Permission } from '@/core/auth/permissions'
 import type { AssignableRole } from './types'
 
-// Human-readable grouping of the 22 permission keys for the create/edit UI.
-// The key strings themselves are the single source of truth in
+// Human-readable grouping of every permission key for the create/edit UI. The
+// key strings themselves are the single source of truth in
 // core/auth/permissions.ts (which mirrors the backend App\Support\Permissions).
+//
+// Every key has to appear in a group: the matrix can only toggle what it
+// renders, so one left out here is one nobody can grant — customers.delete and
+// customers.verify sat outside it for a while, which is why
+// permission-catalog.test.ts now asserts the two lists match.
 export interface PermissionGroup {
   label: string
   items: { key: Permission; label: string }[]
@@ -16,6 +21,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: PERMISSIONS.CUSTOMERS_VIEW, label: 'View customers' },
       { key: PERMISSIONS.CUSTOMERS_CREATE, label: 'Create customers' },
       { key: PERMISSIONS.CUSTOMERS_EDIT, label: 'Edit customers' },
+      { key: PERMISSIONS.CUSTOMERS_DELETE, label: 'Remove customers' },
+      { key: PERMISSIONS.CUSTOMERS_VERIFY, label: 'Verify customers' },
     ],
   },
   {
@@ -70,11 +77,41 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
+    // Its own group rather than sitting under Insights: this key now gates the
+    // whole catalog — the Products screen and the Categories, Brands and Units
+    // screens that feed it — not a report.
+    label: 'Catalog',
+    items: [
+      { key: PERMISSIONS.PRODUCTS_VIEW, label: 'View products, categories, brands & units' },
+    ],
+  },
+  {
+    // The four halves of a depot movement, split the way the business splits
+    // them: the salesman asks and signs, the warehouse decides and loads.
+    label: 'Depot',
+    items: [
+      { key: PERMISSIONS.DEPOT_VIEW, label: 'View depot loads & stock' },
+      { key: PERMISSIONS.DEPOT_REQUEST, label: 'Request a refill' },
+      { key: PERMISSIONS.DEPOT_ISSUE, label: 'Load a depot & answer refill requests' },
+      { key: PERMISSIONS.DEPOT_ACCEPT, label: 'Accept a load that arrived' },
+    ],
+  },
+  {
     label: 'Insights',
     items: [
       { key: PERMISSIONS.REPORTS_VIEW, label: 'View reports' },
       { key: PERMISSIONS.LEADERBOARD_VIEW, label: 'View leaderboard' },
-      { key: PERMISSIONS.PRODUCTS_VIEW, label: 'View products' },
+    ],
+  },
+  {
+    label: 'Preferences',
+    items: [
+      {
+        key: PERMISSIONS.PREFERENCES_MANAGE,
+        label: 'Edit categories, brands, units, areas & customer groups',
+      },
+      { key: PERMISSIONS.EXCHANGE_RATES_VIEW, label: 'View currencies & exchange rates' },
+      { key: PERMISSIONS.EXCHANGE_RATES_MANAGE, label: 'Edit currencies & exchange rates' },
     ],
   },
   {
@@ -97,6 +134,22 @@ const SALESMAN_EXCLUDED: Permission[] = [
   PERMISSIONS.USERS_VIEW,
   PERMISSIONS.USERS_EDIT,
   PERMISSIONS.USERS_REMOVE,
+  // Reference data is shared across the whole company — a salesman reads it
+  // through the product/customer forms but shouldn't be able to reshape it.
+  PERMISSIONS.PREFERENCES_MANAGE,
+  // Removing a customer and approving one are both decisions about the
+  // company's book rather than about a salesman's own round: he may add and
+  // edit, and someone with the key signs the result off.
+  PERMISSIONS.CUSTOMERS_DELETE,
+  PERMISSIONS.CUSTOMERS_VERIFY,
+  // What a dollar is worth is a company-wide figure every price in the app
+  // reads from. A salesman quotes it; he does not set it.
+  PERMISSIONS.EXCHANGE_RATES_VIEW,
+  PERMISSIONS.EXCHANGE_RATES_MANAGE,
+  // He may ask for a refill and sign for what turns up; deciding what leaves
+  // the warehouse is the warehouse's call. Sending his own unsold stock back
+  // still works without it — being assigned to the depot is the authority there.
+  PERMISSIONS.DEPOT_ISSUE,
 ]
 
 // Client-side mirror of the backend App\Support\Permissions::DEFAULTS_BY_ROLE.

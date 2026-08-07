@@ -33,7 +33,7 @@ export async function createPriceList(payload: CreatePriceListPayload): Promise<
 }
 
 export async function updatePriceList(id: number, payload: UpdatePriceListPayload): Promise<void> {
-  await apiClient.patch(`${ENDPOINTS.PRICE_LISTS}/${id}`, payload)
+  await apiClient.post(`${ENDPOINTS.PRICE_LISTS}/${id}`, payload)
 }
 
 export async function deletePriceList(id: number): Promise<void> {

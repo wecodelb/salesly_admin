@@ -3,8 +3,7 @@ import { X } from 'lucide-react'
 import { Modal } from '@/shared/components/Modal/Modal'
 import { Button } from '@/shared/components/Button'
 import { SearchableSelect } from '@/shared/components/SearchableSelect/SearchableSelect'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useAssignPriceList, useUnassignPriceList } from '@/features/customers/hooks/use-customers'
 import { useCustomerOptions } from '../hooks/use-price-lists'
 import type { PriceList } from '../types'
@@ -17,7 +16,7 @@ interface Props {
 /** View + manage the customers benefiting from one price list — the mirror
  *  image of a customer's "Assign price list" action, from this side. */
 export function ManageCustomersModal({ priceList, onClose }: Props) {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const { data: customerOptions = [] } = useCustomerOptions()
   const assign = useAssignPriceList()
   const unassign = useUnassignPriceList()
@@ -29,28 +28,33 @@ export function ManageCustomersModal({ priceList, onClose }: Props) {
     .filter((c) => !assignedIds.has(c.id))
     .map((c) => ({ value: String(c.id), label: c.name }))
 
-  const addCustomer = () => {
+  // This modal stays open while customers are added and removed one by one, so
+  // — unlike the confirm-and-close dialogs — it is not closed first; the
+  // progress dialog sits over it and hands control straight back.
+  const addCustomer = async () => {
     if (!priceList || !addingId) return
-    assign.mutate(
-      { customerId: Number(addingId), priceListId: priceList.id },
+    const customerId = Number(addingId)
+    const name = customerOptions.find((c) => c.id === customerId)?.name
+    setAddingId('')
+    await run(
       {
-        onSuccess: () => {
-          toast.success('Customer added', 'They now benefit from this list.')
-          setAddingId('')
-        },
-        onError: (err) => toast.error('Add failed', apiErrorMessage(err)),
+        label: 'Adding customer to price list',
+        detail: name,
+        success: 'They now benefit from this list.',
       },
+      () => assign.mutateAsync({ customerId, priceListId: priceList.id }),
     )
   }
 
-  const removeCustomer = (customerId: number, name: string) => {
+  const removeCustomer = async (customerId: number, name: string) => {
     if (!priceList) return
-    unassign.mutate(
-      { customerId, priceListId: priceList.id },
+    await run(
       {
-        onSuccess: () => toast.success('Customer removed', `${name} no longer benefits from this list.`),
-        onError: (err) => toast.error('Remove failed', apiErrorMessage(err)),
+        label: 'Removing customer from price list',
+        detail: name,
+        success: `${name} no longer benefits from this list.`,
       },
+      () => unassign.mutateAsync({ customerId, priceListId: priceList.id }),
     )
   }
 

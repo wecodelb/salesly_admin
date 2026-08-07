@@ -32,7 +32,7 @@ export async function createUser(payload: CreateUserPayload): Promise<void> {
 }
 
 export async function updateUser(id: number, payload: UpdateUserPayload): Promise<void> {
-  await apiClient.patch(`${ENDPOINTS.USERS}/${id}`, payload)
+  await apiClient.post(`${ENDPOINTS.USERS}/${id}`, payload)
 }
 
 export async function deleteUser(id: number): Promise<void> {

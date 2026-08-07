@@ -1,4 +1,4 @@
-import type { SelectHTMLAttributes } from 'react'
+import { useId, type SelectHTMLAttributes } from 'react'
 import type { SelectOption } from '@/core/types/common'
 
 interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -8,14 +8,31 @@ interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   placeholder?: string
 }
 
-export function Select({ label, error, options, placeholder, className = '', ...rest }: Props) {
+export function Select({
+  label,
+  error,
+  options,
+  placeholder,
+  className = '',
+  id,
+  ...rest
+}: Props) {
+  // Same fix as Input: the label was rendered beside the control but never
+  // bound to it, so the <select> had no accessible name.
+  const autoId = useId()
+  const selectId = id ?? autoId
+
   return (
     <div className="flex flex-col gap-1.5">
       {label && (
-        <label className="text-sm font-medium text-[var(--text-primary)]">{label}</label>
+        <label htmlFor={selectId} className="text-sm font-medium text-[var(--text-primary)]">
+          {label}
+        </label>
       )}
       <select
         {...rest}
+        id={selectId}
+        aria-invalid={error ? true : undefined}
         className={[
           'w-full h-10 px-3 text-sm rounded-[var(--radius-btn)]',
           'bg-[var(--bg-surface)] border border-[var(--border-default)]',

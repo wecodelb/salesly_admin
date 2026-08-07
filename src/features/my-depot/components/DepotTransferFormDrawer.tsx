@@ -19,9 +19,17 @@ import {
   useUpdateDepotTransfer,
   useWarehouseOptions,
 } from '../hooks/use-my-depot'
+import { CapacityBar } from './CapacityBar'
 import {
+  VOLUME_UNIT,
+  WEIGHT_UNIT,
+  depotUtilisation,
   formatQty,
+  formatVolume,
+  formatWeight,
+  loadTotals,
   sourceAvailability,
+  withLoad,
   type CreateDepotTransferPayload,
   type DepotTransfer,
   type DepotTransferRowPayload,
@@ -217,6 +225,29 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
     return { item, unit, wanted, onHand, short: wanted > onHand }
   }
 
+  // What is actually being strapped on. An item declares weight and volume per
+  // base unit, so a line contributes its base quantity times that figure —
+  // which is the arithmetic the server totals the document with, so this figure
+  // and the one that comes back agree.
+  const load = loadTotals(
+    rows.map((row) => {
+      const stock = lineStock(row)
+      return { qty: stock?.wanted ?? 0, weight: stock?.item.weight, volume: stock?.item.volume }
+    }),
+  )
+
+  const lineCount = rows.filter((row) => row.itemId && Number(row.qty) > 0).length
+
+  // Where it is going, and what is already on it. A draft holds goods at the
+  // source without moving them, so nothing here is double-counted while it is
+  // being edited: it joins the depot's figures only once it is issued.
+  const landsInId = landsIn?.id ?? null
+  const { data: destinationStock } = useDepotStock(landsInId, open && landsInId != null)
+  const destination = depotUtilisation(destinationStock, transfers)
+  const afterWeight = withLoad(destination.weight, load.weight)
+  const afterVolume = withLoad(destination.volume, load.volume)
+  const overCapacity = afterWeight.over || afterVolume.over
+
   const validate = (): boolean => {
     const e: Record<string, string> = {}
 
@@ -303,12 +334,21 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
     label: `${item.name} (${item.code})`,
   }))
 
-  const warehouseOptions = warehouses.map((w) => ({
-    value: String(w.id),
-    label: w.is_depot
-      ? `${w.name}${w.owner_name ? ` — ${w.owner_name}'s depot` : ' — depot'}`
-      : (w.name ?? ''),
-  }))
+  // Depots are named after the salesman who drives them, so the owner is only
+  // worth appending when the name has not said it already — otherwise the
+  // picker reads "Ahmad Khalil depot — Ahmad Khalil's depot".
+  const warehouseOptions = warehouses.map((w) => {
+    const name = w.name ?? ''
+    const owner = w.owner_name ?? ''
+    const saysOwner = owner !== '' && name.toLowerCase().includes(owner.toLowerCase())
+
+    return {
+      value: String(w.id),
+      label: !w.is_depot || saysOwner || owner === ''
+        ? name
+        : `${name} — ${owner}`,
+    }
+  })
 
   return (
     <SideDrawer
@@ -519,6 +559,62 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
               </div>
             )
           })}
+
+          {/* What he will be carrying, and whether it fits. Both figures move as
+              lines are keyed, because the moment to find out the vehicle is too
+              small is while the load is still on paper. */}
+          <div className="mt-2 flex flex-col gap-4 rounded-[var(--radius-card)] border border-[var(--border-subtle)] px-4 py-3.5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">
+                This load{landsIn?.name ? ` → ${landsIn.name}` : ''}
+              </span>
+              <span className="text-sm text-[var(--text-secondary)]">
+                <span className="font-mono tabular-nums text-[var(--text-primary)]">
+                  {formatWeight(load.weight)}
+                </span>{' '}
+                {WEIGHT_UNIT} ·{' '}
+                <span className="font-mono tabular-nums text-[var(--text-primary)]">
+                  {formatVolume(load.volume)}
+                </span>{' '}
+                {VOLUME_UNIT} across {lineCount} {lineCount === 1 ? 'line' : 'lines'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+              <CapacityBar
+                label="Weight after this load"
+                usage={afterWeight}
+                format={formatWeight}
+                unit={WEIGHT_UNIT}
+                incomingNote="on the road and in this load"
+              />
+              <CapacityBar
+                label="Volume after this load"
+                usage={afterVolume}
+                format={formatVolume}
+                unit={VOLUME_UNIT}
+                incomingNote="on the road and in this load"
+              />
+            </div>
+
+            {/* A warning and never a refusal: the cap was typed by somebody who
+                is not standing at the vehicle, and a man who genuinely fits one
+                more pallet on must not be stopped by it. */}
+            {overCapacity && (
+              <div className="flex items-start gap-2">
+                <AlertTriangle
+                  size={15}
+                  aria-hidden
+                  className="mt-0.5 flex-shrink-0 text-[var(--accent-amber)]"
+                />
+                <p className="text-sm text-[var(--accent-amber)]">
+                  This puts {landsIn?.name ?? 'the depot'} past what it is recorded as carrying.
+                  Save it anyway if it really fits — nothing here blocks the load — or take a line
+                  off first.
+                </p>
+              </div>
+            )}
+          </div>
         </section>
       </div>
     </SideDrawer>

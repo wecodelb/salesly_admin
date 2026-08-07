@@ -54,15 +54,6 @@ export function useDeleteUser() {
   })
 }
 
-// Extract the first human-readable validation message from a Laravel error
-// response (mirrors the shape the LoginPage already handles).
-export function apiErrorMessage(err: unknown, fallback = 'Something went wrong'): string {
-  const e = err as {
-    response?: { data?: { errors?: Record<string, string[]>; data?: Record<string, string[]>; message?: string } }
-  }
-  const resData = e?.response?.data
-  if (!e?.response) return 'Cannot reach server. Make sure the backend is running.'
-  if (resData?.errors) return (Object.values(resData.errors).flat()[0] as string) ?? fallback
-  if (resData?.data) return (Object.values(resData.data).flat()[0] as string) ?? fallback
-  return resData?.message ?? fallback
-}
+// Moved to core/api so shared components can report errors too; re-exported
+// here because most of the app has always imported it from this module.
+export { apiErrorMessage } from '@/core/api/api-error'
