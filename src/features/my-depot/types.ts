@@ -14,7 +14,7 @@ export type DepotTransferType = 'TRR' | 'TRO' | 'TRI'
 
 export type DepotTransferStatus = 'DRAFT' | 'CONFIRMED' | 'COMPLETED' | 'CANCELED'
 
-/** Either end of a movement. `is_depot` is what tells a warehouse from a van. */
+/** Either end of a movement. `is_depot` is what tells a depot from a warehouse. */
 export interface DepotWarehouseRef {
   id: number | null
   code: string | null
@@ -47,6 +47,11 @@ export interface DepotTransferRow {
   issued_qty: number | null
   accepted_qty: number | null
   shortfall_qty: number | null
+  /** Per base unit, copied off the item when the line was written, so a line's
+   *  own weight is this times `qty` — the arithmetic the header's totals are
+   *  the sum of. Absent on a document raised before the item was weighed. */
+  weight?: number | null
+  volume?: number | null
   line_memo: string | null
 }
 
@@ -164,6 +169,32 @@ export interface DepotStockLine {
   qty: number
   available_qty: number
   reserved_qty: number
+  /** Per base unit, the way an item declares it — `weight` is what one of these
+   *  weighs, not what the shelf holds. `total_weight` is the product already
+   *  taken, sent when the endpoint has done the multiplication itself. */
+  weight?: number | null
+  volume?: number | null
+  total_weight?: number | null
+  total_volume?: number | null
+}
+
+/**
+ * What a depot may physically carry and what is already against that.
+ *
+ * Both caps are nullable and every fixed warehouse leaves them so: a cap
+ * describes a vehicle, and a building that has never run out of floor has
+ * nothing to declare. Goods still on the road count against the cap because
+ * they are already this depot's — they land on it whether or not somebody
+ * loads it again first, and a projection that ignored them would wave through
+ * a second load the first one has already taken the room for.
+ */
+export interface DepotCapacity {
+  max_weight: number | null
+  max_volume: number | null
+  used_weight: number
+  used_volume: number
+  in_transit_weight: number
+  in_transit_volume: number
 }
 
 export interface DepotStock {
@@ -172,6 +203,8 @@ export interface DepotStock {
   total_qty: number
   total_available_qty: number
   total_reserved_qty: number
+  /** Absent on a warehouse nobody has measured, which reads as uncapped. */
+  capacity?: DepotCapacity | null
   items: DepotStockLine[]
 }
 
@@ -272,6 +305,187 @@ export function sourceAvailability(
   return available
 }
 
+// ─── Capacity ───────────────────────────────────────────────────────────────
+// A depot's capacity is what the man can physically carry out in the morning,
+// so every figure below is about the load leaving rather than about the shelf
+// it came off. Stock mostly leaves a depot by being sold, not by coming back,
+// which is why nothing here nets a return off against the room it frees.
+
+/** Nonsense — a negative weight, a cap of zero, a figure the API left out —
+ *  read as nothing rather than as a bar drawn backwards or a division by zero. */
+function nonNegative(value: number | null | undefined): number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : 0
+}
+
+/**
+ * One bar's worth of arithmetic: what is in there, what is on its way, and how
+ * both sit against the cap.
+ *
+ * The percentages are uncapped so an overload can be spelled out — 118% is the
+ * whole point of the figure, and clamping it to 100 would hide exactly the case
+ * worth showing. The widths are the clamped pair the bar is actually drawn
+ * with, the second segment taking only the room the first left.
+ */
+export interface CapacityUsage {
+  used: number
+  incoming: number
+  total: number
+  /** Null when nobody declared one, which is every fixed warehouse. */
+  max: number | null
+  uncapped: boolean
+  usedPct: number
+  incomingPct: number
+  totalPct: number
+  usedWidth: number
+  incomingWidth: number
+  /** Strictly past the cap: filling it exactly is not an overload. */
+  over: boolean
+}
+
+export function capacityUsage(
+  used: number | null | undefined,
+  incoming: number | null | undefined,
+  max: number | null | undefined,
+): CapacityUsage {
+  const inside = nonNegative(used)
+  const travelling = nonNegative(incoming)
+  const cap = nonNegative(max)
+  const total = inside + travelling
+  const uncapped = cap === 0
+
+  const usedPct = uncapped ? 0 : (inside / cap) * 100
+  const incomingPct = uncapped ? 0 : (travelling / cap) * 100
+  const usedWidth = Math.min(usedPct, 100)
+
+  return {
+    used: inside,
+    incoming: travelling,
+    total,
+    max: uncapped ? null : cap,
+    uncapped,
+    usedPct,
+    incomingPct,
+    totalPct: usedPct + incomingPct,
+    usedWidth,
+    incomingWidth: Math.min(incomingPct, 100 - usedWidth),
+    over: !uncapped && total > cap,
+  }
+}
+
+/** The same depot with one more load on it — what a form asks while the load is
+ *  still being keyed. It rides in the in-transit segment because that is what it
+ *  becomes the moment somebody presses Issue. */
+export function withLoad(usage: CapacityUsage, added: number): CapacityUsage {
+  return capacityUsage(usage.used, usage.incoming + nonNegative(added), usage.max)
+}
+
+/** What a line comes to: the ready-made total when the endpoint sent one, else
+ *  the per-base-unit figure times what is on the line. Null when the item has
+ *  never been weighed — which is a different fact from weighing nothing. */
+export function lineTotal(
+  qty: number,
+  perUnit?: number | null,
+  total?: number | null,
+): number | null {
+  if (typeof total === 'number' && Number.isFinite(total)) return total
+  if (typeof perUnit === 'number' && Number.isFinite(perUnit)) return perUnit * qty
+  return null
+}
+
+export function stockLineWeight(line: DepotStockLine): number | null {
+  return lineTotal(line.qty, line.weight, line.total_weight)
+}
+
+export function stockLineVolume(line: DepotStockLine): number | null {
+  return lineTotal(line.qty, line.volume, line.total_volume)
+}
+
+/** A load being drafted, one line per row: base units and the item's own
+ *  per-unit figures, which is exactly how the server totals the document. */
+export interface LoadLine {
+  qty: number
+  weight?: number | null
+  volume?: number | null
+}
+
+export function loadTotals(lines: LoadLine[]): { weight: number; volume: number } {
+  let weight = 0
+  let volume = 0
+
+  for (const line of lines) {
+    weight += lineTotal(line.qty, line.weight) ?? 0
+    volume += lineTotal(line.qty, line.volume) ?? 0
+  }
+
+  return { weight, volume }
+}
+
+/**
+ * What is on the road toward a warehouse: issued, signed for by nobody, and
+ * therefore in neither building. Read off the feed rather than asked for,
+ * because those documents carry their own totals and the feed is already open
+ * on every screen that needs this.
+ */
+export function inTransitToward(
+  transfers: DepotTransfer[],
+  warehouseId: number | null | undefined,
+): { weight: number; volume: number; count: number } {
+  if (!warehouseId) return { weight: 0, volume: 0, count: 0 }
+
+  let weight = 0
+  let volume = 0
+  let count = 0
+
+  for (const transfer of transfers) {
+    if (!transfer.is_in_transit || transfer.destination?.id !== warehouseId) continue
+    weight += nonNegative(transfer.total_weight)
+    volume += nonNegative(transfer.total_volume)
+    count++
+  }
+
+  return { weight, volume, count }
+}
+
+/**
+ * Both bars for one depot.
+ *
+ * The endpoint's own figures win wherever it has any, since it totals from the
+ * same item weights and can see stock this console never fetched. Where it is
+ * silent the lines and the movements feed answer instead, so a depot still
+ * reports what it is carrying rather than an empty bar.
+ */
+export function depotUtilisation(
+  stock: DepotStock | null | undefined,
+  transfers: DepotTransfer[] = [],
+): { weight: CapacityUsage; volume: CapacityUsage } {
+  const capacity = stock?.capacity
+  const lines = stock?.items ?? []
+
+  let contentsWeight = 0
+  let contentsVolume = 0
+  for (const line of lines) {
+    contentsWeight += stockLineWeight(line) ?? 0
+    contentsVolume += stockLineVolume(line) ?? 0
+  }
+
+  const travelling = inTransitToward(transfers, stock?.warehouse?.id)
+  const prefer = (server: number | null | undefined, derived: number) =>
+    nonNegative(server) > 0 ? nonNegative(server) : derived
+
+  return {
+    weight: capacityUsage(
+      prefer(capacity?.used_weight, contentsWeight),
+      prefer(capacity?.in_transit_weight, travelling.weight),
+      capacity?.max_weight,
+    ),
+    volume: capacityUsage(
+      prefer(capacity?.used_volume, contentsVolume),
+      prefer(capacity?.in_transit_volume, travelling.volume),
+      capacity?.max_volume,
+    ),
+  }
+}
+
 // ─── Presentation ───────────────────────────────────────────────────────────
 
 /** The `status` and `label` a StatusPill takes, read off both type and status:
@@ -351,4 +565,28 @@ const qtyFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
 
 export function formatQty(value: number): string {
   return qtyFmt.format(value)
+}
+
+/** The units both caps are declared in. */
+export const WEIGHT_UNIT = 'kg'
+export const VOLUME_UNIT = 'm³'
+
+// Bare figures, unit-free: a pair reads "1,040 / 1,200 kg", with the unit
+// written once at the end rather than against each half of a comparison.
+const weightFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 })
+// Three places, because a case of biscuits is a few thousandths of a cubic
+// metre and rounding it away would make every small line read as nothing.
+const volumeFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 })
+
+export function formatWeight(value: number): string {
+  return weightFmt.format(value)
+}
+
+export function formatVolume(value: number): string {
+  return volumeFmt.format(value)
+}
+
+/** Whole percent — nobody loads a truck to a tenth of one. */
+export function formatPercent(pct: number): string {
+  return `${Math.round(pct)}%`
 }

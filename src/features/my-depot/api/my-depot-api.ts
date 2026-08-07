@@ -32,19 +32,47 @@ interface ListData<T> {
  * plus the whole document under `transfer` so the server's quantities — which
  * the client did not compute — render without a second call.
  */
-interface WriteResult {
+interface WriteResponse {
   id: number
   trs_number: string
   status: string
   total_qty: number
   transfer: DepotTransfer
+  /**
+   * What the server let through and still wants said. A load past the depot's
+   * capacity arrives here rather than as a 422: the cap is somebody's estimate
+   * typed once, and the man strapping the last pallet on can see the vehicle.
+   */
+  warnings?: { capacity?: string | string[] | null } | null
 }
 
 /** Accepting also returns the load it closed, now carrying its acceptance. */
-interface AcceptResult extends WriteResult {
+interface AcceptResponse extends WriteResponse {
   discrepancy_qty: number
   transfer_id: number
   issue: DepotTransfer
+}
+
+/** The document, and anything the server said about it that isn't a refusal. */
+export interface DepotWriteResult {
+  transfer: DepotTransfer
+  warnings: string[]
+}
+
+export interface DepotAcceptResult extends DepotWriteResult {
+  discrepancy_qty: number
+  /** The load that was closed, now carrying its acceptance. */
+  issue: DepotTransfer
+}
+
+/** One note or several — the endpoint may say a depot is over on weight and
+ *  over on volume, and both are worth reading. */
+function capacityWarnings(body: WriteResponse | null | undefined): string[] {
+  const raw = body?.warnings?.capacity
+  if (!raw) return []
+
+  const notes = Array.isArray(raw) ? raw : [raw]
+  return notes.filter((note): note is string => typeof note === 'string' && note.trim() !== '')
 }
 
 /** Guard against a malformed `last_page` spinning this forever. */
@@ -92,21 +120,23 @@ export async function fetchDepotTransfer(id: number): Promise<DepotTransfer> {
  */
 export async function createDepotTransfer(
   payload: CreateDepotTransferPayload,
-): Promise<DepotTransfer> {
-  const res = await apiClient.post<Envelope<WriteResult>>(ENDPOINTS.DEPOT_TRANSFERS, payload)
-  return res.data.data.transfer
+): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(ENDPOINTS.DEPOT_TRANSFERS, payload)
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
 /** Draft-only. Update is a POST like the rest of this API, not a PATCH. */
 export async function updateDepotTransfer(
   id: number,
   payload: UpdateDepotTransferPayload,
-): Promise<DepotTransfer> {
-  const res = await apiClient.post<Envelope<WriteResult>>(
+): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(
     `${ENDPOINTS.DEPOT_TRANSFERS}/${id}`,
     payload,
   )
-  return res.data.data.transfer
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
 export async function deleteDepotTransfer(id: number): Promise<void> {
@@ -114,18 +144,20 @@ export async function deleteDepotTransfer(id: number): Promise<void> {
 }
 
 /** Stock leaves the source here and belongs nowhere until somebody signs. */
-export async function issueDepotTransfer(id: number): Promise<DepotTransfer> {
-  const res = await apiClient.post<Envelope<WriteResult>>(
+export async function issueDepotTransfer(id: number): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(
     `${ENDPOINTS.DEPOT_TRANSFERS}/${id}/issue`,
   )
-  return res.data.data.transfer
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
-export async function cancelDepotTransfer(id: number): Promise<DepotTransfer> {
-  const res = await apiClient.post<Envelope<WriteResult>>(
+export async function cancelDepotTransfer(id: number): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(
     `${ENDPOINTS.DEPOT_TRANSFERS}/${id}/cancel`,
   )
-  return res.data.data.transfer
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
 /**
@@ -135,32 +167,43 @@ export async function cancelDepotTransfer(id: number): Promise<DepotTransfer> {
 export async function acceptDepotTransfer(
   id: number,
   payload: AcceptTransferPayload,
-): Promise<AcceptResult> {
-  const res = await apiClient.post<Envelope<AcceptResult>>(
+): Promise<DepotAcceptResult> {
+  const res = await apiClient.post<Envelope<AcceptResponse>>(
     `${ENDPOINTS.DEPOT_TRANSFERS}/${id}/accept`,
     payload,
   )
-  return res.data.data
+  const body = res.data.data
+  return {
+    transfer: body.transfer,
+    issue: body.issue,
+    discrepancy_qty: body.discrepancy_qty,
+    warnings: capacityWarnings(body),
+  }
 }
 
 /** The salesman's half of a transfer — it moves no stock at all. */
-export async function createRefillRequest(payload: RefillRequestPayload): Promise<DepotTransfer> {
-  const res = await apiClient.post<Envelope<WriteResult>>(ENDPOINTS.REFILL_REQUESTS, payload)
-  return res.data.data.transfer
+export async function createRefillRequest(
+  payload: RefillRequestPayload,
+): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(ENDPOINTS.REFILL_REQUESTS, payload)
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
-export async function approveRefillRequest(id: number): Promise<DepotTransfer> {
-  const res = await apiClient.post<Envelope<WriteResult>>(
+export async function approveRefillRequest(id: number): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(
     `${ENDPOINTS.REFILL_REQUESTS}/${id}/approve`,
   )
-  return res.data.data.transfer
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
-export async function rejectRefillRequest(id: number): Promise<DepotTransfer> {
-  const res = await apiClient.post<Envelope<WriteResult>>(
+export async function rejectRefillRequest(id: number): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(
     `${ENDPOINTS.REFILL_REQUESTS}/${id}/reject`,
   )
-  return res.data.data.transfer
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
 /**

@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { Modal } from '@/shared/components/Modal/Modal'
 import { Button } from '@/shared/components/Button'
 import { Select } from '@/shared/components/Select'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useAssignSalesman, useSalesmen } from '../hooks/use-customers'
 import type { AdminCustomer } from '../types'
 
@@ -15,7 +14,7 @@ interface Props {
 /** Assign (or unassign) a customer to a salesman. Assignment is what makes
  *  the customer appear in that salesman's Flutter app. */
 export function AssignSalesmanModal({ customer, onClose }: Props) {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const { data: salesmen = [], isLoading } = useSalesmen()
   const assign = useAssignSalesman()
   const [selected, setSelected] = useState('')
@@ -24,24 +23,22 @@ export function AssignSalesmanModal({ customer, onClose }: Props) {
     setSelected(customer?.salesman_id ? String(customer.salesman_id) : '')
   }, [customer])
 
-  const submit = () => {
+  const submit = async () => {
     if (!customer) return
     const salesmanId = selected ? Number(selected) : null
     const salesmanName = salesmen.find((s) => s.id === salesmanId)?.name
-    assign.mutate(
-      { id: customer.id, salesmanId },
+    // Closed first so the confirm modal isn't left stacked under the progress
+    // dialog; a failure reports there rather than back inside this modal.
+    onClose()
+    await run(
       {
-        onSuccess: () => {
-          toast.success(
-            salesmanId ? 'Customer assigned' : 'Customer unassigned',
-            salesmanId
-              ? `${customer.name} now appears in ${salesmanName}'s app.`
-              : `${customer.name} is no longer assigned to a salesman.`,
-          )
-          onClose()
-        },
-        onError: (err) => toast.error('Assignment failed', apiErrorMessage(err)),
+        label: salesmanId ? 'Assigning salesman' : 'Unassigning salesman',
+        detail: customer.name,
+        success: salesmanId
+          ? `${customer.name} now appears in ${salesmanName}'s app.`
+          : `${customer.name} is no longer assigned to a salesman.`,
       },
+      () => assign.mutateAsync({ id: customer.id, salesmanId }),
     )
   }
 

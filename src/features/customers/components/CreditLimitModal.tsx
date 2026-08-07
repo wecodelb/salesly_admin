@@ -3,8 +3,7 @@ import { DollarSign } from 'lucide-react'
 import { Modal } from '@/shared/components/Modal/Modal'
 import { Button } from '@/shared/components/Button'
 import { Input } from '@/shared/components/Input'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useSetCreditLimit } from '../hooks/use-customers'
 import { formatMoney, type AdminCustomer } from '../types'
 
@@ -16,7 +15,7 @@ interface Props {
 /** Set (or clear) a customer's credit limit. The Flutter app flags the
  *  customer "over limit" when the balance exceeds it. */
 export function CreditLimitModal({ customer, onClose }: Props) {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const setLimit = useSetCreditLimit()
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
@@ -26,7 +25,7 @@ export function CreditLimitModal({ customer, onClose }: Props) {
     setError('')
   }, [customer])
 
-  const submit = () => {
+  const submit = async () => {
     if (!customer) return
     const trimmed = value.trim()
     const creditLimit = trimmed === '' ? null : Number(trimmed)
@@ -34,20 +33,18 @@ export function CreditLimitModal({ customer, onClose }: Props) {
       setError('Enter a positive amount, or leave empty for no limit.')
       return
     }
-    setLimit.mutate(
-      { id: customer.id, creditLimit },
+    // Closed first so the modal isn't left stacked under the progress dialog.
+    onClose()
+    await run(
       {
-        onSuccess: () => {
-          toast.success(
-            'Credit limit updated',
-            creditLimit === null
-              ? `${customer.name} has no credit limit now.`
-              : `${customer.name} is capped at ${formatMoney(creditLimit)}.`,
-          )
-          onClose()
-        },
-        onError: (err) => toast.error('Update failed', apiErrorMessage(err)),
+        label: 'Setting credit limit',
+        detail: customer.name,
+        success:
+          creditLimit === null
+            ? `${customer.name} has no credit limit now.`
+            : `${customer.name} is capped at ${formatMoney(creditLimit)}.`,
       },
+      () => setLimit.mutateAsync({ id: customer.id, creditLimit }),
     )
   }
 

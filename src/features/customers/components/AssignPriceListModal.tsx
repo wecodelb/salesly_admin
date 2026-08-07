@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Modal } from '@/shared/components/Modal/Modal'
 import { Button } from '@/shared/components/Button'
 import { SearchableSelect } from '@/shared/components/SearchableSelect/SearchableSelect'
-import { useToast } from '@/shared/hooks/use-toast'
-import { apiErrorMessage } from '@/features/users/hooks/use-users'
+import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { usePriceLists } from '@/features/price-lists/hooks/use-price-lists'
 import { useAssignPriceList } from '../hooks/use-customers'
 import type { AdminCustomer } from '../types'
@@ -17,7 +16,7 @@ interface Props {
  *  point for the same relationship a price list's "Add customers" panel
  *  manages from the other direction. */
 export function AssignPriceListModal({ customer, onClose }: Props) {
-  const toast = useToast()
+  const { run } = useActionProgress()
   const { data: priceLists = [] } = usePriceLists()
   const assign = useAssignPriceList()
   const [priceListId, setPriceListId] = useState('')
@@ -27,18 +26,19 @@ export function AssignPriceListModal({ customer, onClose }: Props) {
     .filter((l) => !alreadyAssigned.has(l.id))
     .map((l) => ({ value: String(l.id), label: l.is_default ? `${l.name} (default)` : l.name }))
 
-  const submit = () => {
+  const submit = async () => {
     if (!customer || !priceListId) return
-    assign.mutate(
-      { customerId: customer.id, priceListId: Number(priceListId) },
+    const listId = Number(priceListId)
+    // Closed first so this modal isn't left stacked under the progress dialog.
+    setPriceListId('')
+    onClose()
+    await run(
       {
-        onSuccess: () => {
-          toast.success('Price list assigned', `${customer.name} now benefits from this list.`)
-          setPriceListId('')
-          onClose()
-        },
-        onError: (err) => toast.error('Assign failed', apiErrorMessage(err)),
+        label: 'Assigning price list',
+        detail: customer.name,
+        success: `${customer.name} now benefits from this list.`,
       },
+      () => assign.mutateAsync({ customerId: customer.id, priceListId: listId }),
     )
   }
 
