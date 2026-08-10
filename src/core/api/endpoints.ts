@@ -10,8 +10,12 @@ export const ENDPOINTS = {
   COMPANY: '/company/info',  // GET  /api/v1/company/info (public)
 
   // Inventory
-  ITEMS: '/items',           // GET/POST/PATCH/DELETE /api/v1/items, GET /{id}/distribution
-  WAREHOUSES: '/warehouses',
+  // GET/POST/PATCH/DELETE /api/v1/items, GET /{id}/distribution,
+  // GET+POST /{id}/levels — the per-warehouse reorder points, read with
+  // products.view and set with preferences.manage.
+  ITEMS: '/items',
+  WAREHOUSES: '/warehouses', // GET/POST, /{id} GET/POST/DELETE — depots included
+
   UOMS: '/uoms',
   CATEGORIES: '/categories', // GET/POST/PATCH/DELETE /api/v1/categories
   BRANDS: '/brands',         // GET/POST/PATCH/DELETE
@@ -25,6 +29,7 @@ export const ENDPOINTS = {
   // one prefix because they are one flow.
   DEPOT_TRANSFERS: '/depot-transfers',   // GET/POST, /{id} GET/POST/DELETE, /{id}/issue|cancel|accept
   REFILL_REQUESTS: '/depot-transfers/requests', // POST, /{id}/approve, /{id}/reject
+  DEPOT_STOCK: '/depot-stock', // GET — every depot at once, a line each
   MY_DEPOT: '/my-depot',     // GET(+?warehouse_id) — what a depot holds now
 
   // Sales

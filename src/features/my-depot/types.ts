@@ -195,6 +195,16 @@ export interface DepotCapacity {
   used_volume: number
   in_transit_weight: number
   in_transit_volume: number
+  /** What the server calls the same two figures. Both spellings are declared
+   *  because the endpoint sends these and older readers here expect the pair
+   *  above; the helpers fall back between them rather than trusting one. */
+  total_weight?: number
+  total_volume?: number
+  /** Already worked out server-side, contents plus what is on the road against
+   *  the ceiling. Null where nothing has been measured — which is not 0%. */
+  weight_pct?: number | null
+  volume_pct?: number | null
+  over_capacity?: boolean
 }
 
 export interface DepotStock {
@@ -206,6 +216,24 @@ export interface DepotStock {
   /** Absent on a warehouse nobody has measured, which reads as uncapped. */
   capacity?: DepotCapacity | null
   items: DepotStockLine[]
+}
+
+/**
+ * GET /depot-stock — one line per depot, the fleet at a glance.
+ *
+ * Deliberately without `items`: the point of the row is whether a depot is
+ * worth opening, and loading every product of every vehicle to answer that
+ * would fetch a few hundred rows to render six.
+ */
+export interface DepotSummary {
+  warehouse: DepotWarehouseRef
+  salesman: DepotSalesmanRef | null
+  /** Distinct products, not cartons. */
+  line_count: number
+  total_qty: number
+  total_available_qty: number
+  total_reserved_qty: number
+  capacity?: DepotCapacity | null
 }
 
 /** GET /warehouses — id, code and name are all WarehouseResource carries. */
@@ -254,6 +282,18 @@ export function isPendingRequest(t: Pick<DepotTransfer, 'trs_type' | 'status'>):
 /** Approved, so a load may be raised against it. */
 export function isApprovedRequest(t: Pick<DepotTransfer, 'trs_type' | 'status'>): boolean {
   return t.trs_type === 'TRR' && t.status === 'CONFIRMED'
+}
+
+/**
+ * Whether the source still has to find these goods.
+ *
+ * Only worth asking of a document nobody has issued yet: once a load has gone
+ * out the stock has already moved, and a line the source could not cover today
+ * says nothing about the morning it actually left. A cancelled document asks
+ * for nothing at all.
+ */
+export function awaitsSourceStock(t: Pick<DepotTransfer, 'trs_type' | 'status'>): boolean {
+  return isEditableDraft(t) || isPendingRequest(t) || isApprovedRequest(t)
 }
 
 // ─── Acceptance arithmetic ──────────────────────────────────────────────────
@@ -488,8 +528,15 @@ export function depotUtilisation(
 
 // ─── Presentation ───────────────────────────────────────────────────────────
 
-/** The `status` and `label` a StatusPill takes, read off both type and status:
- *  a confirmed request is approved, a confirmed load is still on the road. */
+/**
+ * The `status` and `label` a StatusPill takes, read off both type and status:
+ * a confirmed request is approved, a confirmed load is still on the road.
+ *
+ * The only place any document's status is put into words — the table, the
+ * detail page and the modals all render what this returns, so a wording nobody
+ * agreed on cannot appear on one screen and not another. The wire values are
+ * untouched: DRAFT is still DRAFT everywhere it is sent, filtered or stored.
+ */
 export function transferPill(
   t: Pick<DepotTransfer, 'trs_type' | 'status'>,
 ): { status: string; label: string } {
@@ -501,7 +548,10 @@ export function transferPill(
 
   if (t.trs_type === 'TRI') return { status: 'success', label: 'Received' }
 
-  if (t.status === 'DRAFT') return { status: 'draft', label: 'Draft' }
+  // A load being built is already strapped on and already spoken for at the
+  // source — "draft" describes paperwork, and what the warehouse is looking at
+  // is a vehicle with goods on it that have not left yet.
+  if (t.status === 'DRAFT') return { status: 'draft', label: 'Loaded' }
   if (t.status === 'CONFIRMED') return { status: 'warning', label: 'In transit' }
   if (t.status === 'COMPLETED') return { status: 'success', label: 'Delivered' }
   return { status: 'inactive', label: 'Cancelled' }

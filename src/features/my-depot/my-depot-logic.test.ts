@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  awaitsSourceStock,
   capacityUsage,
   clampAccepted,
   depotUtilisation,
@@ -194,6 +195,41 @@ describe('transferPill', () => {
 
   it('is always received on an acceptance', () => {
     expect(transferPill(doc('TRI', 'CONFIRMED')).status).toBe('success')
+  })
+
+  it('calls a load still being built loaded, never a draft', () => {
+    // The goods are strapped on and already spoken for at the source; "draft"
+    // describes paperwork and the warehouse is looking at a vehicle.
+    expect(transferPill(doc('TRO', 'DRAFT')).label).toBe('Loaded')
+  })
+
+  it('leaves the same stored status meaning something else on a request', () => {
+    // DRAFT is one value on the wire and two facts on screen, which is why the
+    // wording is decided from the type as well.
+    expect(transferPill(doc('TRR', 'DRAFT')).label).toBe('Awaiting approval')
+  })
+
+  it('leaves every other load status where it was', () => {
+    expect(transferPill(doc('TRO', 'COMPLETED')).label).toBe('Delivered')
+    expect(transferPill(doc('TRO', 'CANCELED')).label).toBe('Cancelled')
+  })
+})
+
+describe('awaitsSourceStock', () => {
+  it('is true while the source still has to find the goods', () => {
+    expect(awaitsSourceStock(doc('TRO', 'DRAFT'))).toBe(true)
+    expect(awaitsSourceStock(doc('TRR', 'DRAFT'))).toBe(true)
+    expect(awaitsSourceStock(doc('TRR', 'CONFIRMED'))).toBe(true)
+  })
+
+  it('is false once the goods have moved or the document is dead', () => {
+    // What the warehouse holds today says nothing about the morning an issued
+    // load actually left it.
+    expect(awaitsSourceStock(doc('TRO', 'CONFIRMED'))).toBe(false)
+    expect(awaitsSourceStock(doc('TRO', 'COMPLETED'))).toBe(false)
+    expect(awaitsSourceStock(doc('TRO', 'CANCELED'))).toBe(false)
+    expect(awaitsSourceStock(doc('TRR', 'CANCELED'))).toBe(false)
+    expect(awaitsSourceStock(doc('TRI', 'CONFIRMED'))).toBe(false)
   })
 })
 
