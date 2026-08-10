@@ -102,6 +102,13 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
   // drawer is in the tree — the list page has it cached either way.
   const { data: transfers = [] } = useDepotTransfers()
   const warehouses = useWarehouseOptions(transfers)
+  // The company's own warehouse, which every load comes out of unless somebody
+  // names another. Read off the same list the picker is built from, so the
+  // pre-filled value is always one of its options.
+  const mainWarehouseId = useMemo(
+    () => warehouses.find((w) => (w as { is_main?: boolean }).is_main)?.id ?? null,
+    [warehouses],
+  )
   const directory = useDepotDirectory(transfers)
   // The list resource is headers only; the lines come from the detail.
   const { data: detail } = useDepotTransfer(open && transfer ? transfer.id : null)
@@ -150,6 +157,10 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
       setSeeded(false)
     } else if (fromRequest) {
       setSalesmanId(fromRequest.salesman?.id != null ? String(fromRequest.salesman.id) : '')
+      // A salesman asking for a refill rarely says where it should come out of,
+      // so this is usually empty — and the effect below then fills it with the
+      // main warehouse, the same fallback the backend applies when the field
+      // arrives unset.
       setSourceId(fromRequest.source?.id != null ? String(fromRequest.source.id) : '')
       setDestinationId(
         fromRequest.destination?.id != null ? String(fromRequest.destination.id) : '',
@@ -159,6 +170,8 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
       setSeeded(false)
     } else {
       setSalesmanId('')
+      // Left blank here and filled by the effect below, which is the only place
+      // that knows whether the warehouses have arrived yet.
       setSourceId('')
       setDestinationId('')
       setMemo('')
@@ -168,6 +181,19 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
 
     setErrors({})
   }, [open, transfer, fromRequest])
+
+  // Goods come out of the main warehouse unless somebody says otherwise, which
+  // is true of nearly every load — so the field starts filled rather than
+  // asking a question that has the same answer almost every time.
+  //
+  // It lives in its own effect because the warehouses usually arrive after the
+  // drawer has opened, and because the guard on an empty field is what stops it
+  // ever taking back a source somebody has just chosen. Editing an existing
+  // load is left alone: its source is a fact, not a default.
+  useEffect(() => {
+    if (!open || isEdit || sourceId !== '' || !mainWarehouseId) return
+    setSourceId(String(mainWarehouseId))
+  }, [open, isEdit, sourceId, mainWarehouseId])
 
   // Lines arrive with the detail, whether they are the draft's own or the ones
   // the warehouse agreed to on the request.
@@ -384,12 +410,19 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
             </p>
           )}
 
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+          {/* Two questions, not three. Naming the salesman has already named
+              the destination — his depot is the only place a load addressed to
+              him can land — so a third picker offering to override it invited a
+              mistake nobody had a reason to make, and asked the console to know
+              a warehouse id it had just been told. The resolved depot is shown
+              below instead of being editable. */}
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             <SearchableSelect
               label="Salesman"
               value={salesmanId}
               onChange={setSalesmanId}
               options={salesmen.map((s) => ({ value: String(s.id), label: s.name }))}
+              error={errors.destination}
               placeholder="Nobody in particular"
               searchPlaceholder="Search salesmen…"
             />
@@ -400,15 +433,6 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
               options={warehouseOptions}
               error={errors.source}
               placeholder="Choose a warehouse"
-              searchPlaceholder="Search warehouses…"
-            />
-            <SearchableSelect
-              label="To — override the depot"
-              value={destinationId}
-              onChange={setDestinationId}
-              options={warehouseOptions}
-              error={errors.destination}
-              placeholder={resolvedDepot?.name ?? 'The salesman’s depot'}
               searchPlaceholder="Search warehouses…"
             />
           </div>

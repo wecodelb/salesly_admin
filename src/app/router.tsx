@@ -24,6 +24,7 @@ const CustomersPage    = lazy(() => import('@/features/customers/pages/Customers
 const DepotTransfersPage = lazy(() => import('@/features/my-depot/pages/DepotTransfersPage').then(m => ({ default: m.DepotTransfersPage })))
 const DepotTransferDetailPage = lazy(() => import('@/features/my-depot/pages/DepotTransferDetailPage').then(m => ({ default: m.DepotTransferDetailPage })))
 const DepotStockPage   = lazy(() => import('@/features/my-depot/pages/DepotStockPage').then(m => ({ default: m.DepotStockPage })))
+const WarehousesPage   = lazy(() => import('@/features/warehouses/pages/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
 const ProductsPage     = lazy(() => import('@/features/products/pages/ProductsPage').then(m => ({ default: m.ProductsPage })))
 const PriceListsPage   = lazy(() => import('@/features/price-lists/pages/PriceListsPage').then(m => ({ default: m.PriceListsPage })))
 const PromotionsPage   = lazy(() => import('@/features/promotions/pages/PromotionsPage').then(m => ({ default: m.PromotionsPage })))
@@ -101,6 +102,10 @@ export const router = createBrowserRouter([
       { path: 'depot-transfers', Component: makePage(DepotTransfersPage, P.DEPOT_VIEW) },
       { path: 'depot-transfers/:id', Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },
       { path: 'depot-stock',  Component: makePage(DepotStockPage, P.DEPOT_VIEW) },
+      // Every place stock can sit, depots included. Reading rides with the
+      // depot screens it feeds; opening, editing and deleting one is gated by
+      // preferences.manage inside the page.
+      { path: 'warehouses',   Component: makePage(WarehousesPage, P.DEPOT_VIEW) },
       { path: 'customers',    Component: makePage(CustomersPage, P.CUSTOMERS_VIEW) },
       { path: 'customers/:id', Component: makePage(CustomerDetailPage, P.CUSTOMERS_VIEW) },
       { path: 'products',     Component: makePage(ProductsPage, P.PRODUCTS_VIEW) },

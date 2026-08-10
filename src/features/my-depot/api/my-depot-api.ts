@@ -4,6 +4,7 @@ import type {
   AcceptTransferPayload,
   CreateDepotTransferPayload,
   DepotStock,
+  DepotSummary,
   DepotTransfer,
   RefillRequestPayload,
   UpdateDepotTransferPayload,
@@ -104,6 +105,24 @@ export async function fetchDepotTransfers(perPage = 200): Promise<DepotTransfer[
   }
 
   return all
+}
+
+/**
+ * How many refill requests are still waiting for an answer.
+ *
+ * Asked as a filtered count rather than read off the feed the loads page
+ * already holds: this figure sits in the sidebar on every screen and refetches
+ * on a timer, and walking every page of the movements feed twice a minute to
+ * count four documents would be paid for by everybody. `per_page=1` because
+ * only the total is wanted — the rows are thrown away.
+ */
+export async function fetchPendingRefillCount(): Promise<number> {
+  const res = await apiClient.get<Envelope<ListData<DepotTransfer>>>(ENDPOINTS.DEPOT_TRANSFERS, {
+    params: { trs_type: 'TRR', status: 'DRAFT', per_page: 1 },
+  })
+
+  const body = res.data.data
+  return body?.pagination?.total ?? body?.data?.length ?? 0
 }
 
 /** One document with its lines, the document behind it and its acceptance. */
@@ -212,6 +231,15 @@ export async function rejectRefillRequest(id: number): Promise<DepotWriteResult>
  * console looks into somebody else's — and how the load form checks the source
  * can cover what is being drafted.
  */
+/**
+ * Every depot at once, a line each — what the stock screen opens on before
+ * anybody has picked a salesman.
+ */
+export async function fetchAllDepotStock(): Promise<DepotSummary[]> {
+  const res = await apiClient.get<Envelope<ListData<DepotSummary>>>(ENDPOINTS.DEPOT_STOCK)
+  return res.data.data?.data ?? []
+}
+
 export async function fetchDepotStock(warehouseId?: number | null): Promise<DepotStock> {
   const res = await apiClient.get<Envelope<DepotStock>>(ENDPOINTS.MY_DEPOT, {
     params: warehouseId ? { warehouse_id: warehouseId } : undefined,
