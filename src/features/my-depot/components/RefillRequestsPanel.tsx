@@ -1,4 +1,5 @@
-import { Check, Inbox, PackagePlus, X } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Check, ChevronRight, Inbox, PackagePlus, X } from 'lucide-react'
 import { Button } from '@/shared/components/Button'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { usePermissions } from '@/core/auth/use-permissions'
@@ -23,8 +24,14 @@ interface Props {
  * Approved requests stay on the panel until somebody loads against them: an
  * approval nobody acted on is exactly the thing that gets forgotten, and it is
  * the only place the "load from this" button can live.
+ *
+ * Every row opens the document. A request is a list of goods, and this panel
+ * shows none of it — approving one off a quantity total alone is signing for a
+ * load nobody has read. The lines live on the detail page, which answers both
+ * questions in the same place: what is being asked for, and yes or no.
  */
 export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
+  const navigate = useNavigate()
   const { can } = usePermissions()
   const canIssue = can(PERMISSIONS.DEPOT_ISSUE)
   const { run } = useActionProgress()
@@ -85,9 +92,17 @@ export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
               key={request.id}
               className="flex flex-wrap items-center gap-x-4 gap-y-2 py-2.5 first:pt-0 last:pb-0"
             >
-              <div className="min-w-0 flex-1">
+              {/* The clickable area is the description and nothing else: the
+                  answer buttons sit beside it and must never be a near-miss for
+                  the thing that opens the document. */}
+              <button
+                type="button"
+                onClick={() => navigate(`/depot-transfers/${request.id}`)}
+                title={`Read what ${request.trs_number} is asking for`}
+                className="group -mx-2 min-w-0 flex-1 cursor-pointer rounded-[var(--radius-btn)] px-2 py-1 text-left transition-colors hover:bg-[var(--bg-surface-raised)]"
+              >
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm text-[var(--text-primary)]">
+                  <span className="font-mono text-sm text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-primary)] group-hover:underline">
                     {request.trs_number}
                   </span>
                   {!isPending && (
@@ -95,12 +110,17 @@ export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
                       Approved — not loaded yet
                     </span>
                   )}
+                  <ChevronRight
+                    size={14}
+                    aria-hidden
+                    className="text-[var(--text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
+                  />
                 </div>
                 <div className="text-xs text-[var(--text-muted)]">
                   {request.salesman?.name ?? 'Unassigned'} · {formatQty(request.total_qty)} units
                   from {request.source?.name ?? '—'} · {request.trs_date ?? '—'}
                 </div>
-              </div>
+              </button>
 
               {canIssue && (
                 <div className="flex items-center gap-2">

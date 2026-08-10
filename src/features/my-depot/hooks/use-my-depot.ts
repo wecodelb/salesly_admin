@@ -8,9 +8,11 @@ import {
   createDepotTransfer,
   createRefillRequest,
   deleteDepotTransfer,
+  fetchAllDepotStock,
   fetchDepotStock,
   fetchDepotTransfer,
   fetchDepotTransfers,
+  fetchPendingRefillCount,
   fetchWarehouses,
   issueDepotTransfer,
   rejectRefillRequest,
@@ -29,17 +31,28 @@ import type {
 const TRANSFERS_KEY = ['depot-transfers'] as const
 const STOCK_KEY = ['depot-stock'] as const
 const WAREHOUSES_KEY = ['admin-warehouses'] as const
+const PENDING_REQUESTS_KEY = ['depot-pending-requests'] as const
+
+/** How often the pending-request badge asks again. Long enough that a browser
+ *  left open all day is not a load on the server, short enough that a salesman
+ *  who asks for a refill is not waiting on somebody's F5. */
+const PENDING_POLL_MS = 30_000
 
 /**
  * Anything that moves stock changes both the paperwork and what a depot holds,
  * so every mutation below refreshes the two together — a load issued while the
  * stock screen is open would otherwise keep showing the goods on the shelf.
+ *
+ * The pending count goes with them: answering a request is the one action that
+ * changes it, and a badge that waited out its own poll would keep advertising
+ * work somebody just did.
  */
 function useInvalidateDepot() {
   const qc = useQueryClient()
   return () => {
     qc.invalidateQueries({ queryKey: TRANSFERS_KEY })
     qc.invalidateQueries({ queryKey: STOCK_KEY })
+    qc.invalidateQueries({ queryKey: PENDING_REQUESTS_KEY })
   }
 }
 
@@ -88,8 +101,49 @@ export function useDepotStock(warehouseId: number | null, enabled = true) {
   })
 }
 
+/**
+ * Every depot at once. What the stock screen opens on: the fleet, before
+ * anybody has picked a name out of it.
+ */
+export function useAllDepotStock(enabled = true) {
+  return useQuery({
+    queryKey: [...STOCK_KEY, 'all'],
+    queryFn: () => fetchAllDepotStock(),
+    enabled,
+  })
+}
+
 export function useWarehouses() {
   return useQuery({ queryKey: WAREHOUSES_KEY, queryFn: () => fetchWarehouses() })
+}
+
+/**
+ * Refill requests nobody has answered yet, as a number.
+ *
+ * Polled rather than pushed: there is no socket in this app, and a request
+ * waiting an extra half-minute costs nothing next to a connection held open for
+ * every console in the company. Window focus is the other trigger, because the
+ * moment somebody comes back to the tab is exactly when the figure they walked
+ * away from is worth doubting.
+ *
+ * `enabled` carries the depot.view check from the caller: the sidebar renders
+ * for everyone, and asking on behalf of someone who may not read the feed would
+ * be a 403 every thirty seconds.
+ */
+export function usePendingRefillCount(enabled = true) {
+  return useQuery({
+    queryKey: PENDING_REQUESTS_KEY,
+    queryFn: () => fetchPendingRefillCount(),
+    enabled,
+    refetchInterval: PENDING_POLL_MS,
+    // Both overrides fight the client's own defaults on purpose: the app turns
+    // focus refetching off and holds everything fresh for two minutes, which is
+    // right for a catalog and wrong for a queue somebody is waiting in. A count
+    // that is stale the moment it is read is what makes coming back to the tab
+    // ask again.
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  })
 }
 
 /**
