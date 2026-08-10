@@ -64,6 +64,9 @@ const FIXTURES: DepotTransfer[] = [
 vi.mock('../api/my-depot-api', () => ({
   fetchDepotTransfers: async () => FIXTURES,
   fetchDepotTransfer: async (id: number) => FIXTURES.find((t) => t.id === id)!,
+  // The badge asks for its own filtered count rather than reading the feed, so
+  // it needs answering separately — one request nobody has approved.
+  fetchPendingRefillCount: async () => 1,
   fetchWarehouses: async () => [{ id: 1, code: 'WH-1', name: 'Main Warehouse' }],
   fetchDepotStock: async () => ({
     warehouse: MAIN,
@@ -144,6 +147,14 @@ async function loadedFeed() {
 
 function transferRows() {
   return within(screen.getByRole('table')).getAllByRole('row').slice(1)
+}
+
+/** The requests panel above the feed. Scoped, because a request appears both
+ *  in the inbox and in the feed below it and its number is in two places. */
+function refillInbox(): HTMLElement {
+  const panel = screen.getByText('Refill requests').closest('section')
+  if (!panel) throw new Error('The refill inbox is not on the page.')
+  return panel
 }
 
 // Row actions live behind a three-dots Dropdown that only renders its items
@@ -301,5 +312,28 @@ describe('refill requests', () => {
 
     expect(screen.getByText('Refill requests')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument()
+  })
+
+  it('opens the request from the inbox row', async () => {
+    // Approving off a quantity total alone is signing for a load nobody has
+    // read; the lines are on the document, so the row has to reach it.
+    const user = userEvent.setup()
+    signIn([PERMISSIONS.DEPOT_VIEW, PERMISSIONS.DEPOT_ISSUE])
+    renderPage()
+    await loadedFeed()
+
+    await user.click(within(refillInbox()).getByText('TRR-1'))
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/depot-transfers/1')
+  })
+
+  it('still opens it for a reviewer who cannot answer it', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await loadedFeed()
+
+    await user.click(within(refillInbox()).getByText('TRR-1'))
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/depot-transfers/1')
   })
 })

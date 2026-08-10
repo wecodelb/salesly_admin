@@ -34,12 +34,12 @@ import { useSalesmen } from '@/features/customers/hooks/use-customers'
 import { AcceptTransferModal } from '../components/AcceptTransferModal'
 import { DepotTransferFormDrawer } from '../components/DepotTransferFormDrawer'
 import { RefillRequestsPanel } from '../components/RefillRequestsPanel'
-import { TransferRoute } from '../components/TransferRoute'
 import {
   useCancelDepotTransfer,
   useDeleteDepotTransfer,
   useDepotTransfers,
   useIssueDepotTransfer,
+  usePendingRefillCount,
   useWarehouseOptions,
 } from '../hooks/use-my-depot'
 import {
@@ -60,12 +60,6 @@ import {
   type DepotTransferType,
 } from '../types'
 
-const TYPE_TONE: Record<DepotTransferType, string> = {
-  TRR: 'bg-[var(--accent-amber)]/12 text-[var(--accent-amber)]',
-  TRO: 'bg-[var(--accent-primary)]/10 text-[var(--accent-primary)]',
-  TRI: 'bg-[var(--accent-green)]/12 text-[var(--accent-green)]',
-}
-
 /**
  * Everything moving between the warehouse and the depots, in one feed.
  *
@@ -82,6 +76,9 @@ export function DepotTransfersPage() {
 
   const { run } = useActionProgress()
   const { data: transfers = [], isLoading, isError, refetch } = useDepotTransfers()
+  // The same polled figure the sidebar wears, so the two cannot disagree while
+  // somebody is looking at both.
+  const { data: pendingRequests = 0 } = usePendingRefillCount()
   const { data: salesmen = [] } = useSalesmen()
   const warehouses = useWarehouseOptions(transfers)
   const issueTransfer = useIssueDepotTransfer()
@@ -307,34 +304,32 @@ export function DepotTransfersPage() {
       : []),
   ]
 
+  // Document, date, salesman, weight, volume, status — what somebody deciding
+  // whether a vehicle can take another load actually reads across. Everything
+  // else a document carries is on its own page, one click away.
   const columns: Column<DepotTransfer & Record<string, unknown>>[] = [
     {
       key: 'trs_number',
       header: 'Document',
       sortable: true,
       render: (t) => (
-        <div className="min-w-0">
-          <div className="font-mono text-sm text-[var(--text-primary)]">{t.trs_number}</div>
-          <div className="text-xs text-[var(--text-muted)]">{t.trs_date ?? '—'}</div>
-        </div>
+        <span className="font-mono text-sm text-[var(--text-primary)]">{t.trs_number}</span>
       ),
     },
     {
-      key: 'trs_type',
-      header: 'Type',
+      key: 'trs_date',
+      header: 'Date',
       sortable: true,
+      // The API writes dates day-first, which sorts as text into an order no
+      // calendar recognises — 03/11 ahead of 02/12. Sorted on the parsed
+      // instant instead; a date that won't parse sinks rather than shuffling
+      // the rows around it.
+      sortValue: (t) => parseApiDate(t.trs_date)?.getTime() ?? null,
       render: (t) => (
-        <span
-          className={`inline-flex items-center rounded-[var(--radius-pill)] px-2 py-0.5 text-xs font-medium ${TYPE_TONE[t.trs_type]}`}
-        >
-          {TYPE_LABELS[t.trs_type]}
+        <span className="whitespace-nowrap text-sm text-[var(--text-secondary)]">
+          {t.trs_date ?? '—'}
         </span>
       ),
-    },
-    {
-      key: 'route',
-      header: 'Route',
-      render: (t) => <TransferRoute source={t.source} destination={t.destination} />,
     },
     {
       key: 'salesman',
@@ -347,35 +342,28 @@ export function DepotTransfersPage() {
         ),
     },
     {
-      key: 'total_qty',
-      header: 'Quantity',
+      key: 'total_weight',
+      header: `Weight (${WEIGHT_UNIT})`,
       sortable: true,
       align: 'right',
-      // The header's own total, in base units: the list endpoint deliberately
-      // leaves the lines off, so there is no line count to show instead.
+      // What the load costs a vehicle. Quantity says nothing about that — a
+      // thousand sachets and a thousand crates are the same figure and two
+      // different mornings.
       render: (t) => (
         <span className="font-mono text-sm tabular-nums text-[var(--text-secondary)]">
-          {formatQty(t.total_qty)}
+          {formatWeight(t.total_weight)}
         </span>
       ),
     },
     {
-      key: 'total_weight',
-      header: 'Weight / volume',
+      key: 'total_volume',
+      header: `Volume (${VOLUME_UNIT})`,
       sortable: true,
       align: 'right',
-      // What the load costs a vehicle. Quantity says nothing about that — a
-      // thousand sachets and a thousand crates are the same figure above and
-      // two different mornings.
       render: (t) => (
-        <div>
-          <div className="font-mono text-sm tabular-nums text-[var(--text-secondary)]">
-            {formatWeight(t.total_weight)} {WEIGHT_UNIT}
-          </div>
-          <div className="font-mono text-xs tabular-nums text-[var(--text-muted)]">
-            {formatVolume(t.total_volume)} {VOLUME_UNIT}
-          </div>
-        </div>
+        <span className="font-mono text-sm tabular-nums text-[var(--text-secondary)]">
+          {formatVolume(t.total_volume)}
+        </span>
       ),
     },
     {
@@ -434,11 +422,21 @@ export function DepotTransfersPage() {
         title="Depot loads"
         subtitle="Filling a salesman's depot from the warehouse, and emptying it back at the end of the day"
         actions={
-          canIssue && (
-            <Button icon={<Plus size={16} />} onClick={openCreate}>
-              New load
-            </Button>
-          )
+          <div className="flex items-center gap-3">
+            {/* Somebody is standing in a car park waiting on this, which is why
+                it sits beside the title rather than only in the strip below. */}
+            {pendingRequests > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-[var(--radius-pill)] bg-[var(--accent-amber)]/12 px-2.5 py-1 text-xs font-medium text-[var(--accent-amber)]">
+                <Inbox size={13} aria-hidden />
+                {pendingRequests} {pendingRequests === 1 ? 'request' : 'requests'} waiting
+              </span>
+            )}
+            {canIssue && (
+              <Button icon={<Plus size={16} />} onClick={openCreate}>
+                New load
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -476,7 +474,13 @@ export function DepotTransfersPage() {
                 value={statusFilter}
                 onChange={setStatusFilter}
                 options={[
-                  { value: 'DRAFT', label: 'Draft / pending', count: counts.byStatus.get('DRAFT') ?? 0 },
+                  {
+                    // One stored status, two readings — a load being built is
+                    // loaded, a request nobody has answered is waiting.
+                    value: 'DRAFT',
+                    label: 'Loaded / awaiting approval',
+                    count: counts.byStatus.get('DRAFT') ?? 0,
+                  },
                   {
                     value: 'CONFIRMED',
                     label: 'Issued / approved',

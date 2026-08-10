@@ -194,6 +194,9 @@ export interface DistributionWarehouse {
   code: string
   name: string
   is_depot: boolean
+  /** The company's default source. Optional because the older distribution
+   *  payload predates the flag and nothing here needs it to lay a row out. */
+  is_main?: boolean
   /** What the location may carry, null where nobody has measured it. */
   max_weight: number | null
   max_volume: number | null
@@ -307,4 +310,96 @@ const qtyFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
  *  whole cartons nearly always, so trailing zeros are dropped. */
 export function formatQty(value: number): string {
   return qtyFmt.format(value)
+}
+
+// ─── Levels ─────────────────────────────────────────────────────────────────
+// Contract from App\Http\Resources\V1\Inventory\ItemLevelResource and
+// ItemLevelRequest, behind GET/POST /items/{id}/levels.
+//
+// A reorder point belongs to a pair, not to a product: the depot that sells
+// this all day and the warehouse it is picked from need completely different
+// floors for the same line, which is why none of this lives on the item.
+
+export interface ItemLevel {
+  /** Every warehouse in the company is answered for, including ones that have
+   *  never held this item — so this is only ever absent on a malformed row. */
+  warehouse?: DistributionWarehouse | null
+  qty: number
+  available_qty: number
+  reserved_qty: number
+  /**
+   * Both in base units, and both nullable — null means nobody has set a level
+   * here and no quantity can ever breach it. It is emphatically not zero: zero
+   * is an instruction, "carry none of this, tell me when it turns up", and a
+   * screen that rendered the unset state as 0 would report every warehouse in
+   * the company as sitting exactly on a minimum nobody chose.
+   */
+  min_qty: number | null
+  max_qty: number | null
+  /** Server-decided, so three clients don't each rediscover the rule above. */
+  below_min?: boolean
+  above_max?: boolean
+}
+
+/**
+ * One cell of the grid. Quantities are base units.
+ *
+ * An omitted key leaves the stored level alone, so the ceiling can be edited
+ * without the client having to know the floor; an explicit null is what clears
+ * one back to "nobody has set it".
+ */
+export interface SaveItemLevelPayload {
+  warehouse_id: number
+  min_qty?: number | null
+  max_qty?: number | null
+}
+
+/** What an unset level reads as. Never "0" — see ItemLevel above. */
+const NO_LIMIT = 'No limit'
+
+function isLevelSet(value: number | null | undefined): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
+export function levelLabel(value: number | null | undefined): string {
+  return isLevelSet(value) ? formatQty(value) : NO_LIMIT
+}
+
+/**
+ * Whether this pair is under its floor or over its ceiling.
+ *
+ * The server's own reading wins where it sent one — it is the only party that
+ * can see the stored levels and the stock in the same breath. Where the key is
+ * missing the comparison is made here on the same rule, which is the one rule
+ * that matters: a level nobody set cannot be breached.
+ */
+export function levelBreach(row: ItemLevel): { belowMin: boolean; aboveMax: boolean } {
+  const qty = qtyOf(row.qty)
+
+  return {
+    belowMin:
+      typeof row.below_min === 'boolean'
+        ? row.below_min
+        : isLevelSet(row.min_qty) && qty < row.min_qty,
+    aboveMax:
+      typeof row.above_max === 'boolean'
+        ? row.above_max
+        : isLevelSet(row.max_qty) && qty > row.max_qty,
+  }
+}
+
+/**
+ * How one row of the grid reads at a glance, or null where there is nothing to
+ * say — a pair with no levels set is not "fine", it is unmanaged, and a green
+ * pill on it would be a claim nobody made.
+ */
+export function levelPill(row: ItemLevel): { status: string; label: string } | null {
+  const { belowMin, aboveMax } = levelBreach(row)
+
+  // The floor first: running out is what stops a sale, while a ceiling breach
+  // is only money sitting in the wrong place.
+  if (belowMin) return { status: 'error', label: 'Below low' }
+  if (aboveMax) return { status: 'warning', label: 'Above max' }
+  if (!isLevelSet(row.min_qty) && !isLevelSet(row.max_qty)) return null
+  return { status: 'active', label: 'Within levels' }
 }

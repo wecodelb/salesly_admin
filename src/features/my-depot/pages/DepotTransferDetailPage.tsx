@@ -3,12 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Ban,
+  Check,
+  Eye,
   FileCheck2,
   Pencil,
   Send,
   Trash2,
   Truck,
   UserCheck,
+  X,
 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { Button } from '@/shared/components/Button'
@@ -20,25 +23,32 @@ import { LoadingSkeleton } from '@/shared/components/LoadingSkeleton/LoadingSkel
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
+import { ProductDistributionPanel } from '@/features/products/components/ProductDistributionPanel'
 import { AcceptTransferModal } from '../components/AcceptTransferModal'
 import { DepotTransferFormDrawer } from '../components/DepotTransferFormDrawer'
 import { TransferRoute } from '../components/TransferRoute'
 import {
+  useApproveRefillRequest,
   useCancelDepotTransfer,
   useDeleteDepotTransfer,
+  useDepotStock,
   useDepotTransfer,
   useIssueDepotTransfer,
+  useRejectRefillRequest,
 } from '../hooks/use-my-depot'
 import {
   TYPE_LABELS,
   VOLUME_UNIT,
   WEIGHT_UNIT,
+  awaitsSourceStock,
   formatQty,
   formatVolume,
   formatWeight,
   isAcceptable,
   isEditableDraft,
+  isPendingRequest,
   lineTotal,
+  sourceAvailability,
   transferPill,
   type DepotTransferRow,
 } from '../types'
@@ -78,10 +88,24 @@ export function DepotTransferDetailPage() {
   const issueTransfer = useIssueDepotTransfer()
   const cancelTransfer = useCancelDepotTransfer()
   const deleteTransfer = useDeleteDepotTransfer()
+  const approveRequest = useApproveRefillRequest()
+  const rejectRequest = useRejectRefillRequest()
+
+  // Only a document nobody has issued still has to be filled, and only then is
+  // the source's shelf worth reading — after it goes out, what the warehouse
+  // holds today says nothing about the morning the goods left.
+  const needsSourceStock = !!transfer && awaitsSourceStock(transfer)
+  const sourceId = transfer?.source?.id ?? null
+  const { data: sourceStock, isSuccess: sourceStockRead } = useDepotStock(
+    sourceId,
+    needsSourceStock && sourceId != null,
+  )
 
   const [editing, setEditing] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  /** The line whose stock is being hunted for elsewhere. */
+  const [inspecting, setInspecting] = useState<DepotTransferRow | null>(null)
   // The form drawer pulls the catalog and the whole movements feed the moment
   // it mounts. Reading one document shouldn't pay for that, so it joins the
   // tree on the first Edit and then stays — which keeps the close animation.
@@ -115,6 +139,11 @@ export function DepotTransferDetailPage() {
   const pill = transferPill(transfer)
   const draft = isEditableDraft(transfer)
   const acceptable = isAcceptable(transfer)
+  // A request nobody has answered. Both answers live here as well as on the
+  // inbox panel, because reading the lines is the whole reason somebody opened
+  // this page — and a reviewer who had to go back to the list to say yes would
+  // be answering from memory of what he just read.
+  const answerable = isPendingRequest(transfer)
   const rows = transfer.rows ?? []
   // An acceptance carries what actually landed; the other two carry what was
   // asked for or picked. Only the first has anything to compare against.
@@ -125,6 +154,19 @@ export function DepotTransferDetailPage() {
   // column is left off rather than filled with dashes.
   const hasLineSizes = rows.some((row) => row.weight != null || row.volume != null)
 
+  // What the source can still put behind each line. A draft has already taken
+  // its own lines out of `available_qty`, so they are handed back first —
+  // exactly as the backend does before re-checking — or every line of a load
+  // that swept the shelf clean would read as uncovered.
+  const available = sourceAvailability(sourceStock?.items ?? [], draft ? rows : [])
+  const shortfallAtSource = (row: DepotTransferRow) =>
+    Math.max(0, row.qty - (available.get(row.item_id) ?? 0))
+  // Held back until the shelf has actually been read: an empty map is
+  // indistinguishable from a warehouse holding none of anything, and flashing
+  // "0 — short" across every line while the request is in flight would send
+  // somebody hunting for stock that is sitting right there.
+  const showsCoverage = needsSourceStock && sourceStockRead
+
   const handleIssue = () =>
     run(
       {
@@ -133,6 +175,26 @@ export function DepotTransferDetailPage() {
         success: `The goods have left ${transfer.source?.name ?? 'the warehouse'} — in transit until somebody signs.`,
       },
       () => issueTransfer.mutateAsync(transfer.id),
+    )
+
+  const handleApprove = () =>
+    run(
+      {
+        label: 'Approving request',
+        detail: transfer.trs_number,
+        success: `${transfer.trs_number} is approved — raise the load when the picking is done.`,
+      },
+      () => approveRequest.mutateAsync(transfer.id),
+    )
+
+  const handleReject = () =>
+    run(
+      {
+        label: 'Rejecting request',
+        detail: transfer.trs_number,
+        success: `${transfer.trs_number} was turned down. Nothing moved.`,
+      },
+      () => rejectRequest.mutateAsync(transfer.id),
     )
 
   const handleCancel = () =>
@@ -244,6 +306,53 @@ export function DepotTransferDetailPage() {
           },
         ]
       : []),
+    ...(showsCoverage
+      ? [
+          {
+            key: 'coverage',
+            header: 'At source',
+            align: 'right' as const,
+            // The figure that decides whether this document can go out at all.
+            // A line the source cannot cover gets the eye beside it, because
+            // the next question is always the same one: who else has this, and
+            // is it near enough to pull from.
+            render: (row: DepotTransferRow) => {
+              const onHand = available.get(row.item_id) ?? 0
+              const missing = shortfallAtSource(row)
+
+              if (missing <= 0) {
+                return (
+                  <span className="font-mono text-sm tabular-nums text-[var(--text-secondary)]">
+                    {formatQty(onHand)}
+                  </span>
+                )
+              }
+
+              return (
+                <div className="flex items-center justify-end gap-2">
+                  <div>
+                    <div className="font-mono text-sm font-medium tabular-nums text-[var(--accent-red)]">
+                      {formatQty(onHand)}
+                    </div>
+                    <div className="text-xs tabular-nums text-[var(--text-muted)]">
+                      {formatQty(missing)} short
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    title="Where else this is stocked"
+                    aria-label={`Where ${row.item_name} is stocked`}
+                    onClick={() => setInspecting(row)}
+                    className="cursor-pointer rounded-[var(--radius-btn)] p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-surface-raised)] hover:text-[var(--accent-primary)]"
+                  >
+                    <Eye size={15} />
+                  </button>
+                </div>
+              )
+            },
+          },
+        ]
+      : []),
     {
       key: 'line_memo',
       header: 'Note',
@@ -285,6 +394,18 @@ export function DepotTransferDetailPage() {
                 </Button>
                 <Button icon={<Send size={15} />} onClick={handleIssue}>
                   Issue
+                </Button>
+              </>
+            )}
+            {/* Answering rides on depot.issue, not on whoever raised it: what
+                leaves the building is the warehouse's call. */}
+            {canIssue && answerable && (
+              <>
+                <Button variant="outline" icon={<X size={15} />} onClick={handleReject}>
+                  Reject
+                </Button>
+                <Button icon={<Check size={15} />} onClick={handleApprove}>
+                  Approve
                 </Button>
               </>
             )}
@@ -430,6 +551,38 @@ export function DepotTransferDetailPage() {
         transfer={accepting ? transfer : null}
         onClose={() => setAccepting(false)}
       />
+
+      {/* Where else the goods are. The document cannot be filled from here, but
+          this is how somebody decides which warehouse to fill it from instead —
+          or which depot to bring stock back off first. */}
+      <Modal
+        open={!!inspecting}
+        onClose={() => setInspecting(null)}
+        title={inspecting ? inspecting.item_name : undefined}
+        size="xl"
+        footer={
+          <Button variant="ghost" onClick={() => setInspecting(null)}>
+            Close
+          </Button>
+        }
+      >
+        {inspecting && (
+          <>
+            <p className="mb-4 text-sm text-[var(--text-secondary)]">
+              This line needs{' '}
+              <span className="font-mono tabular-nums text-[var(--text-primary)]">
+                {formatQty(inspecting.qty)}
+              </span>{' '}
+              and {transfer.source?.name ?? 'the source'} can promise only{' '}
+              <span className="font-mono tabular-nums text-[var(--accent-red)]">
+                {formatQty(available.get(inspecting.item_id) ?? 0)}
+              </span>
+              . Everywhere else it is held is below.
+            </p>
+            <ProductDistributionPanel itemId={inspecting.item_id} />
+          </>
+        )}
+      </Modal>
 
       <Modal
         open={deleting}
