@@ -183,35 +183,51 @@ describe('request gating', () => {
 })
 
 describe('transferPill', () => {
-  it('reads CONFIRMED as approved on a request and in transit on a load', () => {
+  it('reads CONFIRMED as a load created on a request and issued on a load', () => {
     // Same status, two different facts — which is why the pill needs the type.
-    expect(transferPill(doc('LR', 'CONFIRMED')).label).toBe('Approved')
-    expect(transferPill(doc('TRO', 'CONFIRMED')).label).toBe('In transit')
+    // An answered request says "load created" rather than "approved": saying yes
+    // and building the load are one act, so there is no resting state between.
+    expect(transferPill(doc('LR', 'CONFIRMED')).label).toBe('Load created')
+    expect(transferPill(doc('TRO', 'CONFIRMED')).label).toBe('Load issued')
   })
 
   it('reads a cancelled request as rejected', () => {
     expect(transferPill(doc('LR', 'CANCELED')).label).toBe('Rejected')
   })
 
-  it('is always received on an acceptance', () => {
+  it('is always loaded on an acceptance', () => {
     expect(transferPill(doc('TRI', 'CONFIRMED')).status).toBe('success')
+    expect(transferPill(doc('TRI', 'CONFIRMED')).label).toBe('Loaded')
   })
 
-  it('calls a load still being built loaded, never a draft', () => {
+  it('calls a load still being built created, never a draft', () => {
     // The goods are strapped on and already spoken for at the source; "draft"
     // describes paperwork and the warehouse is looking at a vehicle.
-    expect(transferPill(doc('TRO', 'DRAFT')).label).toBe('Loaded')
+    expect(transferPill(doc('TRO', 'DRAFT')).label).toBe('Load created')
   })
 
   it('leaves the same stored status meaning something else on a request', () => {
     // DRAFT is one value on the wire and two facts on screen, which is why the
     // wording is decided from the type as well.
-    expect(transferPill(doc('LR', 'DRAFT')).label).toBe('Awaiting approval')
+    expect(transferPill(doc('LR', 'DRAFT')).label).toBe('Requested')
   })
 
-  it('leaves every other load status where it was', () => {
-    expect(transferPill(doc('TRO', 'COMPLETED')).label).toBe('Delivered')
+  it('ends the ladder on loaded, wherever the load got there from', () => {
+    // requested → load created → load issued → loaded, and cancelled off to one
+    // side. Five words for the whole flow, which is four fewer than it had.
+    expect(transferPill(doc('TRO', 'COMPLETED')).label).toBe('Loaded')
     expect(transferPill(doc('TRO', 'CANCELED')).label).toBe('Cancelled')
+  })
+
+  it('never says approved anywhere', () => {
+    // The word is gone on purpose: an approval nobody acted on was the state
+    // that got forgotten, so the flow no longer has one.
+    const labels = (['DRAFT', 'CONFIRMED', 'COMPLETED', 'CANCELED'] as const).flatMap(
+      (status) =>
+        (['LR', 'TRO', 'TRI'] as const).map((type) => transferPill(doc(type, status)).label),
+    )
+
+    expect(labels.some((label) => label.toLowerCase().includes('approv'))).toBe(false)
   })
 })
 

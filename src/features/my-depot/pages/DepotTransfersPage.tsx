@@ -33,13 +33,13 @@ import { PERMISSIONS } from '@/core/auth/permissions'
 import { useSalesmen } from '@/features/customers/hooks/use-customers'
 import { AcceptTransferModal } from '../components/AcceptTransferModal'
 import { DepotTransferFormDrawer } from '../components/DepotTransferFormDrawer'
-import { RefillRequestsPanel } from '../components/RefillRequestsPanel'
+import { LoadRequestsPanel } from '../components/LoadRequestsPanel'
 import {
   useCancelDepotTransfer,
   useDeleteDepotTransfer,
   useDepotTransfers,
   useIssueDepotTransfer,
-  usePendingRefillCount,
+  usePendingLoadRequestCount,
   useWarehouseOptions,
 } from '../hooks/use-my-depot'
 import {
@@ -78,7 +78,7 @@ export function DepotTransfersPage() {
   const { data: transfers = [], isLoading, isError, refetch } = useDepotTransfers()
   // The same polled figure the sidebar wears, so the two cannot disagree while
   // somebody is looking at both.
-  const { data: pendingRequests = 0 } = usePendingRefillCount()
+  const { data: pendingRequests = 0 } = usePendingLoadRequestCount()
   const { data: salesmen = [] } = useSalesmen()
   const warehouses = useWarehouseOptions(transfers)
   const issueTransfer = useIssueDepotTransfer()
@@ -442,7 +442,7 @@ export function DepotTransfersPage() {
 
       <StatStrip stats={stats} loading={isLoading} />
 
-      <RefillRequestsPanel transfers={transfers} onLoadFrom={openLoadFrom} />
+      <LoadRequestsPanel transfers={transfers} onLoadFrom={openLoadFrom} />
 
       <FilterBar
         search={search}

@@ -8,12 +8,14 @@ import {
   fetchCategories,
   fetchCurrencies,
   fetchItemDistribution,
+  fetchItemLevels,
   fetchProduct,
   fetchProducts,
   fetchUoms,
+  saveItemLevel,
   updateItem,
 } from '../api/products-api'
-import type { CreateItemPayload, UpdateItemPayload } from '../types'
+import type { CreateItemPayload, SaveItemLevelPayload, UpdateItemPayload } from '../types'
 
 const PRODUCTS_KEY = ['admin-products'] as const
 const CATEGORIES_KEY = ['admin-categories'] as const
@@ -42,6 +44,34 @@ export function useItemDistribution(itemId: number | null) {
     queryKey: [...PRODUCTS_KEY, itemId, 'distribution'],
     queryFn: () => fetchItemDistribution(itemId!),
     enabled: itemId != null,
+  })
+}
+
+/**
+ * This product's reorder points, per warehouse. Keyed under the product like
+ * the distribution beside it, so an edit to the item clears both together.
+ */
+export function useItemLevels(itemId: number | null) {
+  return useQuery({
+    queryKey: [...PRODUCTS_KEY, itemId, 'levels'],
+    queryFn: () => fetchItemLevels(itemId!),
+    enabled: itemId != null,
+  })
+}
+
+/**
+ * Setting a level writes a ledger row where the pair had none, so the
+ * distribution — which lists exactly those rows — is refreshed alongside the
+ * grid the write came from.
+ */
+export function useSaveItemLevel(itemId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: SaveItemLevelPayload) => saveItemLevel(itemId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...PRODUCTS_KEY, itemId, 'levels'] })
+      qc.invalidateQueries({ queryKey: [...PRODUCTS_KEY, itemId, 'distribution'] })
+    },
   })
 }
 
