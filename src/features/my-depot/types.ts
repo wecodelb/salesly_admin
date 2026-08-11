@@ -2,7 +2,7 @@
 // DepotTransferRowResource and DepotStockResource, plus the three request
 // classes behind /depot-transfers.
 //
-// One shape covers all three documents — the refill request (TRR), the issue
+// One shape covers all three documents — the load request (TRR), the issue
 // (TRO) and the acceptance (TRI) — because the backend renders them through one
 // resource: the type is a field, not a shape. Nothing here names a direction
 // either. The evening's return of unsold stock is a load out of the salesman's
@@ -10,7 +10,7 @@
 // things that say which way the goods are travelling.
 
 /** TRR asks, TRO loads out, TRI signs for what turned up. */
-export type DepotTransferType = 'TRR' | 'TRO' | 'TRI'
+export type DepotTransferType = 'LR' | 'TRO' | 'TRI'
 
 export type DepotTransferStatus = 'DRAFT' | 'CONFIRMED' | 'COMPLETED' | 'CANCELED'
 
@@ -136,7 +136,7 @@ export interface CreateDepotTransferPayload {
 
 export type UpdateDepotTransferPayload = CreateDepotTransferPayload
 
-export interface RefillRequestPayload {
+export interface LoadRequestPayload {
   salesman_id?: number | null
   warehouse_id?: number | null
   trs_date?: string
@@ -276,12 +276,12 @@ export function isAcceptable(t: Pick<DepotTransfer, 'trs_type' | 'status'>): boo
 /** An answered request is answered; a rejection is not overturned into an
  *  approval. */
 export function isPendingRequest(t: Pick<DepotTransfer, 'trs_type' | 'status'>): boolean {
-  return t.trs_type === 'TRR' && t.status === 'DRAFT'
+  return t.trs_type === 'LR' && t.status === 'DRAFT'
 }
 
 /** Approved, so a load may be raised against it. */
 export function isApprovedRequest(t: Pick<DepotTransfer, 'trs_type' | 'status'>): boolean {
-  return t.trs_type === 'TRR' && t.status === 'CONFIRMED'
+  return t.trs_type === 'LR' && t.status === 'CONFIRMED'
 }
 
 /**
@@ -540,25 +540,29 @@ export function depotUtilisation(
 export function transferPill(
   t: Pick<DepotTransfer, 'trs_type' | 'status'>,
 ): { status: string; label: string } {
-  if (t.trs_type === 'TRR') {
-    if (t.status === 'DRAFT') return { status: 'pending', label: 'Awaiting approval' }
-    if (t.status === 'CONFIRMED') return { status: 'success', label: 'Approved' }
+  if (t.trs_type === 'LR') {
+    if (t.status === 'DRAFT') return { status: 'pending', label: 'Requested' }
+    // Deliberately not "Approved". Approving is no longer a state a document
+    // rests in: the warehouse answers a request by building the load in the same
+    // drawer, so by the time anyone reads this the load exists. A separate
+    // "approved" pill only ever meant "somebody said yes and then forgot".
+    if (t.status === 'CONFIRMED') return { status: 'success', label: 'Load created' }
     return { status: 'error', label: 'Rejected' }
   }
 
-  if (t.trs_type === 'TRI') return { status: 'success', label: 'Received' }
+  if (t.trs_type === 'TRI') return { status: 'success', label: 'Loaded' }
 
   // A load being built is already strapped on and already spoken for at the
   // source — "draft" describes paperwork, and what the warehouse is looking at
   // is a vehicle with goods on it that have not left yet.
-  if (t.status === 'DRAFT') return { status: 'draft', label: 'Loaded' }
-  if (t.status === 'CONFIRMED') return { status: 'warning', label: 'In transit' }
-  if (t.status === 'COMPLETED') return { status: 'success', label: 'Delivered' }
+  if (t.status === 'DRAFT') return { status: 'draft', label: 'Load created' }
+  if (t.status === 'CONFIRMED') return { status: 'warning', label: 'Load issued' }
+  if (t.status === 'COMPLETED') return { status: 'success', label: 'Loaded' }
   return { status: 'inactive', label: 'Cancelled' }
 }
 
 export const TYPE_LABELS: Record<DepotTransferType, string> = {
-  TRR: 'Refill request',
+  LR: 'Load request',
   TRO: 'Load out',
   TRI: 'Acceptance',
 }

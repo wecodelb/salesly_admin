@@ -11,6 +11,7 @@ import { useProducts } from '@/features/products/hooks/use-products'
 import { useSalesmen } from '@/features/customers/hooks/use-customers'
 import type { AdminItem } from '@/features/products/types'
 import {
+  useApproveLoadRequest,
   useCreateDepotTransfer,
   useDepotDirectory,
   useDepotStock,
@@ -27,6 +28,7 @@ import {
   formatQty,
   formatVolume,
   formatWeight,
+  isPendingRequest,
   loadTotals,
   sourceAvailability,
   withLoad,
@@ -40,7 +42,7 @@ interface Props {
   onClose: () => void
   /** Null/undefined = a new load. Only a draft may be passed here. */
   transfer?: DepotTransfer | null
-  /** An approved refill request this load answers — its salesman, its ends and
+  /** An approved load request this load answers — its salesman, its ends and
    *  its lines seed the form, and it is sent as `from_request_id` so the two
    *  documents stay chained. */
   fromRequest?: DepotTransfer | null
@@ -114,6 +116,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
   const { data: detail } = useDepotTransfer(open && transfer ? transfer.id : null)
   const { data: requestDetail } = useDepotTransfer(open && fromRequest ? fromRequest.id : null)
   const createTransfer = useCreateDepotTransfer()
+  const approveRequest = useApproveLoadRequest()
   const updateTransfer = useUpdateDepotTransfer()
 
   const [salesmanId, setSalesmanId] = useState('')
@@ -157,7 +160,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
       setSeeded(false)
     } else if (fromRequest) {
       setSalesmanId(fromRequest.salesman?.id != null ? String(fromRequest.salesman.id) : '')
-      // A salesman asking for a refill rarely says where it should come out of,
+      // A salesman asking for a load rarely says where it should come out of,
       // so this is usually empty — and the effect below then fills it with the
       // main warehouse, the same fallback the backend applies when the field
       // arrives unset.
@@ -333,8 +336,14 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
       rows: lines,
     }
 
-    const label = isEdit ? 'Saving load' : 'Drafting load'
+    const label = isEdit ? 'Saving load' : 'Creating load'
     const detailLine = landsIn?.name ?? undefined
+
+    // Answering a request and building its load are one action now, so the
+    // approval happens here rather than as a button of its own. The server
+    // refuses `from_request_id` on a request nobody has approved, which is
+    // exactly the check being satisfied — not worked around.
+    const needsApproval = !isEdit && fromRequest != null && isPendingRequest(fromRequest)
 
     const saved = await run(
       {
@@ -342,18 +351,25 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
         detail: detailLine,
         success: isEdit
           ? 'The load has been saved.'
-          : 'The load is drafted — the goods are reserved until it goes out.',
+          : 'The load is created — the goods are reserved until it goes out.',
       },
-      () =>
-        isEdit && transfer
-          ? updateTransfer.mutateAsync({ id: transfer.id, payload })
-          : createTransfer.mutateAsync(payload),
+      async () => {
+        if (isEdit && transfer) {
+          return updateTransfer.mutateAsync({ id: transfer.id, payload })
+        }
+        // Approve first, and let a failure here stop the whole thing: a load
+        // created against an unapproved request is the one state the two
+        // documents must never be left in.
+        if (needsApproval) await approveRequest.mutateAsync(fromRequest.id)
+        return createTransfer.mutateAsync(payload)
+      },
     )
 
     if (saved !== null) onClose()
   }
 
-  const saving = createTransfer.isPending || updateTransfer.isPending
+  const saving =
+    createTransfer.isPending || updateTransfer.isPending || approveRequest.isPending
 
   const productOptions = products.map((item) => ({
     value: String(item.id),
@@ -380,15 +396,18 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
     <SideDrawer
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit load' : fromRequest ? 'Load against a request' : 'New load'}
-      width="w-[70%]"
+      title={isEdit ? 'Edit load' : fromRequest ? 'Load against a request' : 'Create load'}
+      width="w-[50%]"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
+          {/* "Create load", not "Create draft". What the button produces is a
+              load with goods reserved against it; "draft" described the row in
+              the table and told the person pressing it nothing. */}
           <Button onClick={handleSubmit} loading={saving}>
-            {isEdit ? 'Save draft' : 'Create draft'}
+            {isEdit ? 'Save load' : 'Create load'}
           </Button>
         </>
       }
@@ -401,7 +420,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
 
           {fromRequest && (
             <p className="text-xs text-[var(--text-muted)]">
-              Answering refill request{' '}
+              Answering load request{' '}
               <span className="font-mono text-[var(--text-secondary)]">
                 {fromRequest.trs_number}
               </span>

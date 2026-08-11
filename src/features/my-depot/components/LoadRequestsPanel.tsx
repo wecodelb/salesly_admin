@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { Check, ChevronRight, Inbox, PackagePlus, X } from 'lucide-react'
+import { ChevronRight, Inbox, PackagePlus, X } from 'lucide-react'
 import { Button } from '@/shared/components/Button'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
-import { useApproveRefillRequest, useRejectRefillRequest } from '../hooks/use-my-depot'
+import { useRejectLoadRequest } from '../hooks/use-my-depot'
 import { formatQty, isApprovedRequest, isPendingRequest, type DepotTransfer } from '../types'
 
 interface Props {
@@ -30,13 +30,12 @@ interface Props {
  * load nobody has read. The lines live on the detail page, which answers both
  * questions in the same place: what is being asked for, and yes or no.
  */
-export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
+export function LoadRequestsPanel({ transfers, onLoadFrom }: Props) {
   const navigate = useNavigate()
   const { can } = usePermissions()
   const canIssue = can(PERMISSIONS.DEPOT_ISSUE)
   const { run } = useActionProgress()
-  const approveRequest = useApproveRefillRequest()
-  const rejectRequest = useRejectRefillRequest()
+  const rejectRequest = useRejectLoadRequest()
 
   const pending = transfers.filter(isPendingRequest)
   // A request already answered with a load is done with; one still waiting for
@@ -50,16 +49,6 @@ export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
 
   const waiting = [...pending, ...approved]
   if (waiting.length === 0) return null
-
-  const handleApprove = (request: DepotTransfer) =>
-    run(
-      {
-        label: 'Approving request',
-        detail: request.trs_number,
-        success: `${request.trs_number} is approved — raise the load when the picking is done.`,
-      },
-      () => approveRequest.mutateAsync(request.id),
-    )
 
   const handleReject = (request: DepotTransfer) =>
     run(
@@ -76,7 +65,7 @@ export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
       <div className="flex items-center gap-2">
         <Inbox size={15} aria-hidden className="text-[var(--accent-amber)]" />
         <h2 className="font-heading text-sm font-semibold text-[var(--text-primary)]">
-          Refill requests
+          Load requests
         </h2>
         <span className="rounded-full bg-[var(--accent-amber)]/12 px-2 py-0.5 text-xs font-medium tabular-nums text-[var(--accent-amber)]">
           {waiting.length}
@@ -107,7 +96,7 @@ export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
                   </span>
                   {!isPending && (
                     <span className="rounded-[var(--radius-pill)] bg-[var(--accent-green)]/12 px-2 py-0.5 text-xs font-medium text-[var(--accent-green)]">
-                      Approved — not loaded yet
+                      Answered — no load raised yet
                     </span>
                   )}
                   <ChevronRight
@@ -124,33 +113,28 @@ export function RefillRequestsPanel({ transfers, onLoadFrom }: Props) {
 
               {canIssue && (
                 <div className="flex items-center gap-2">
-                  {isPending ? (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        icon={<X size={14} />}
-                        onClick={() => handleReject(request)}
-                      >
-                        Reject
-                      </Button>
-                      <Button
-                        size="sm"
-                        icon={<Check size={14} />}
-                        onClick={() => handleApprove(request)}
-                      >
-                        Approve
-                      </Button>
-                    </>
-                  ) : (
+                  {isPending && (
                     <Button
                       size="sm"
-                      icon={<PackagePlus size={14} />}
-                      onClick={() => onLoadFrom(request)}
+                      variant="outline"
+                      icon={<X size={14} />}
+                      onClick={() => handleReject(request)}
                     >
-                      Create the load
+                      Reject
                     </Button>
                   )}
+                  {/* One button for both states. Saying yes and building the
+                      load are the same act now, so a pending request and an
+                      approved-but-unloaded one lead to the same drawer — the
+                      only difference is whether the approval still has to
+                      happen, which the drawer settles for itself. */}
+                  <Button
+                    size="sm"
+                    icon={<PackagePlus size={14} />}
+                    onClick={() => onLoadFrom(request)}
+                  >
+                    Create load
+                  </Button>
                 </div>
               )}
             </div>

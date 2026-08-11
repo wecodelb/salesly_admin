@@ -3,19 +3,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useToast } from '@/shared/hooks/use-toast'
 import {
   acceptDepotTransfer,
-  approveRefillRequest,
+  approveLoadRequest,
   cancelDepotTransfer,
   createDepotTransfer,
-  createRefillRequest,
+  createLoadRequest,
   deleteDepotTransfer,
   fetchAllDepotStock,
   fetchDepotStock,
   fetchDepotTransfer,
   fetchDepotTransfers,
-  fetchPendingRefillCount,
+  fetchPendingLoadRequestCount,
   fetchWarehouses,
   issueDepotTransfer,
-  rejectRefillRequest,
+  rejectLoadRequest,
   updateDepotTransfer,
 } from '../api/my-depot-api'
 import type {
@@ -24,7 +24,7 @@ import type {
   DepotDirectoryEntry,
   DepotTransfer,
   DepotWarehouseRef,
-  RefillRequestPayload,
+  LoadRequestPayload,
   UpdateDepotTransferPayload,
 } from '../types'
 
@@ -35,7 +35,7 @@ const PENDING_REQUESTS_KEY = ['depot-pending-requests'] as const
 
 /** How often the pending-request badge asks again. Long enough that a browser
  *  left open all day is not a load on the server, short enough that a salesman
- *  who asks for a refill is not waiting on somebody's F5. */
+ *  who asks for a load is not waiting on somebody's F5. */
 const PENDING_POLL_MS = 30_000
 
 /**
@@ -118,7 +118,7 @@ export function useWarehouses() {
 }
 
 /**
- * Refill requests nobody has answered yet, as a number.
+ * Load requests nobody has answered yet, as a number.
  *
  * Polled rather than pushed: there is no socket in this app, and a request
  * waiting an extra half-minute costs nothing next to a connection held open for
@@ -130,10 +130,10 @@ export function useWarehouses() {
  * for everyone, and asking on behalf of someone who may not read the feed would
  * be a 403 every thirty seconds.
  */
-export function usePendingRefillCount(enabled = true) {
+export function usePendingLoadRequestCount(enabled = true) {
   return useQuery({
     queryKey: PENDING_REQUESTS_KEY,
-    queryFn: () => fetchPendingRefillCount(),
+    queryFn: () => fetchPendingLoadRequestCount(),
     enabled,
     refetchInterval: PENDING_POLL_MS,
     // Both overrides fight the client's own defaults on purpose: the app turns
@@ -276,26 +276,26 @@ export function useAcceptDepotTransfer() {
   })
 }
 
-export function useCreateRefillRequest() {
+export function useCreateLoadRequest() {
   const settled = useDepotWriteSettled()
   return useMutation({
-    mutationFn: (payload: RefillRequestPayload) => createRefillRequest(payload),
+    mutationFn: (payload: LoadRequestPayload) => createLoadRequest(payload),
     onSuccess: settled,
   })
 }
 
-export function useApproveRefillRequest() {
+export function useApproveLoadRequest() {
   const settled = useDepotWriteSettled()
   return useMutation({
-    mutationFn: (id: number) => approveRefillRequest(id),
+    mutationFn: (id: number) => approveLoadRequest(id),
     onSuccess: settled,
   })
 }
 
-export function useRejectRefillRequest() {
+export function useRejectLoadRequest() {
   const settled = useDepotWriteSettled()
   return useMutation({
-    mutationFn: (id: number) => rejectRefillRequest(id),
+    mutationFn: (id: number) => rejectLoadRequest(id),
     onSuccess: settled,
   })
 }

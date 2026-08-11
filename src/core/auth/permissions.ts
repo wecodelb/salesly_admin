@@ -26,11 +26,11 @@ export const PERMISSIONS = {
   REPORTS_VIEW: 'reports.view',
   LEADERBOARD_VIEW: 'leaderboard.view',
   PRODUCTS_VIEW: 'products.view',
-  /** Seeing depot loads, refill requests, and what is in a depot right now. */
+  /** Seeing depot loads, load requests, and what is in a depot right now. */
   DEPOT_VIEW: 'depot.view',
-  /** Asking the warehouse for a refill — the salesman's half of a transfer. */
+  /** Asking the warehouse for a load — the salesman's half of a transfer. */
   DEPOT_REQUEST: 'depot.request',
-  /** Loading a depot, and approving or rejecting a refill request. Held by the
+  /** Loading a depot, and approving or rejecting a load request. Held by the
    *  warehouse side: whoever decides what actually leaves the building. */
   DEPOT_ISSUE: 'depot.issue',
   /** Signing for a load that arrived, short counts included. Kept apart from
