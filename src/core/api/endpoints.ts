@@ -28,7 +28,7 @@ export const ENDPOINTS = {
   // return of what he didn't sell. All three documents (TRR/TRO/TRI) live on
   // one prefix because they are one flow.
   DEPOT_TRANSFERS: '/depot-transfers',   // GET/POST, /{id} GET/POST/DELETE, /{id}/issue|cancel|accept
-  REFILL_REQUESTS: '/depot-transfers/requests', // POST, /{id}/approve, /{id}/reject
+  LOAD_REQUESTS: '/depot-transfers/load-requests', // POST, /{id}/approve, /{id}/reject
   DEPOT_STOCK: '/depot-stock', // GET — every depot at once, a line each
   MY_DEPOT: '/my-depot',     // GET(+?warehouse_id) — what a depot holds now
 

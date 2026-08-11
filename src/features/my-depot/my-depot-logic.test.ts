@@ -153,7 +153,7 @@ describe('draft-only gating', () => {
   })
 
   it('never offers those actions on a request or an acceptance', () => {
-    expect(isEditableDraft(doc('TRR', 'DRAFT'))).toBe(false)
+    expect(isEditableDraft(doc('LR', 'DRAFT'))).toBe(false)
     expect(isEditableDraft(doc('TRI', 'CONFIRMED'))).toBe(false)
   })
 })
@@ -171,26 +171,26 @@ describe('acceptance gating', () => {
 
 describe('request gating', () => {
   it('offers approve/reject only on a request nobody has answered', () => {
-    expect(isPendingRequest(doc('TRR', 'DRAFT'))).toBe(true)
-    expect(isPendingRequest(doc('TRR', 'CONFIRMED'))).toBe(false)
-    expect(isPendingRequest(doc('TRR', 'CANCELED'))).toBe(false)
+    expect(isPendingRequest(doc('LR', 'DRAFT'))).toBe(true)
+    expect(isPendingRequest(doc('LR', 'CONFIRMED'))).toBe(false)
+    expect(isPendingRequest(doc('LR', 'CANCELED'))).toBe(false)
   })
 
   it('only lets a load be raised against an approved request', () => {
-    expect(isApprovedRequest(doc('TRR', 'CONFIRMED'))).toBe(true)
-    expect(isApprovedRequest(doc('TRR', 'DRAFT'))).toBe(false)
+    expect(isApprovedRequest(doc('LR', 'CONFIRMED'))).toBe(true)
+    expect(isApprovedRequest(doc('LR', 'DRAFT'))).toBe(false)
   })
 })
 
 describe('transferPill', () => {
   it('reads CONFIRMED as approved on a request and in transit on a load', () => {
     // Same status, two different facts — which is why the pill needs the type.
-    expect(transferPill(doc('TRR', 'CONFIRMED')).label).toBe('Approved')
+    expect(transferPill(doc('LR', 'CONFIRMED')).label).toBe('Approved')
     expect(transferPill(doc('TRO', 'CONFIRMED')).label).toBe('In transit')
   })
 
   it('reads a cancelled request as rejected', () => {
-    expect(transferPill(doc('TRR', 'CANCELED')).label).toBe('Rejected')
+    expect(transferPill(doc('LR', 'CANCELED')).label).toBe('Rejected')
   })
 
   it('is always received on an acceptance', () => {
@@ -206,7 +206,7 @@ describe('transferPill', () => {
   it('leaves the same stored status meaning something else on a request', () => {
     // DRAFT is one value on the wire and two facts on screen, which is why the
     // wording is decided from the type as well.
-    expect(transferPill(doc('TRR', 'DRAFT')).label).toBe('Awaiting approval')
+    expect(transferPill(doc('LR', 'DRAFT')).label).toBe('Awaiting approval')
   })
 
   it('leaves every other load status where it was', () => {
@@ -218,8 +218,8 @@ describe('transferPill', () => {
 describe('awaitsSourceStock', () => {
   it('is true while the source still has to find the goods', () => {
     expect(awaitsSourceStock(doc('TRO', 'DRAFT'))).toBe(true)
-    expect(awaitsSourceStock(doc('TRR', 'DRAFT'))).toBe(true)
-    expect(awaitsSourceStock(doc('TRR', 'CONFIRMED'))).toBe(true)
+    expect(awaitsSourceStock(doc('LR', 'DRAFT'))).toBe(true)
+    expect(awaitsSourceStock(doc('LR', 'CONFIRMED'))).toBe(true)
   })
 
   it('is false once the goods have moved or the document is dead', () => {
@@ -228,7 +228,7 @@ describe('awaitsSourceStock', () => {
     expect(awaitsSourceStock(doc('TRO', 'CONFIRMED'))).toBe(false)
     expect(awaitsSourceStock(doc('TRO', 'COMPLETED'))).toBe(false)
     expect(awaitsSourceStock(doc('TRO', 'CANCELED'))).toBe(false)
-    expect(awaitsSourceStock(doc('TRR', 'CANCELED'))).toBe(false)
+    expect(awaitsSourceStock(doc('LR', 'CANCELED'))).toBe(false)
     expect(awaitsSourceStock(doc('TRI', 'CONFIRMED'))).toBe(false)
   })
 })
