@@ -6,7 +6,7 @@ import type {
   DepotStock,
   DepotSummary,
   DepotTransfer,
-  RefillRequestPayload,
+  LoadRequestPayload,
   UpdateDepotTransferPayload,
   WarehouseOption,
 } from '../types'
@@ -108,7 +108,7 @@ export async function fetchDepotTransfers(perPage = 200): Promise<DepotTransfer[
 }
 
 /**
- * How many refill requests are still waiting for an answer.
+ * How many load requests are still waiting for an answer.
  *
  * Asked as a filtered count rather than read off the feed the loads page
  * already holds: this figure sits in the sidebar on every screen and refetches
@@ -116,9 +116,9 @@ export async function fetchDepotTransfers(perPage = 200): Promise<DepotTransfer[
  * count four documents would be paid for by everybody. `per_page=1` because
  * only the total is wanted — the rows are thrown away.
  */
-export async function fetchPendingRefillCount(): Promise<number> {
+export async function fetchPendingLoadRequestCount(): Promise<number> {
   const res = await apiClient.get<Envelope<ListData<DepotTransfer>>>(ENDPOINTS.DEPOT_TRANSFERS, {
-    params: { trs_type: 'TRR', status: 'DRAFT', per_page: 1 },
+    params: { trs_type: 'LR', status: 'DRAFT', per_page: 1 },
   })
 
   const body = res.data.data
@@ -201,25 +201,25 @@ export async function acceptDepotTransfer(
 }
 
 /** The salesman's half of a transfer — it moves no stock at all. */
-export async function createRefillRequest(
-  payload: RefillRequestPayload,
+export async function createLoadRequest(
+  payload: LoadRequestPayload,
 ): Promise<DepotWriteResult> {
-  const res = await apiClient.post<Envelope<WriteResponse>>(ENDPOINTS.REFILL_REQUESTS, payload)
+  const res = await apiClient.post<Envelope<WriteResponse>>(ENDPOINTS.LOAD_REQUESTS, payload)
   const body = res.data.data
   return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
-export async function approveRefillRequest(id: number): Promise<DepotWriteResult> {
+export async function approveLoadRequest(id: number): Promise<DepotWriteResult> {
   const res = await apiClient.post<Envelope<WriteResponse>>(
-    `${ENDPOINTS.REFILL_REQUESTS}/${id}/approve`,
+    `${ENDPOINTS.LOAD_REQUESTS}/${id}/approve`,
   )
   const body = res.data.data
   return { transfer: body.transfer, warnings: capacityWarnings(body) }
 }
 
-export async function rejectRefillRequest(id: number): Promise<DepotWriteResult> {
+export async function rejectLoadRequest(id: number): Promise<DepotWriteResult> {
   const res = await apiClient.post<Envelope<WriteResponse>>(
-    `${ENDPOINTS.REFILL_REQUESTS}/${id}/reject`,
+    `${ENDPOINTS.LOAD_REQUESTS}/${id}/reject`,
   )
   const body = res.data.data
   return { transfer: body.transfer, warnings: capacityWarnings(body) }

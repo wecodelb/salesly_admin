@@ -7,6 +7,8 @@ import type {
   CreateItemPayload,
   Currency,
   ItemDistribution,
+  ItemLevel,
+  SaveItemLevelPayload,
   UomOption,
   UpdateItemPayload,
 } from '../types'
@@ -76,6 +78,37 @@ export async function fetchItemDistribution(itemId: number): Promise<ItemDistrib
     `${ENDPOINTS.ITEMS}/${itemId}/distribution`,
   )
   return res.data.data?.data ?? []
+}
+
+/**
+ * The reorder points for this product, one row per warehouse in the company.
+ *
+ * Every warehouse is answered for, not only the ones holding stock: "this depot
+ * should carry ten and is carrying none" is the sentence the screen exists to
+ * show, and a pair that has never been stocked has no ledger row to read it
+ * off. Reading writes nothing — the zeros come back unsaved.
+ *
+ * The order is the backend's, depots first then by name, matching the
+ * distribution list beside it.
+ */
+export async function fetchItemLevels(itemId: number): Promise<ItemLevel[]> {
+  const res = await apiClient.get<Envelope<ListData<ItemLevel>>>(
+    `${ENDPOINTS.ITEMS}/${itemId}/levels`,
+  )
+  return res.data.data?.data ?? []
+}
+
+/** Sets one pair's levels and hands back that row alone, already carrying the
+ *  server's breach flags. */
+export async function saveItemLevel(
+  itemId: number,
+  payload: SaveItemLevelPayload,
+): Promise<ItemLevel> {
+  const res = await apiClient.post<Envelope<{ data: ItemLevel }>>(
+    `${ENDPOINTS.ITEMS}/${itemId}/levels`,
+    payload,
+  )
+  return res.data.data.data
 }
 
 export async function createItem(payload: CreateItemPayload): Promise<void> {

@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Ban,
-  Check,
   Eye,
   FileCheck2,
+  PackagePlus,
   Pencil,
   Send,
   Trash2,
@@ -28,13 +28,12 @@ import { AcceptTransferModal } from '../components/AcceptTransferModal'
 import { DepotTransferFormDrawer } from '../components/DepotTransferFormDrawer'
 import { TransferRoute } from '../components/TransferRoute'
 import {
-  useApproveRefillRequest,
   useCancelDepotTransfer,
   useDeleteDepotTransfer,
   useDepotStock,
   useDepotTransfer,
   useIssueDepotTransfer,
-  useRejectRefillRequest,
+  useRejectLoadRequest,
 } from '../hooks/use-my-depot'
 import {
   TYPE_LABELS,
@@ -88,8 +87,7 @@ export function DepotTransferDetailPage() {
   const issueTransfer = useIssueDepotTransfer()
   const cancelTransfer = useCancelDepotTransfer()
   const deleteTransfer = useDeleteDepotTransfer()
-  const approveRequest = useApproveRefillRequest()
-  const rejectRequest = useRejectRefillRequest()
+  const rejectRequest = useRejectLoadRequest()
 
   // Only a document nobody has issued still has to be filled, and only then is
   // the source's shelf worth reading — after it goes out, what the warehouse
@@ -177,15 +175,13 @@ export function DepotTransferDetailPage() {
       () => issueTransfer.mutateAsync(transfer.id),
     )
 
-  const handleApprove = () =>
-    run(
-      {
-        label: 'Approving request',
-        detail: transfer.trs_number,
-        success: `${transfer.trs_number} is approved — raise the load when the picking is done.`,
-      },
-      () => approveRequest.mutateAsync(transfer.id),
-    )
+  /// Saying yes opens the load, rather than setting a flag and leaving somebody
+  /// to remember the second half. The drawer arrives holding what the salesman
+  /// asked for, and its own submit does the approving.
+  const handleCreateLoad = () => {
+    setFormMounted(true)
+    setEditing(true)
+  }
 
   const handleReject = () =>
     run(
@@ -404,8 +400,8 @@ export function DepotTransferDetailPage() {
                 <Button variant="outline" icon={<X size={15} />} onClick={handleReject}>
                   Reject
                 </Button>
-                <Button icon={<Check size={15} />} onClick={handleApprove}>
-                  Approve
+                <Button icon={<PackagePlus size={15} />} onClick={handleCreateLoad}>
+                  Create load
                 </Button>
               </>
             )}
@@ -539,11 +535,15 @@ export function DepotTransferDetailPage() {
         />
       </section>
 
+      {/* One drawer, two jobs, never both at once: a request is never an
+          editable draft load, so which of the two props is filled decides
+          whether this opens to correct a load or to raise one. */}
       {formMounted && (
         <DepotTransferFormDrawer
           open={editing}
           onClose={() => setEditing(false)}
-          transfer={transfer}
+          transfer={transfer.trs_type === 'LR' ? null : transfer}
+          fromRequest={transfer.trs_type === 'LR' ? transfer : null}
         />
       )}
 

@@ -53,7 +53,7 @@ function transfer(
 // warehouse is still picking, a load already on the road, and the signature
 // that closed an earlier one.
 const FIXTURES: DepotTransfer[] = [
-  transfer(1, 'TRR', 'DRAFT'),
+  transfer(1, 'LR', 'DRAFT'),
   transfer(2, 'TRO', 'DRAFT'),
   transfer(3, 'TRO', 'CONFIRMED'),
   transfer(4, 'TRI', 'CONFIRMED', { source: MAIN, destination: DEPOT }),
@@ -66,7 +66,7 @@ vi.mock('../api/my-depot-api', () => ({
   fetchDepotTransfer: async (id: number) => FIXTURES.find((t) => t.id === id)!,
   // The badge asks for its own filtered count rather than reading the feed, so
   // it needs answering separately — one request nobody has approved.
-  fetchPendingRefillCount: async () => 1,
+  fetchPendingLoadRequestCount: async () => 1,
   fetchWarehouses: async () => [{ id: 1, code: 'WH-1', name: 'Main Warehouse' }],
   fetchDepotStock: async () => ({
     warehouse: MAIN,
@@ -82,9 +82,9 @@ vi.mock('../api/my-depot-api', () => ({
   issueDepotTransfer: async () => FIXTURES[2],
   cancelDepotTransfer: async () => FIXTURES[1],
   acceptDepotTransfer: async () => ({}),
-  createRefillRequest: async () => FIXTURES[0],
-  approveRefillRequest: async () => FIXTURES[0],
-  rejectRefillRequest: async () => FIXTURES[0],
+  createLoadRequest: async () => FIXTURES[0],
+  approveLoadRequest: async () => FIXTURES[0],
+  rejectLoadRequest: async () => FIXTURES[0],
 }))
 
 // The salesman filter reads the company's users; left unmocked it reaches for a
@@ -151,9 +151,9 @@ function transferRows() {
 
 /** The requests panel above the feed. Scoped, because a request appears both
  *  in the inbox and in the feed below it and its number is in two places. */
-function refillInbox(): HTMLElement {
-  const panel = screen.getByText('Refill requests').closest('section')
-  if (!panel) throw new Error('The refill inbox is not on the page.')
+function loadRequestInbox(): HTMLElement {
+  const panel = screen.getByText('Load requests').closest('section')
+  if (!panel) throw new Error('The load inbox is not on the page.')
   return panel
 }
 
@@ -296,22 +296,27 @@ describe('accepting', () => {
   })
 })
 
-describe('refill requests', () => {
+describe('load requests', () => {
   it('answers a pending request only with depot.issue', async () => {
+    // Two answers, and saying yes is spelled "create load": the approval happens
+    // inside the drawer that builds it, so there is no separate approve step to
+    // press and then forget about.
     signIn([PERMISSIONS.DEPOT_VIEW, PERMISSIONS.DEPOT_ISSUE])
     renderPage()
     await loadedFeed()
 
-    expect(screen.getByRole('button', { name: /approve/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /create load/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /reject/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^approve$/i })).not.toBeInTheDocument()
   })
 
   it('shows the inbox read-only without it', async () => {
     renderPage()
     await loadedFeed()
 
-    expect(screen.getByText('Refill requests')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /approve/i })).not.toBeInTheDocument()
+    expect(screen.getByText('Load requests')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /create load/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /reject/i })).not.toBeInTheDocument()
   })
 
   it('opens the request from the inbox row', async () => {
@@ -322,7 +327,7 @@ describe('refill requests', () => {
     renderPage()
     await loadedFeed()
 
-    await user.click(within(refillInbox()).getByText('TRR-1'))
+    await user.click(within(loadRequestInbox()).getByText('LR-1'))
 
     expect(await screen.findByTestId('location')).toHaveTextContent('/depot-transfers/1')
   })
@@ -332,7 +337,7 @@ describe('refill requests', () => {
     renderPage()
     await loadedFeed()
 
-    await user.click(within(refillInbox()).getByText('TRR-1'))
+    await user.click(within(loadRequestInbox()).getByText('LR-1'))
 
     expect(await screen.findByTestId('location')).toHaveTextContent('/depot-transfers/1')
   })
