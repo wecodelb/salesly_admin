@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Boxes, Eye, FolderTree, MoreVertical, Package, PackageCheck, PackageX, Percent, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
+import { Boxes, Eye, FolderTree, Gauge, MoreVertical, Package, PackageCheck, PackageX, Percent, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -14,6 +14,7 @@ import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { ItemFormDrawer } from '../components/ItemFormDrawer'
+import { ItemLevelsDrawer } from '../components/ItemLevelsDrawer'
 import { useBrands, useCategories, useDeleteItem, useProducts } from '../hooks/use-products'
 import { effectiveUsd, formatLbp, formatUsd, type AdminItem } from '../types'
 
@@ -35,6 +36,7 @@ export function ProductsPage() {
   const [editing, setEditing] = useState<AdminItem | null>(null)
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<AdminItem | null>(null)
+  const [leveling, setLeveling] = useState<AdminItem | null>(null)
 
   const debouncedSearch = useDebounce(search, 250)
 
@@ -215,6 +217,15 @@ export function ProductsPage() {
                 onClick: () => navigate(`/products/${p.id}`),
               },
               { label: 'Edit', icon: <Pencil size={14} />, onClick: () => setEditing(p) },
+              // A reorder point belongs to a warehouse-and-product pair, not to
+              // the product, so it is set from the row rather than from the
+              // item form: a depot and the warehouse it is filled from need
+              // different floors for the same line.
+              {
+                label: 'Set item level',
+                icon: <Gauge size={14} />,
+                onClick: () => setLeveling(p),
+              },
             ]}
           />
           <button
@@ -350,6 +361,7 @@ export function ProductsPage() {
 
       <ItemFormDrawer open={creating} onClose={() => setCreating(false)} />
       <ItemFormDrawer open={!!editing} onClose={() => setEditing(null)} item={editing} />
+      <ItemLevelsDrawer open={!!leveling} onClose={() => setLeveling(null)} item={leveling} />
 
       <Modal
         open={!!deleting}

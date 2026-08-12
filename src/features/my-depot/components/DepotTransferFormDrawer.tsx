@@ -97,7 +97,10 @@ const HEADING_GLOW = { textShadow: '0 0 14px var(--heading-glow)' }
 export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }: Props) {
   const isEdit = !!transfer
   const { run } = useActionProgress()
-  const { data: products = [] } = useProducts()
+  // `isLoading` rather than a bare list: an empty catalogue and a catalogue still
+  // arriving look identical in the picker, and "Choose a product" over an empty
+  // dropdown reads as "this company has no products".
+  const { data: products = [], isLoading: productsLoading } = useProducts()
   const { data: salesmen = [] } = useSalesmen()
   // The feed is where a depot names itself, so the pickers below are built from
   // it. Read here rather than passed in, so the cost lands only once this
@@ -291,7 +294,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
       e.destination = 'No depot on record for this salesman — name the warehouse yourself'
 
     const filled = rows.filter((row) => row.itemId || row.qty)
-    if (filled.length === 0) e.rows = 'A load needs at least one line'
+    if (filled.length === 0) e.rows = 'A load needs at least one product'
 
     rows.forEach((row, i) => {
       if (!row.itemId && !row.qty) return
@@ -424,7 +427,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
               <span className="font-mono text-[var(--text-secondary)]">
                 {fromRequest.trs_number}
               </span>
-              . Its lines are the starting point — every change you make here is a deliberate
+              . Its products are the starting point — every change you make here is a deliberate
               difference from what was agreed.
             </p>
           )}
@@ -503,26 +506,34 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
         <section className="flex flex-col gap-3 border-t border-[var(--border-default)] pt-6">
           <div className="flex items-center justify-between">
             <h3 className={HEADING} style={HEADING_GLOW}>
-              Lines
+              Products
             </h3>
             <button
               type="button"
               onClick={addRow}
-              className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[var(--accent-primary)] hover:underline"
+              disabled={productsLoading}
+              className="inline-flex cursor-pointer items-center gap-1 text-xs font-medium text-[var(--accent-primary)] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Plus size={13} /> Add line
+              <Plus size={13} /> Add product
             </button>
           </div>
 
           <p className="text-xs text-[var(--text-muted)]">
             {source
-              ? 'The figure beside each line is what the source can still promise — anything already reserved by another load is gone from it.'
-              : 'Choose the source warehouse and each line will show what it has left.'}
+              ? 'The figure beside each product is what the source can still promise — anything already reserved by another load is gone from it.'
+              : 'Choose the source warehouse and each product will show what it has left.'}
           </p>
 
           {errors.rows && <p className="text-xs text-[var(--accent-red)]">{errors.rows}</p>}
 
-          {rows.map((row, i) => {
+          {/* Shown in place of the rows while the catalogue is on its way. The
+              pickers are useless until it lands — every one of them would be an
+              empty dropdown — and skeleton rows say "arriving" where an empty
+              dropdown says "there is nothing here". */}
+          {productsLoading ? (
+            <ProductRowsSkeleton />
+          ) : (
+          rows.map((row, i) => {
             const stock = lineStock(row)
             const item = row.itemId ? productsById.get(Number(row.itemId)) : undefined
             const packagings = item ? packagingsOf(item) : []
@@ -582,7 +593,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
                         {formatQty(stock.onHand)} available
                       </div>
                       <div className="text-[var(--text-muted)]">
-                        this line takes {formatQty(stock.wanted)}
+                        this product takes {formatQty(stock.wanted)}
                       </div>
                     </>
                   ) : (
@@ -592,8 +603,8 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
 
                 <button
                   type="button"
-                  title="Remove line"
-                  aria-label={`Remove line ${i + 1}`}
+                  title="Remove product"
+                  aria-label={`Remove product ${i + 1}`}
                   onClick={() => removeRow(i)}
                   className="mb-1 cursor-pointer rounded-[var(--radius-btn)] p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-surface-raised)] hover:text-[var(--accent-red)]"
                 >
@@ -601,10 +612,11 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
                 </button>
               </div>
             )
-          })}
+          })
+          )}
 
           {/* What he will be carrying, and whether it fits. Both figures move as
-              lines are keyed, because the moment to find out the vehicle is too
+              products are keyed, because the moment to find out the vehicle is too
               small is while the load is still on paper. */}
           <div className="mt-2 flex flex-col gap-4 rounded-[var(--radius-card)] border border-[var(--border-subtle)] px-4 py-3.5">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -619,7 +631,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
                 <span className="font-mono tabular-nums text-[var(--text-primary)]">
                   {formatVolume(load.volume)}
                 </span>{' '}
-                {VOLUME_UNIT} across {lineCount} {lineCount === 1 ? 'line' : 'lines'}
+                {VOLUME_UNIT} across {lineCount} {lineCount === 1 ? 'product' : 'products'}
               </span>
             </div>
 
@@ -652,8 +664,8 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
                 />
                 <p className="text-sm text-[var(--accent-amber)]">
                   This puts {landsIn?.name ?? 'the depot'} past what it is recorded as carrying.
-                  Save it anyway if it really fits — nothing here blocks the load — or take a line
-                  off first.
+                  Save it anyway if it really fits — nothing here blocks the load — or take a
+                  product off first.
                 </p>
               </div>
             )}
@@ -661,5 +673,39 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
         </section>
       </div>
     </SideDrawer>
+  )
+}
+
+/**
+ * Placeholder rows while the product catalogue is on its way.
+ *
+ * Shaped like the real row — product, packaging, quantity, the delete button —
+ * rather than using the generic list skeleton, so the section does not change
+ * layout when the data lands. A skeleton that reflows on arrival reads as the
+ * page breaking rather than the page filling in.
+ */
+function ProductRowsSkeleton() {
+  return (
+    <div className="flex flex-col gap-3" aria-busy="true" aria-live="polite">
+      <span className="sr-only">Loading products…</span>
+      {[0, 1].map((i) => (
+        <div key={i} className="flex flex-wrap items-end gap-3 animate-pulse">
+          <div className="min-w-[14rem] flex-1 space-y-1.5">
+            {/* Only the first row carries field labels in the real markup. */}
+            {i === 0 && <div className="h-2.5 w-14 rounded bg-[var(--border-subtle)]" />}
+            <div className="h-9 rounded-[var(--radius-btn)] bg-[var(--border-default)]" />
+          </div>
+          <div className="w-40 space-y-1.5">
+            {i === 0 && <div className="h-2.5 w-16 rounded bg-[var(--border-subtle)]" />}
+            <div className="h-9 rounded-[var(--radius-btn)] bg-[var(--border-default)]" />
+          </div>
+          <div className="w-28 space-y-1.5">
+            {i === 0 && <div className="h-2.5 w-10 rounded bg-[var(--border-subtle)]" />}
+            <div className="h-9 rounded-[var(--radius-btn)] bg-[var(--border-default)]" />
+          </div>
+          <div className="mb-1 h-8 w-8 rounded-[var(--radius-btn)] bg-[var(--border-subtle)]" />
+        </div>
+      ))}
+    </div>
   )
 }

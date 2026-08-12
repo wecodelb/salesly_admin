@@ -91,8 +91,8 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     label: 'Depot',
     items: [
       { key: PERMISSIONS.DEPOT_VIEW, label: 'View depot loads & stock' },
-      { key: PERMISSIONS.DEPOT_REQUEST, label: 'Request a refill' },
-      { key: PERMISSIONS.DEPOT_ISSUE, label: 'Load a depot & answer refill requests' },
+      { key: PERMISSIONS.DEPOT_REQUEST, label: 'Request a load' },
+      { key: PERMISSIONS.DEPOT_ISSUE, label: 'Load a depot & answer load requests' },
       { key: PERMISSIONS.DEPOT_ACCEPT, label: 'Accept a load that arrived' },
     ],
   },
@@ -146,7 +146,7 @@ const SALESMAN_EXCLUDED: Permission[] = [
   // reads from. A salesman quotes it; he does not set it.
   PERMISSIONS.EXCHANGE_RATES_VIEW,
   PERMISSIONS.EXCHANGE_RATES_MANAGE,
-  // He may ask for a refill and sign for what turns up; deciding what leaves
+  // He may ask for a load and sign for what turns up; deciding what leaves
   // the warehouse is the warehouse's call. Sending his own unsold stock back
   // still works without it — being assigned to the depot is the authority there.
   PERMISSIONS.DEPOT_ISSUE,
