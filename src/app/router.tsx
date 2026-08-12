@@ -31,6 +31,7 @@ const PromotionsPage   = lazy(() => import('@/features/promotions/pages/Promotio
 const CurrenciesPage = lazy(() => import('@/features/currencies/pages/CurrenciesPage').then(m => ({ default: m.CurrenciesPage })))
 const CustomerDetailPage = lazy(() => import('@/features/customers/pages/CustomerDetailPage').then(m => ({ default: m.CustomerDetailPage })))
 const ProductDetailPage  = lazy(() => import('@/features/products/pages/ProductDetailPage').then(m => ({ default: m.ProductDetailPage })))
+const InvoiceDetailPage = lazy(() => import('@/features/invoices/pages/InvoiceDetailPage').then(m => ({ default: m.InvoiceDetailPage })))
 const CategoriesPage   = lazy(() => import('@/features/categories/pages/CategoriesPage').then(m => ({ default: m.CategoriesPage })))
 const BrandsPage       = lazy(() => import('@/features/brands/pages/BrandsPage').then(m => ({ default: m.BrandsPage })))
 const AreasPage        = lazy(() => import('@/features/areas/pages/AreasPage').then(m => ({ default: m.AreasPage })))
@@ -91,6 +92,10 @@ export const router = createBrowserRouter([
       { path: 'activity',     Component: makePage(ActivityPage) },
       { path: 'orders',       Component: makePage(OrdersPage, P.ORDERS_VIEW) },
       { path: 'invoices',     Component: makePage(InvoicesPage, P.INVOICES_VIEW) },
+      // One invoice with its lines. Reading rides on the same key as the list;
+      // nothing here writes, because an invoice exists because goods changed
+      // hands and must not be rewritten after the fact.
+      { path: 'invoices/:id', Component: makePage(InvoiceDetailPage, P.INVOICES_VIEW) },
       { path: 'returns',      Component: makePage(ReturnsPage, P.RETURNS_VIEW) },
       { path: 'collections',  Component: makePage(CollectionsPage, P.COLLECTIONS_VIEW) },
       { path: 'visits',       Component: makePage(VisitsPage, P.VISITS_CHECKIN) },
