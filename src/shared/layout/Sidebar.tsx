@@ -3,18 +3,19 @@ import {
   LayoutDashboard, Map, Activity, ShoppingCart, FileText, RotateCcw, Banknote,
   MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent, Coins,
   BarChart2, Trophy, UserCog, CreditCard, Key, MessageCircle, Shield, Settings,
-  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes,
+  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes, Warehouse,
   ChevronLeft, Zap, type LucideIcon,
 } from 'lucide-react'
-import { NAV_GROUPS } from './nav-config'
+import { NAV_GROUPS, type NavBadge } from './nav-config'
 import { usePermissions } from '@/core/auth/use-permissions'
-import type { Permission } from '@/core/auth/permissions'
+import { PERMISSIONS, type Permission } from '@/core/auth/permissions'
+import { usePendingLoadRequestCount } from '@/features/my-depot/hooks/use-my-depot'
 
 const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard, Map, Activity, ShoppingCart, FileText, RotateCcw, Banknote,
   MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent, Coins,
   BarChart2, Trophy, UserCog, CreditCard, Key, MessageCircle, Shield, Settings,
-  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes,
+  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes, Warehouse,
 }
 
 interface Props {
@@ -24,6 +25,14 @@ interface Props {
 
 export function Sidebar({ collapsed, onCollapse }: Props) {
   const { can, role } = usePermissions()
+  // Polled, and only for somebody who may read the feed it counts — the menu
+  // renders for everyone, and asking on behalf of a user who would be refused
+  // is a 403 every half-minute.
+  const { data: pendingLoadRequests = 0 } = usePendingLoadRequestCount(can(PERMISSIONS.DEPOT_VIEW))
+
+  const badgeCount = (badge?: NavBadge): number =>
+    badge === 'pending-load-requests' ? pendingLoadRequests : 0
+
   return (
     <aside
       className={[
@@ -61,11 +70,18 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
               <div className="space-y-0.5">
                 {visible.map((item) => {
                   const Icon = ICON_MAP[item.icon]
+                  const count = badgeCount(item.badge)
                   return (
                     <NavLink
                       key={item.key}
                       to={item.path}
-                      title={collapsed ? item.label : undefined}
+                      title={
+                        collapsed
+                          ? count > 0
+                            ? `${item.label} (${count} waiting)`
+                            : item.label
+                          : undefined
+                      }
                       className={({ isActive }) =>
                         [
                           'flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -76,8 +92,21 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
                         ].join(' ')
                       }
                     >
-                      {Icon && <Icon size={18} className="flex-shrink-0" />}
+                      <span className="relative flex-shrink-0">
+                        {Icon && <Icon size={18} />}
+                        {/* Collapsed there is no room for the figure, but the
+                            fact that something is waiting still has to survive
+                            — a dot on the icon says it without the width. */}
+                        {collapsed && count > 0 && (
+                          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--accent-amber)]" />
+                        )}
+                      </span>
                       {!collapsed && <span className="truncate">{item.label}</span>}
+                      {!collapsed && count > 0 && (
+                        <span className="ml-auto rounded-full bg-[var(--accent-amber)]/20 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-[var(--accent-amber)]">
+                          {count}
+                        </span>
+                      )}
                     </NavLink>
                   )
                 })}

@@ -7,6 +7,12 @@ export interface Column<T> {
   header: string
   render?: (row: T) => React.ReactNode
   sortable?: boolean
+  /**
+   * What this column actually sorts by, where the stored value doesn't sort
+   * itself — a `d/m/Y` date compared as text puts the 3rd of November before
+   * the 2nd of January. Falls back to the field named by `key`.
+   */
+  sortValue?: (row: T) => string | number | null | undefined
   width?: string
   /** Numeric columns read better right-aligned. */
   align?: 'left' | 'right' | 'center'
@@ -57,8 +63,9 @@ export function DataTable<T extends Record<string, unknown>>({
 
   const sorted = [...data].sort((a, b) => {
     if (!sort) return 0
-    const aVal = a[sort.field]
-    const bVal = b[sort.field]
+    const read = columns.find((col) => col.key === sort.field)?.sortValue
+    const aVal = read ? read(a) : a[sort.field]
+    const bVal = read ? read(b) : b[sort.field]
     if (aVal == null) return 1
     if (bVal == null) return -1
     // Numbers compare numerically; anything else falls back to a natural

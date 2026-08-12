@@ -1,5 +1,12 @@
 import type { Permission } from '@/core/auth/permissions'
 
+/**
+ * A live count the sidebar hangs off an entry. Named rather than numeric,
+ * because the number is fetched where it is rendered — nav-config is a static
+ * description of the menu and has no business holding state.
+ */
+export type NavBadge = 'pending-load-requests'
+
 export interface NavItem {
   key: string
   label: string
@@ -9,6 +16,8 @@ export interface NavItem {
   /** Restrict to these roles (in addition to any permission check). */
   roles?: string[]
   group?: string
+  /** Shown as a count beside the label while it is above zero. */
+  badge?: NavBadge
 }
 
 export interface NavGroup {
@@ -47,8 +56,14 @@ export const NAV_GROUPS: NavGroup[] = [
     // sits above the catalog and beside the field work it belongs to.
     label: 'Depot',
     items: [
-      { key: 'depot-transfers', label: 'Depot Loads', icon: 'Truck', path: '/depot-transfers', permission: 'depot.view' },
-      { key: 'depot-stock', label: 'Depot Stock', icon: 'Boxes', path: '/depot-stock', permission: 'depot.view' },
+      // The badge is the load requests nobody has answered: a salesman asking
+      // for stock is blocked until somebody here says yes, and that is not a
+      // thing to find out by opening the screen.
+      { key: 'depot-transfers', label: 'Depot Loads', icon: 'Truck', path: '/depot-transfers', permission: 'depot.view', badge: 'pending-load-requests' },
+      // No separate stock entry. What each place holds is on the warehouse list
+      // and on the warehouse itself, which is where somebody looking for it
+      // already is.
+      { key: 'warehouses', label: 'Warehouses', icon: 'Warehouse', path: '/warehouses', permission: 'depot.view' },
     ],
   },
   {
