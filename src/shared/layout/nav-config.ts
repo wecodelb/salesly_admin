@@ -59,7 +59,11 @@ export const NAV_GROUPS: NavGroup[] = [
       // The badge is the load requests nobody has answered: a salesman asking
       // for stock is blocked until somebody here says yes, and that is not a
       // thing to find out by opening the screen.
-      { key: 'depot-transfers', label: 'Depot Loads', icon: 'Truck', path: '/depot-transfers', permission: 'depot.view', badge: 'pending-load-requests' },
+      // The chain in the order it happens. The badge is the requests nobody has
+      // answered: a salesman asking for stock is blocked until somebody here says
+      // yes, and that is not a thing to find out by opening the screen.
+      { key: 'load-requests', label: 'Load Requests', icon: 'Inbox', path: '/load-requests', permission: 'depot.view', badge: 'pending-load-requests' },
+      { key: 'load-issues', label: 'Load Issues', icon: 'Truck', path: '/load-issues', permission: 'depot.view' },
       // No separate stock entry. What each place holds is on the warehouse list
       // and on the warehouse itself, which is where somebody looking for it
       // already is.

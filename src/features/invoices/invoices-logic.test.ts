@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { invoicePill, isSettled, isUnpaid, totalsOf, type Invoice } from './types'
+import {
+  describeTender,
+  invoicePill,
+  isSettled,
+  isUnpaid,
+  paymentMethodLabel,
+  totalsOf,
+  type Invoice,
+  type InvoicePayment,
+} from './types'
 
 /** Only the fields the arithmetic reads; the rest of an invoice is irrelevant here. */
 function invoice(
@@ -114,5 +123,38 @@ describe('totalsOf', () => {
     // what is actually collectable rather than netting one customer's credit
     // against another's debt.
     expect(totals.outstanding).toBe(20)
+  })
+})
+
+describe('tender breakdown', () => {
+  const tender = (over: Partial<InvoicePayment> = {}): InvoicePayment => ({
+    method: 'cash',
+    amount: 40,
+    currency: 'USD',
+    value: 40,
+    exchange_rate: null,
+    reference: null,
+    ...over,
+  })
+
+  it('names the method on a line that needed no conversion', () => {
+    expect(describeTender(tender())).toBe('Cash')
+    expect(describeTender(tender({ method: 'whish' }))).toBe('Whish')
+    expect(describeTender(tender({ method: 'account' }))).toBe('On account')
+  })
+
+  it('keeps the notes the customer counted out on a foreign line', () => {
+    // The converted figure alone would mean the console cannot reproduce the
+    // receipt the customer is holding.
+    expect(
+      describeTender(
+        tender({ amount: 89_500, currency: 'LBP', value: 10, exchange_rate: 8950 }),
+      ),
+    ).toBe('Cash · 89,500 LBP')
+  })
+
+  it('passes an unrecognised method through rather than blanking it', () => {
+    expect(paymentMethodLabel('bitcoin')).toBe('bitcoin')
+    expect(paymentMethodLabel(null)).toBe('—')
   })
 })

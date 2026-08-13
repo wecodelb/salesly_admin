@@ -112,9 +112,17 @@ export function CustomerDetailPage() {
           value={formatMoney(customer.balance)}
           icon={<CreditCard size={18} className="text-[var(--accent-primary)]" />}
         />
+        {/* A cash-only customer has no limit because they have no credit, which
+            is the opposite of "no cap" — the two must never read the same. */}
         <KpiCard
           title="Credit limit"
-          value={customer.credit_limit != null ? formatMoney(customer.credit_limit) : 'No cap'}
+          value={
+            customer.allow_credit === false
+              ? 'Cash only'
+              : customer.credit_limit != null
+                ? formatMoney(customer.credit_limit)
+                : 'No cap'
+          }
           icon={<CreditCard size={18} className="text-[var(--text-muted)]" />}
         />
         <KpiCard

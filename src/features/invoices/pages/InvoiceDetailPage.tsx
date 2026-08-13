@@ -7,7 +7,14 @@ import { StatStrip } from '@/shared/components/StatStrip/StatStrip'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
 import { useInvoice } from '../hooks/use-invoices'
-import { formatMoney, formatQty, invoicePill, type InvoiceRow } from '../types'
+import {
+  describeTender,
+  formatMoney,
+  formatQty,
+  invoicePill,
+  paymentMethodLabel,
+  type InvoiceRow,
+} from '../types'
 
 /**
  * One invoice: what the customer took, what they paid, and what they still owe.
@@ -110,6 +117,7 @@ export function InvoiceDetailPage() {
   ]
 
   const rows = invoice?.rows ?? []
+  const tenders = invoice?.payments ?? []
 
   return (
     <>
@@ -137,7 +145,7 @@ export function InvoiceDetailPage() {
           worth knowing, and a row that vanished would read as never having been
           asked for. */}
       <section className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Fact label="Paid by" value={invoice?.payment_method || '—'} />
+        <Fact label="Paid by" value={paymentMethodLabel(invoice?.payment_method)} />
         <Fact
           label="Signature"
           value={invoice?.signature_path ? 'Signed for' : 'Not signed'}
@@ -155,6 +163,43 @@ export function InvoiceDetailPage() {
           icon={<MapPin size={13} />}
         />
       </section>
+
+      {/* Only for the sales that took more than one tender. On a plain cash sale
+          "Paid by" above already says everything, and a one-row breakdown
+          repeating it would read as though something more complicated happened. */}
+      {tenders.length > 1 && (
+        <section className="mb-5 rounded-[var(--radius-card)] border border-[var(--border-subtle)] px-4 py-3">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            How it was paid
+          </h3>
+          <ul className="flex flex-col gap-1.5">
+            {tenders.map((tender, i) => (
+              <li
+                key={`${tender.method}-${i}`}
+                className="flex items-baseline justify-between gap-3 text-sm"
+              >
+                <span
+                  className={
+                    tender.method === 'account'
+                      ? 'text-[var(--accent-amber)]'
+                      : 'text-[var(--text-secondary)]'
+                  }
+                >
+                  {describeTender(tender)}
+                  {tender.reference ? (
+                    <span className="ml-2 text-xs text-[var(--text-muted)]">
+                      {tender.reference}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="font-mono text-sm text-[var(--text-primary)]">
+                  {formatMoney(tender.value)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <DataTable
         columns={columns}

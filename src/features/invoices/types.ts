@@ -47,6 +47,12 @@ export interface Invoice {
   payment_method: string | null
   currency: string | null
 
+  /**
+   * How the total was made up, when it took more than one tender. Empty on the
+   * ordinary single-payment sale, so a length check is the whole test.
+   */
+  payments?: InvoicePayment[]
+
   /** Sold off a van, with no order behind it. */
   is_van_sale: boolean
 
@@ -59,6 +65,52 @@ export interface Invoice {
 
   /** Present on the single-document read only; the list is headers. */
   rows?: InvoiceRow[]
+}
+
+/**
+ * One tender against an invoice.
+ *
+ * Both figures are kept because both are true. `amount` with `currency` is what
+ * the customer counted out — 89,500 in lira — and `value` is the same money in
+ * the document's currency, which is what the totals are built from. Showing only
+ * the converted figure would mean the console cannot reproduce the receipt the
+ * customer is holding.
+ */
+export interface InvoicePayment {
+  method: string
+  amount: number
+  currency: string
+  value: number
+  /** The rate this line was converted at, or null when it needed no conversion. */
+  exchange_rate: number | null
+  reference: string | null
+}
+
+/** How a tender reads on screen. */
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: 'Cash',
+  whish: 'Whish',
+  account: 'On account',
+  cheque: 'Cheque',
+  transfer: 'Transfer',
+  credit: 'On account',
+}
+
+export function paymentMethodLabel(method: string | null | undefined): string {
+  if (!method) return '—'
+  return PAYMENT_METHOD_LABELS[method] ?? method
+}
+
+/**
+ * What a tender line reads as: the notes handed over, and their value when those
+ * were not the invoice's own currency.
+ */
+export function describeTender(tender: InvoicePayment): string {
+  const label = paymentMethodLabel(tender.method)
+  if (tender.exchange_rate == null) return label
+
+  const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
+  return `${label} · ${fmt.format(tender.amount)} ${tender.currency.toUpperCase()}`
 }
 
 export interface InvoicePagination {

@@ -385,11 +385,14 @@ export function CustomersPage() {
       key: 'credit_limit',
       header: 'Credit limit',
       sortable: true,
-      render: (c) => (
-        <span className="font-mono text-sm text-[var(--text-secondary)]">
-          {c.credit_limit != null ? formatMoney(c.credit_limit) : '—'}
-        </span>
-      ),
+      render: (c) =>
+        c.allow_credit === false ? (
+          <span className="text-xs text-[var(--text-muted)]">Cash only</span>
+        ) : (
+          <span className="font-mono text-sm text-[var(--text-secondary)]">
+            {c.credit_limit != null ? formatMoney(c.credit_limit) : '—'}
+          </span>
+        ),
     },
     {
       key: 'status',
