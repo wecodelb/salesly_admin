@@ -112,12 +112,11 @@ export function LoadRequestsPanel({ transfers, onLoadFrom }: Props) {
               </button>
 
               {canIssue && (
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   {isPending && (
                     <Button
-                      size="sm"
                       variant="outline"
-                      icon={<X size={14} />}
+                      icon={<X size={15} />}
                       onClick={() => handleReject(request)}
                     >
                       Reject
@@ -127,10 +126,13 @@ export function LoadRequestsPanel({ transfers, onLoadFrom }: Props) {
                       load are the same act now, so a pending request and an
                       approved-but-unloaded one lead to the same drawer — the
                       only difference is whether the approval still has to
-                      happen, which the drawer settles for itself. */}
+                      happen, which the drawer settles for itself.
+
+                      Default size, matching the Load Requests table: this is the
+                      action the screen exists for, and `sm` was too tight for the
+                      label beside its icon. */}
                   <Button
-                    size="sm"
-                    icon={<PackagePlus size={14} />}
+                    icon={<PackagePlus size={15} />}
                     onClick={() => onLoadFrom(request)}
                   >
                     Create load

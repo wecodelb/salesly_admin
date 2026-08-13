@@ -184,7 +184,9 @@ export function LoadRequestsPage() {
           {
             key: 'actions',
             header: '',
-            width: 'w-1',
+            // Wide enough for both buttons side by side. `w-1` squeezed the cell
+            // to its minimum and the labels had nowhere to go.
+            width: 'w-[15rem]',
             render: (request: DepotTransfer) => {
               // Nothing to do on a request that has been turned down, or one whose
               // load already exists — the load is the thing to act on then.
@@ -197,19 +199,20 @@ export function LoadRequestsPage() {
                   className="flex items-center justify-end gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {/* The row's two answers, at the default size rather than `sm`:
+                      this is the screen's whole purpose, and a 32px box could not
+                      hold "Create load" beside its icon without clipping it. */}
                   {isPendingRequest(request) && (
                     <Button
-                      size="sm"
                       variant="outline"
-                      icon={<X size={14} />}
+                      icon={<X size={15} />}
                       onClick={() => handleReject(request)}
                     >
                       Reject
                     </Button>
                   )}
                   <Button
-                    size="sm"
-                    icon={<PackagePlus size={14} />}
+                    icon={<PackagePlus size={15} />}
                     onClick={() => openLoadDrawer(request)}
                   >
                     Create load
