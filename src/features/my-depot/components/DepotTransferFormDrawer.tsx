@@ -20,6 +20,7 @@ import {
   useUpdateDepotTransfer,
   useWarehouseOptions,
 } from '../hooks/use-my-depot'
+import { raiseLoad } from '../raise-load'
 import { CapacityBar } from './CapacityBar'
 import {
   VOLUME_UNIT,
@@ -84,9 +85,14 @@ const HEADING = 'text-sm font-semibold tracking-wide text-[var(--heading-accent)
 const HEADING_GLOW = { textShadow: '0 0 14px var(--heading-glow)' }
 
 /**
- * Drafting a load out. A draft reserves the goods without moving them, so this
- * form is editable right up to the moment somebody presses Issue — and never
- * after, which is why it only ever opens on a draft.
+ * Building a load out, and issuing it.
+ *
+ * Creating one from here issues it in the same act: this form *is* the
+ * adjustment step — it opens prefilled with what the salesman asked for and
+ * every line is editable — so a draft behind a second Issue button was a gate
+ * with nothing left to decide at it, and it left the phone showing "Load issued"
+ * on a load that had not been. Editing an existing draft still only saves it;
+ * that path exists for a load raised some other way.
  *
  * The salesman is asked first and his depot follows, because a load is
  * addressed to a person: the console should not have to know a warehouse id to
@@ -354,7 +360,7 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
         detail: detailLine,
         success: isEdit
           ? 'The load has been saved.'
-          : 'The load is created — the goods are reserved until it goes out.',
+          : 'The load is issued — the goods have left the warehouse and are on their way.',
       },
       async () => {
         if (isEdit && transfer) {
@@ -363,8 +369,23 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
         // Approve first, and let a failure here stop the whole thing: a load
         // created against an unapproved request is the one state the two
         // documents must never be left in.
-        if (needsApproval) await approveRequest.mutateAsync(fromRequest.id)
-        return createTransfer.mutateAsync(payload)
+        // Approve if nobody has, then raise the load already issued — the server
+        // does both halves of that in one transaction. The drawer *is* the
+        // adjustment step, so a draft behind a second "Issue" button on another
+        // screen was a gate with nothing left to decide at it, and it made the
+        // two apps disagree: the phone's row read "Load issued" while the load
+        // was still a draft, so the salesman had no Receive to press and nothing
+        // said why.
+        //
+        // The sequencing lives in `raiseLoad` because the rules are worth stating
+        // and testing away from a form.
+        return raiseLoad(
+          {
+            approve: (id) => approveRequest.mutateAsync(id),
+            create: (body) => createTransfer.mutateAsync(body),
+          },
+          { payload, approveRequestId: needsApproval ? fromRequest.id : null },
+        )
       },
     )
 
@@ -372,7 +393,9 @@ export function DepotTransferFormDrawer({ open, onClose, transfer, fromRequest }
   }
 
   const saving =
-    createTransfer.isPending || updateTransfer.isPending || approveRequest.isPending
+    createTransfer.isPending ||
+    updateTransfer.isPending ||
+    approveRequest.isPending
 
   const productOptions = products.map((item) => ({
     value: String(item.id),

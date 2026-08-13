@@ -132,6 +132,13 @@ export interface CreateDepotTransferPayload {
   /** Sending the key replaces the whole row set; omitting it on an edit leaves
    *  the lines — and their reservation — alone. */
   rows?: DepotTransferRowPayload[]
+  /** Send the load out in the same act as building it, in one transaction.
+   *
+   *  The console sets this on every load it raises: the form is the adjustment
+   *  step, so a draft behind a second Issue button was a gate with nothing left
+   *  to decide at it — and a load left drafted reads as "Load issued" on the
+   *  salesman's phone while offering him no Receive. */
+  issue?: boolean
 }
 
 export type UpdateDepotTransferPayload = CreateDepotTransferPayload
