@@ -542,20 +542,21 @@ export function transferPill(
 ): { status: string; label: string } {
   if (t.trs_type === 'LR') {
     if (t.status === 'DRAFT') return { status: 'pending', label: 'Requested' }
-    // Deliberately not "Approved". Approving is no longer a state a document
-    // rests in: the warehouse answers a request by building the load in the same
-    // drawer, so by the time anyone reads this the load exists. A separate
-    // "approved" pill only ever meant "somebody said yes and then forgot".
-    if (t.status === 'CONFIRMED') return { status: 'success', label: 'Load created' }
+    // Deliberately not "Approved" and deliberately not "Load created". Answering
+    // a request means building the load in the same drawer, so by the time anyone
+    // reads this a load exists and is on its way — which is what the salesman's
+    // phone says too. One vocabulary for one document.
+    if (t.status === 'CONFIRMED') return { status: 'warning', label: 'Load issued' }
     return { status: 'error', label: 'Rejected' }
   }
 
   if (t.trs_type === 'TRI') return { status: 'success', label: 'Loaded' }
 
-  // A load being built is already strapped on and already spoken for at the
-  // source — "draft" describes paperwork, and what the warehouse is looking at
-  // is a vehicle with goods on it that have not left yet.
-  if (t.status === 'DRAFT') return { status: 'draft', label: 'Load created' }
+  // Three words carry the whole flow: requested, load issued, loaded. Whether a
+  // load has physically left the building is a distinction the warehouse can see
+  // for itself and nobody acts on differently, so a draft and an issued load read
+  // the same here rather than inventing a fourth state.
+  if (t.status === 'DRAFT') return { status: 'warning', label: 'Load issued' }
   if (t.status === 'CONFIRMED') return { status: 'warning', label: 'Load issued' }
   if (t.status === 'COMPLETED') return { status: 'success', label: 'Loaded' }
   return { status: 'inactive', label: 'Cancelled' }

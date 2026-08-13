@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, MapPin, PenLine, Receipt, Truck } from 'lucide-react'
+import { ArrowLeft, MapPin, PenLine, Receipt } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { Button } from '@/shared/components/Button'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
@@ -71,7 +71,7 @@ export function InvoiceDetailPage() {
       header: 'Sold',
       align: 'right',
       // In the packaging it was sold in, with the base quantity underneath: the
-      // first is what the customer agreed to, the second is what left the van.
+      // first is what the customer agreed to, the second is what left the depot.
       render: (row) => (
         <div className="flex flex-col items-end">
           <span className="font-mono text-sm tabular-nums text-[var(--text-primary)]">
@@ -124,14 +124,6 @@ export function InvoiceDetailPage() {
           .join(' · ')}
         actions={
           <div className="flex items-center gap-2">
-            {invoice?.is_van_sale && (
-              <span
-                title="Sold straight off the van, with no order behind it"
-                className="inline-flex items-center gap-1 rounded-[var(--radius-pill)] bg-[var(--accent-primary)]/12 px-2.5 py-1 text-xs font-medium text-[var(--accent-primary)]"
-              >
-                <Truck size={12} aria-hidden /> Van sale
-              </span>
-            )}
             {pill && <StatusPill status={pill.status} label={pill.label} />}
             {back}
           </div>

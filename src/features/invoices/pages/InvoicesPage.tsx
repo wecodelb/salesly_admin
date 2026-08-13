@@ -110,16 +110,6 @@ export function InvoicesPage() {
             <span className="font-mono text-sm text-[var(--text-primary)]">
               {invoice.trs_number || `#${invoice.id}`}
             </span>
-            {/* Only on a van sale. An invoice off an order is the ordinary case
-                and does not need a badge saying so. */}
-            {invoice.is_van_sale && (
-              <span
-                title="Sold straight off the van, with no order behind it"
-                className="inline-flex items-center gap-1 rounded-[var(--radius-pill)] bg-[var(--accent-primary)]/12 px-2 py-0.5 text-xs font-medium text-[var(--accent-primary)]"
-              >
-                <Truck size={11} aria-hidden /> Van
-              </span>
-            )}
           </div>
           <div className="text-xs text-[var(--text-muted)]">{invoice.trs_date ?? '—'}</div>
         </div>
@@ -220,7 +210,7 @@ export function InvoicesPage() {
     <>
       <PageHeader
         title="Invoices"
-        subtitle="Every invoice raised — off an order, or straight off a van — with what has been collected against each."
+        subtitle="Every invoice raised, with what has been collected against each."
       />
 
       <StatStrip stats={stats} loading={isLoading} />

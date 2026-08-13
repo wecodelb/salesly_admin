@@ -183,11 +183,11 @@ describe('request gating', () => {
 })
 
 describe('transferPill', () => {
-  it('reads CONFIRMED as a load created on a request and issued on a load', () => {
-    // Same status, two different facts — which is why the pill needs the type.
-    // An answered request says "load created" rather than "approved": saying yes
-    // and building the load are one act, so there is no resting state between.
-    expect(transferPill(doc('LR', 'CONFIRMED')).label).toBe('Load created')
+  it('reads an answered request as load issued, same as the load itself', () => {
+    // Saying yes and building the load are one act, so there is no resting state
+    // between them — and the console says the same word the salesman's phone
+    // does, because it is one document.
+    expect(transferPill(doc('LR', 'CONFIRMED')).label).toBe('Load issued')
     expect(transferPill(doc('TRO', 'CONFIRMED')).label).toBe('Load issued')
   })
 
@@ -200,10 +200,21 @@ describe('transferPill', () => {
     expect(transferPill(doc('TRI', 'CONFIRMED')).label).toBe('Loaded')
   })
 
-  it('calls a load still being built created, never a draft', () => {
-    // The goods are strapped on and already spoken for at the source; "draft"
-    // describes paperwork and the warehouse is looking at a vehicle.
-    expect(transferPill(doc('TRO', 'DRAFT')).label).toBe('Load created')
+  it('never says draft, and never invents a fourth state', () => {
+    // "Draft" describes paperwork; the warehouse is looking at a vehicle. And
+    // whether it has physically left is a distinction nobody acts on
+    // differently, so it reads the same as an issued load.
+    expect(transferPill(doc('TRO', 'DRAFT')).label).toBe('Load issued')
+
+    const labels = (['DRAFT', 'CONFIRMED', 'COMPLETED', 'CANCELED'] as const).flatMap(
+      (status) =>
+        (['LR', 'TRO', 'TRI'] as const).map((type) => transferPill(doc(type, status)).label),
+    )
+
+    // The whole vocabulary, both apps: three steps plus the two dead ends.
+    expect(new Set(labels)).toEqual(
+      new Set(['Requested', 'Rejected', 'Load issued', 'Loaded', 'Cancelled']),
+    )
   })
 
   it('leaves the same stored status meaning something else on a request', () => {
