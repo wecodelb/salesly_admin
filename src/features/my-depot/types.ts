@@ -2,15 +2,15 @@
 // DepotTransferRowResource and DepotStockResource, plus the three request
 // classes behind /depot-transfers.
 //
-// One shape covers all three documents — the load request (TRR), the issue
-// (TRO) and the acceptance (TRI) — because the backend renders them through one
+// One shape covers all three documents — the load request (LR), the load issue
+// (LI) and the acceptance (TRI) — because the backend renders them through one
 // resource: the type is a field, not a shape. Nothing here names a direction
 // either. The evening's return of unsold stock is a load out of the salesman's
 // own depot into the warehouse, so `source` and `destination` are the only
 // things that say which way the goods are travelling.
 
-/** TRR asks, TRO loads out, TRI signs for what turned up. */
-export type DepotTransferType = 'LR' | 'TRO' | 'TRI'
+/** LR asks, LI loads out, TRI signs for what turned up. */
+export type DepotTransferType = 'LR' | 'LI' | 'TRI'
 
 export type DepotTransferStatus = 'DRAFT' | 'CONFIRMED' | 'COMPLETED' | 'CANCELED'
 
@@ -264,13 +264,13 @@ export interface DepotDirectoryEntry {
 /** Only a draft load can still be edited, deleted, issued or cancelled: once it
  *  has gone out the goods have left the shelf. */
 export function isEditableDraft(t: Pick<DepotTransfer, 'trs_type' | 'status'>): boolean {
-  return t.trs_type === 'TRO' && t.status === 'DRAFT'
+  return t.trs_type === 'LI' && t.status === 'DRAFT'
 }
 
 /** A load can only be signed for between leaving the warehouse and being signed
  *  for — which is exactly the window `is_in_transit` describes. */
 export function isAcceptable(t: Pick<DepotTransfer, 'trs_type' | 'status'>): boolean {
-  return t.trs_type === 'TRO' && t.status === 'CONFIRMED'
+  return t.trs_type === 'LI' && t.status === 'CONFIRMED'
 }
 
 /** An answered request is answered; a rejection is not overturned into an
@@ -550,21 +550,21 @@ export function transferPill(
     return { status: 'error', label: 'Rejected' }
   }
 
-  if (t.trs_type === 'TRI') return { status: 'success', label: 'Loaded' }
+  if (t.trs_type === 'TRI') return { status: 'success', label: 'Received' }
 
-  // Three words carry the whole flow: requested, load issued, loaded. Whether a
+  // Three words carry the whole flow: requested, load issued, received. Whether a
   // load has physically left the building is a distinction the warehouse can see
   // for itself and nobody acts on differently, so a draft and an issued load read
   // the same here rather than inventing a fourth state.
   if (t.status === 'DRAFT') return { status: 'warning', label: 'Load issued' }
   if (t.status === 'CONFIRMED') return { status: 'warning', label: 'Load issued' }
-  if (t.status === 'COMPLETED') return { status: 'success', label: 'Loaded' }
+  if (t.status === 'COMPLETED') return { status: 'success', label: 'Received' }
   return { status: 'inactive', label: 'Cancelled' }
 }
 
 export const TYPE_LABELS: Record<DepotTransferType, string> = {
   LR: 'Load request',
-  TRO: 'Load out',
+  LI: 'Load issue',
   TRI: 'Acceptance',
 }
 

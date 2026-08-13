@@ -49,6 +49,7 @@ import {
   lineTotal,
   sourceAvailability,
   transferPill,
+  type DepotTransfer,
   type DepotTransferRow,
 } from '../types'
 
@@ -522,16 +523,21 @@ export function DepotTransferDetailPage() {
         </div>
       )}
 
+      {/* On a load raised against a request, what the warehouse actually put on
+          the vehicle beside what was asked for. Those two are rarely identical and
+          the difference is the only thing anybody argues about afterwards. */}
+      <RequestComparison issue={transfer} />
+
       <section>
         <h3 className={HEADING} style={HEADING_GLOW}>
-          Lines
+          Products
         </h3>
         <DataTable
           columns={columns}
           data={rows as (DepotTransferRow & Record<string, unknown>)[]}
           keyField="id"
           emptyIcon={<Truck size={30} />}
-          emptyMessage="This document has no lines."
+          emptyMessage="This document has no products."
         />
       </section>
 
@@ -607,5 +613,134 @@ export function DepotTransferDetailPage() {
         </p>
       </Modal>
     </>
+  )
+}
+
+/**
+ * What the salesman asked for, beside what the warehouse actually issued.
+ *
+ * Only rendered on a load raised against a request — a load keyed directly has
+ * nothing to compare against, and a comparison block full of dashes would imply
+ * somebody had asked for nothing.
+ *
+ * The request's lines are fetched rather than carried on the load: the load copies
+ * quantities, not provenance, so the only way to say "he asked for six and got
+ * four" is to read both documents. Items appear even when they are on one side
+ * only — a line the warehouse added, or one it left off entirely, is exactly the
+ * change worth seeing.
+ */
+function RequestComparison({ issue }: { issue: DepotTransfer }) {
+  const requestId =
+    issue.trs_type === 'LI' && issue.source_document?.trs_type === 'LR'
+      ? issue.source_document.id
+      : null
+
+  const { data: request } = useDepotTransfer(requestId)
+
+  if (requestId == null) return null
+
+  const requested = new Map<number, { name: string; code: string; qty: number }>()
+  for (const row of request?.rows ?? []) {
+    const at = requested.get(row.item_id)
+    requested.set(row.item_id, {
+      name: row.item_name,
+      code: row.item_code,
+      qty: (at?.qty ?? 0) + row.qty,
+    })
+  }
+
+  const issued = new Map<number, { name: string; code: string; qty: number }>()
+  for (const row of issue.rows ?? []) {
+    const at = issued.get(row.item_id)
+    issued.set(row.item_id, {
+      name: row.item_name,
+      code: row.item_code,
+      qty: (at?.qty ?? 0) + row.qty,
+    })
+  }
+
+  const itemIds = [...new Set([...requested.keys(), ...issued.keys()])]
+  if (itemIds.length === 0) return null
+
+  const lines = itemIds.map((id) => {
+    const asked = requested.get(id)
+    const sent = issued.get(id)
+    const askedQty = asked?.qty ?? 0
+    const sentQty = sent?.qty ?? 0
+
+    return {
+      id,
+      name: asked?.name ?? sent?.name ?? `Item ${id}`,
+      code: asked?.code ?? sent?.code ?? '',
+      askedQty,
+      sentQty,
+      delta: sentQty - askedQty,
+    }
+  })
+
+  const changed = lines.filter((l) => l.delta !== 0)
+
+  return (
+    <section className="mb-5 flex flex-col gap-3 rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-5">
+      <div className="flex items-center gap-2">
+        <h3 className={HEADING} style={HEADING_GLOW}>
+          Against the request
+        </h3>
+        <span
+          className={[
+            'rounded-[var(--radius-pill)] px-2 py-0.5 text-xs font-medium',
+            changed.length === 0
+              ? 'bg-[var(--accent-green)]/12 text-[var(--accent-green)]'
+              : 'bg-[var(--accent-amber)]/12 text-[var(--accent-amber)]',
+          ].join(' ')}
+        >
+          {changed.length === 0
+            ? 'Issued exactly as asked'
+            : `${changed.length} changed`}
+        </span>
+      </div>
+
+      <div className="flex flex-col divide-y divide-[var(--border-subtle)]">
+        {lines.map((line) => (
+          <div
+            key={line.id}
+            className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2 first:pt-0 last:pb-0"
+          >
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm text-[var(--text-primary)]">{line.name}</div>
+              <div className="font-mono text-xs text-[var(--text-muted)]">{line.code}</div>
+            </div>
+
+            <div className="flex items-center gap-4 tabular-nums">
+              <span className="text-xs text-[var(--text-muted)]">
+                asked{' '}
+                <span className="font-mono text-sm text-[var(--text-secondary)]">
+                  {formatQty(line.askedQty)}
+                </span>
+              </span>
+              <span className="text-xs text-[var(--text-muted)]">
+                issued{' '}
+                <span className="font-mono text-sm text-[var(--text-primary)]">
+                  {formatQty(line.sentQty)}
+                </span>
+              </span>
+              {line.delta !== 0 && (
+                <span
+                  className={[
+                    'font-mono text-sm font-medium',
+                    line.delta > 0
+                      ? 'text-[var(--accent-green)]'
+                      : 'text-[var(--accent-amber)]',
+                  ].join(' ')}
+                >
+                  {line.delta > 0 ? '+' : ''}
+                  {formatQty(line.delta)}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   )
 }

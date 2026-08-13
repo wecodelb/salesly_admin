@@ -41,7 +41,7 @@ export function LoadRequestsPanel({ transfers, onLoadFrom }: Props) {
   // A request already answered with a load is done with; one still waiting for
   // its load is not.
   const loadedRequestIds = new Set(
-    transfers.filter((t) => t.trs_type === 'TRO' && t.src_id).map((t) => t.src_id),
+    transfers.filter((t) => t.trs_type === 'LI' && t.src_id).map((t) => t.src_id),
   )
   const approved = transfers.filter(
     (t) => isApprovedRequest(t) && !loadedRequestIds.has(t.id),

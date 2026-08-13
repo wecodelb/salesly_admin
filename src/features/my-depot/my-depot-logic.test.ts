@@ -141,15 +141,15 @@ describe('sourceAvailability', () => {
 
 describe('draft-only gating', () => {
   it('lets a draft load be edited, deleted, issued and cancelled', () => {
-    expect(isEditableDraft(doc('TRO', 'DRAFT'))).toBe(true)
+    expect(isEditableDraft(doc('LI', 'DRAFT'))).toBe(true)
   })
 
   it('closes the door once the goods have left the warehouse', () => {
-    expect(isEditableDraft(doc('TRO', 'CONFIRMED'))).toBe(false)
-    expect(isEditableDraft(doc('TRO', 'COMPLETED'))).toBe(false)
+    expect(isEditableDraft(doc('LI', 'CONFIRMED'))).toBe(false)
+    expect(isEditableDraft(doc('LI', 'COMPLETED'))).toBe(false)
     // Cancelled means the reservation is already back on the shelf; releasing
     // it twice would conjure stock out of nothing.
-    expect(isEditableDraft(doc('TRO', 'CANCELED'))).toBe(false)
+    expect(isEditableDraft(doc('LI', 'CANCELED'))).toBe(false)
   })
 
   it('never offers those actions on a request or an acceptance', () => {
@@ -160,12 +160,12 @@ describe('draft-only gating', () => {
 
 describe('acceptance gating', () => {
   it('offers accept only while the load is in transit', () => {
-    expect(isAcceptable(doc('TRO', 'CONFIRMED'))).toBe(true)
+    expect(isAcceptable(doc('LI', 'CONFIRMED'))).toBe(true)
   })
 
   it('refuses before it has been issued and after it has been signed for', () => {
-    expect(isAcceptable(doc('TRO', 'DRAFT'))).toBe(false)
-    expect(isAcceptable(doc('TRO', 'COMPLETED'))).toBe(false)
+    expect(isAcceptable(doc('LI', 'DRAFT'))).toBe(false)
+    expect(isAcceptable(doc('LI', 'COMPLETED'))).toBe(false)
   })
 })
 
@@ -188,32 +188,32 @@ describe('transferPill', () => {
     // between them — and the console says the same word the salesman's phone
     // does, because it is one document.
     expect(transferPill(doc('LR', 'CONFIRMED')).label).toBe('Load issued')
-    expect(transferPill(doc('TRO', 'CONFIRMED')).label).toBe('Load issued')
+    expect(transferPill(doc('LI', 'CONFIRMED')).label).toBe('Load issued')
   })
 
   it('reads a cancelled request as rejected', () => {
     expect(transferPill(doc('LR', 'CANCELED')).label).toBe('Rejected')
   })
 
-  it('is always loaded on an acceptance', () => {
+  it('is always received on an acceptance', () => {
     expect(transferPill(doc('TRI', 'CONFIRMED')).status).toBe('success')
-    expect(transferPill(doc('TRI', 'CONFIRMED')).label).toBe('Loaded')
+    expect(transferPill(doc('TRI', 'CONFIRMED')).label).toBe('Received')
   })
 
   it('never says draft, and never invents a fourth state', () => {
     // "Draft" describes paperwork; the warehouse is looking at a vehicle. And
     // whether it has physically left is a distinction nobody acts on
     // differently, so it reads the same as an issued load.
-    expect(transferPill(doc('TRO', 'DRAFT')).label).toBe('Load issued')
+    expect(transferPill(doc('LI', 'DRAFT')).label).toBe('Load issued')
 
     const labels = (['DRAFT', 'CONFIRMED', 'COMPLETED', 'CANCELED'] as const).flatMap(
       (status) =>
-        (['LR', 'TRO', 'TRI'] as const).map((type) => transferPill(doc(type, status)).label),
+        (['LR', 'LI', 'TRI'] as const).map((type) => transferPill(doc(type, status)).label),
     )
 
     // The whole vocabulary, both apps: three steps plus the two dead ends.
     expect(new Set(labels)).toEqual(
-      new Set(['Requested', 'Rejected', 'Load issued', 'Loaded', 'Cancelled']),
+      new Set(['Requested', 'Rejected', 'Load issued', 'Received', 'Cancelled']),
     )
   })
 
@@ -223,11 +223,11 @@ describe('transferPill', () => {
     expect(transferPill(doc('LR', 'DRAFT')).label).toBe('Requested')
   })
 
-  it('ends the ladder on loaded, wherever the load got there from', () => {
+  it('ends the ladder on received, wherever the load got there from', () => {
     // requested → load created → load issued → loaded, and cancelled off to one
     // side. Five words for the whole flow, which is four fewer than it had.
-    expect(transferPill(doc('TRO', 'COMPLETED')).label).toBe('Loaded')
-    expect(transferPill(doc('TRO', 'CANCELED')).label).toBe('Cancelled')
+    expect(transferPill(doc('LI', 'COMPLETED')).label).toBe('Received')
+    expect(transferPill(doc('LI', 'CANCELED')).label).toBe('Cancelled')
   })
 
   it('never says approved anywhere', () => {
@@ -235,7 +235,7 @@ describe('transferPill', () => {
     // that got forgotten, so the flow no longer has one.
     const labels = (['DRAFT', 'CONFIRMED', 'COMPLETED', 'CANCELED'] as const).flatMap(
       (status) =>
-        (['LR', 'TRO', 'TRI'] as const).map((type) => transferPill(doc(type, status)).label),
+        (['LR', 'LI', 'TRI'] as const).map((type) => transferPill(doc(type, status)).label),
     )
 
     expect(labels.some((label) => label.toLowerCase().includes('approv'))).toBe(false)
@@ -244,7 +244,7 @@ describe('transferPill', () => {
 
 describe('awaitsSourceStock', () => {
   it('is true while the source still has to find the goods', () => {
-    expect(awaitsSourceStock(doc('TRO', 'DRAFT'))).toBe(true)
+    expect(awaitsSourceStock(doc('LI', 'DRAFT'))).toBe(true)
     expect(awaitsSourceStock(doc('LR', 'DRAFT'))).toBe(true)
     expect(awaitsSourceStock(doc('LR', 'CONFIRMED'))).toBe(true)
   })
@@ -252,9 +252,9 @@ describe('awaitsSourceStock', () => {
   it('is false once the goods have moved or the document is dead', () => {
     // What the warehouse holds today says nothing about the morning an issued
     // load actually left it.
-    expect(awaitsSourceStock(doc('TRO', 'CONFIRMED'))).toBe(false)
-    expect(awaitsSourceStock(doc('TRO', 'COMPLETED'))).toBe(false)
-    expect(awaitsSourceStock(doc('TRO', 'CANCELED'))).toBe(false)
+    expect(awaitsSourceStock(doc('LI', 'CONFIRMED'))).toBe(false)
+    expect(awaitsSourceStock(doc('LI', 'COMPLETED'))).toBe(false)
+    expect(awaitsSourceStock(doc('LI', 'CANCELED'))).toBe(false)
     expect(awaitsSourceStock(doc('LR', 'CANCELED'))).toBe(false)
     expect(awaitsSourceStock(doc('TRI', 'CONFIRMED'))).toBe(false)
   })
@@ -310,8 +310,8 @@ function transfer(overrides: Partial<DepotTransfer> = {}): DepotTransfer {
     id: 1,
     company_id: 1,
     uuid: null,
-    trs_type: 'TRO',
-    trs_number: 'TRO-1',
+    trs_type: 'LI',
+    trs_number: 'LI-1',
     trs_date: '03/11/2026 08:00',
     status: 'CONFIRMED',
     is_in_transit: true,
