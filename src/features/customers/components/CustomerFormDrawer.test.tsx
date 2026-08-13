@@ -212,6 +212,61 @@ describe('financial section', () => {
   })
 })
 
+describe('allow credit', () => {
+  const limitField = () => screen.queryByLabelText('Credit limit (optional)')
+
+  it('starts allowed, with the limit field on show', async () => {
+    await openDrawer()
+
+    expect(screen.getByLabelText('Allow credit')).toBeChecked()
+    expect(limitField()).toBeInTheDocument()
+  })
+
+  it('hides the limit when credit is turned off, and sends no cap', async () => {
+    const user = await openDrawer()
+
+    await user.type(screen.getByLabelText('Code'), 'CUST-912')
+    await user.type(screen.getByLabelText('Name'), 'Cash Only Shop')
+    await user.type(limitField()!, '750')
+
+    // Cleared after a number was typed: the field goes, and so does the number.
+    // Leaving it behind would put a cap on a customer who cannot draw against it
+    // at all, ready to spring back the day credit is switched on again.
+    await user.click(screen.getByLabelText('Allow credit'))
+    expect(limitField()).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Create customer' }))
+
+    await waitFor(() => expect(api.createCustomer).toHaveBeenCalledTimes(1))
+    expect(api.createCustomer.mock.calls[0][0]).toMatchObject({
+      allow_credit: false,
+      credit_limit: null,
+    })
+  })
+
+  it('sends the limit alongside the flag when credit is allowed', async () => {
+    const user = await openDrawer()
+
+    await user.type(screen.getByLabelText('Code'), 'CUST-913')
+    await user.type(screen.getByLabelText('Name'), 'Trusted Shop')
+    await user.type(limitField()!, '2500')
+    await user.click(screen.getByRole('button', { name: 'Create customer' }))
+
+    await waitFor(() => expect(api.createCustomer).toHaveBeenCalledTimes(1))
+    expect(api.createCustomer.mock.calls[0][0]).toMatchObject({
+      allow_credit: true,
+      credit_limit: 2500,
+    })
+  })
+
+  it('reads a cash-only customer back as cash-only', async () => {
+    await openDrawer({ ...EXISTING, allow_credit: false, credit_limit: null })
+
+    expect(screen.getByLabelText('Allow credit')).not.toBeChecked()
+    expect(limitField()).not.toBeInTheDocument()
+  })
+})
+
 describe('progress dialog', () => {
   it('covers the create with the centre-screen dialog: spinner, then success', async () => {
     // The dialog lives in AppShell in the real app; mounted here so the

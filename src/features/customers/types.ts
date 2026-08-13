@@ -41,6 +41,9 @@ export interface AdminCustomer {
   /** Resolved name for display (mock mode resolves locally; backend part 1
    *  returns it on the resource). */
   salesman_name: string | null
+  /** Whether this customer may owe money at all. Absent on rows written before
+   *  the column existed, and those customers have credit. */
+  allow_credit?: boolean
   credit_limit: number | null
   /** Outstanding amount the customer owes (positive = due). */
   balance: number
@@ -111,6 +114,7 @@ export interface CreateCustomerPayload {
   currency_id?: number | null
   price_level?: PriceLevel
   salesman_id?: number | null
+  allow_credit?: boolean
   credit_limit?: number | null
   addresses?: Omit<CustomerAddress, 'id'>[]
 }

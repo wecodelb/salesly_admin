@@ -160,7 +160,11 @@ export function useSetCreditLimit() {
     mutationFn: ({ id, creditLimit }: { id: number; creditLimit: number | null }) =>
       USE_MOCK_DATA
         ? mockSetCreditLimit(id, creditLimit)
-        : updateCustomer(id, { credit_limit: creditLimit }),
+        : // Setting a limit says the customer has credit, so it turns the flag on
+          // with it. Otherwise this shortcut would write a cap onto a cash-only
+          // shop where the server refuses every unpaid invoice anyway, and the
+          // number would sit there meaning nothing.
+          updateCustomer(id, { credit_limit: creditLimit, allow_credit: true }),
     onSuccess: invalidate,
   })
 }

@@ -61,6 +61,10 @@ interface FormState {
   priceLevel: PriceLevel
   priceListId: string
   currencyId: string
+  /** Whether this customer may take goods without paying. Cleared makes them a
+   *  cash-only shop: the limit below disappears, and the salesman's phone stops
+   *  offering "On account" at all. */
+  allowCredit: boolean
   creditLimit: string
   phone1: string
   phone2: string
@@ -85,6 +89,8 @@ const EMPTY: FormState = {
   priceLevel: DEFAULT_PRICE_LEVEL,
   priceListId: '',
   currencyId: '',
+  // Most trade customers get credit; the box is there to say which ones don't.
+  allowCredit: true,
   creditLimit: '',
   phone1: '',
   phone2: '',
@@ -153,6 +159,9 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
         priceLevel: customer.price_level ?? DEFAULT_PRICE_LEVEL,
         priceListId: listId,
         currencyId: customer.currency_id != null ? String(customer.currency_id) : '',
+        // Absent on a row written before the column existed, and those customers
+        // have credit — the same default the API resource reports.
+        allowCredit: customer.allow_credit ?? true,
         creditLimit: customer.credit_limit != null ? String(customer.credit_limit) : '',
         phone1: customer.phone1 ?? '',
         phone2: customer.phone2 ?? '',
@@ -222,7 +231,10 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
         e[`addr-${i}-lng`] = 'Between -180 and 180'
     })
 
+    // Only worth checking while the field is on screen — a stale number behind a
+    // cleared checkbox is discarded on submit, not complained about.
     if (
+      form.allowCredit &&
       form.creditLimit.trim() &&
       (Number.isNaN(Number(form.creditLimit)) || Number(form.creditLimit) < 0)
     )
@@ -282,7 +294,12 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
       currency_id: form.currencyId === '' ? null : Number(form.currencyId),
       price_level: form.priceLevel,
       salesman_id: form.salesmanId === '' ? null : Number(form.salesmanId),
-      credit_limit: form.creditLimit.trim() === '' ? null : Number(form.creditLimit),
+      allow_credit: form.allowCredit,
+      // Nulled outright for a cash-only customer rather than left as typed: a
+      // limit nobody can draw against would come back into force the day credit
+      // is switched on again.
+      credit_limit:
+        !form.allowCredit || form.creditLimit.trim() === '' ? null : Number(form.creditLimit),
     }
     // `addresses` replaces the whole set, so it only goes out once this drawer
     // actually knows what the set is — omitting it leaves the server's alone.
@@ -476,19 +493,44 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
                   searchPlaceholder="Search currencies…"
                 />
               </div>
+              {/* The limit only exists for a customer who has credit at all, so
+                  the field appears with the box rather than sitting there greyed
+                  out inviting a number nobody will honour. */}
               <div className="flex-1 min-w-0">
-                <Input
-                  label="Credit limit (optional)"
-                  type="number"
-                  min={0}
-                  step="any"
-                  value={form.creditLimit}
-                  onChange={(e) => set('creditLimit', e.target.value)}
-                  error={errors.creditLimit}
-                  placeholder="No cap"
-                />
+                {form.allowCredit ? (
+                  <Input
+                    label="Credit limit (optional)"
+                    type="number"
+                    min={0}
+                    step="any"
+                    value={form.creditLimit}
+                    onChange={(e) => set('creditLimit', e.target.value)}
+                    error={errors.creditLimit}
+                    placeholder="No cap"
+                  />
+                ) : null}
               </div>
             </div>
+
+            <label className="inline-flex items-start gap-2 cursor-pointer">
+              {/* Labelled explicitly rather than by the wrapper, whose text runs
+                  on into the explanation underneath. */}
+              <input
+                type="checkbox"
+                aria-label="Allow credit"
+                checked={form.allowCredit}
+                onChange={(e) => set('allowCredit', e.target.checked)}
+                className="mt-0.5 accent-[var(--accent-primary)] cursor-pointer"
+              />
+              <span className="text-sm text-[var(--text-primary)]">
+                Allow credit
+                <span className="block text-xs text-[var(--text-muted)]">
+                  {form.allowCredit
+                    ? 'Invoices may be left partly or wholly unpaid, up to the limit.'
+                    : 'Cash only — every invoice must be settled in full at the door.'}
+                </span>
+              </span>
+            </label>
           </section>
         </div>
 

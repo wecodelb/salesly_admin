@@ -21,7 +21,8 @@ const VisitsPage       = lazy(() => import('@/features/visits/pages/VisitsPage')
 const RoutesPage       = lazy(() => import('@/features/routes/pages/RoutesPage').then(m => ({ default: m.RoutesPage })))
 const TasksPage        = lazy(() => import('@/features/tasks/pages/TasksPage').then(m => ({ default: m.TasksPage })))
 const CustomersPage    = lazy(() => import('@/features/customers/pages/CustomersPage').then(m => ({ default: m.CustomersPage })))
-const DepotTransfersPage = lazy(() => import('@/features/my-depot/pages/DepotTransfersPage').then(m => ({ default: m.DepotTransfersPage })))
+const LoadRequestsPage  = lazy(() => import('@/features/my-depot/pages/LoadRequestsPage').then(m => ({ default: m.LoadRequestsPage })))
+const LoadIssuesPage    = lazy(() => import('@/features/my-depot/pages/LoadIssuesPage').then(m => ({ default: m.LoadIssuesPage })))
 const DepotTransferDetailPage = lazy(() => import('@/features/my-depot/pages/DepotTransferDetailPage').then(m => ({ default: m.DepotTransferDetailPage })))
 const WarehousesPage   = lazy(() => import('@/features/warehouses/pages/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
 const WarehouseDetailPage = lazy(() => import('@/features/warehouses/pages/WarehouseDetailPage').then(m => ({ default: m.WarehouseDetailPage })))
@@ -101,10 +102,19 @@ export const router = createBrowserRouter([
       { path: 'visits',       Component: makePage(VisitsPage, P.VISITS_CHECKIN) },
       { path: 'routes',       Component: makePage(RoutesPage, P.ROUTE_VIEW) },
       { path: 'tasks',        Component: makePage(TasksPage, P.TASKS_VIEW) },
-      // Depot. Reading is one key; issuing, accepting and answering requests
-      // are gated inside the screens, since a load's own source decides who may
-      // send it out.
-      { path: 'depot-transfers', Component: makePage(DepotTransfersPage, P.DEPOT_VIEW) },
+      // Depot, in the order the chain happens: he asks, the warehouse issues, he
+      // signs. Reading is one key; issuing, accepting and answering requests are
+      // gated inside the screens, since a load's own source decides who may send
+      // it out.
+      //
+      // Both detail routes render the same document page — it reads any of the
+      // three types — so the single-request and single-load views are one
+      // component rather than two that would drift apart.
+      { path: 'load-requests',       Component: makePage(LoadRequestsPage, P.DEPOT_VIEW) },
+      { path: 'load-requests/:id',   Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },
+      { path: 'load-issues',         Component: makePage(LoadIssuesPage, P.DEPOT_VIEW) },
+      { path: 'load-issues/:id',     Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },
+      // Kept so older links and the detail page's own Back still resolve.
       { path: 'depot-transfers/:id', Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },
       // Every place stock can sit, depots included. Reading rides with the
       // depot screens it feeds; opening, editing and deleting one is gated by
