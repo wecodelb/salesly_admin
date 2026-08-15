@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { SaleslyWordmark } from '../SaleslyWordmark/SaleslyWordmark'
 
 interface Props {
   onDone: () => void
@@ -37,35 +38,9 @@ export function SplashScreen({ onDone, duration = 2200 }: Props) {
     >
       {/* Logo area */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-        {/* Brand mark */}
-        <div style={{ position: 'relative', marginBottom: 4 }}>
-          <span
-            style={{
-              fontSize: 52,
-              fontWeight: 800,
-              color: '#ffffff',
-              letterSpacing: '-1px',
-              lineHeight: 1,
-            }}
-          >
-            Salesly
-          </span>
-          {/* Teal arrow accent */}
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            style={{ position: 'absolute', top: -4, right: -26 }}
-          >
-            <path
-              d="M4 16L16 4M16 4H8M16 4V12"
-              stroke="#2DD4BF"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+        {/* Brand mark — 54px, the size the mobile splash uses. */}
+        <div style={{ marginBottom: 4 }}>
+          <SaleslyWordmark fontSize={54} />
         </div>
 
         {/* Tagline */}

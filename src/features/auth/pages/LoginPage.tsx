@@ -7,6 +7,7 @@ import { useAuthStore } from '@/core/auth/auth-store'
 import type { Permission } from '@/core/auth/permissions'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
+import { SaleslyWordmark } from '@/shared/components/SaleslyWordmark/SaleslyWordmark'
 import { SplashScreen } from '@/shared/components/SplashScreen/SplashScreen'
 import { useSplashStore } from '@/shared/components/SplashScreen/splash-store'
 
@@ -123,7 +124,11 @@ export function LoginPage() {
           <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-3 shadow-lg">
             <Zap size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white font-heading">Salesly</h1>
+          {/* Still an h1 — the mark is the page's heading, and it is real text,
+              so it is read out as the name rather than skipped as an image. */}
+          <h1 className="m-0">
+            <SaleslyWordmark fontSize={28} />
+          </h1>
           <p className="text-sm text-white/50 mt-1">Admin Console</p>
         </div>
 

@@ -6,6 +6,7 @@ import {
   FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes, Warehouse,
   ChevronLeft, Zap, type LucideIcon,
 } from 'lucide-react'
+import { SaleslyWordmark } from '@/shared/components/SaleslyWordmark/SaleslyWordmark'
 import { NAV_GROUPS, type NavBadge } from './nav-config'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS, type Permission } from '@/core/auth/permissions'
@@ -46,9 +47,9 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
         <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-blue)] flex items-center justify-center flex-shrink-0">
           <Zap size={16} className="text-white" />
         </div>
-        {!collapsed && (
-          <span className="text-base font-bold text-white font-heading tracking-tight">Salesly</span>
-        )}
+        {/* The same mark, just small. Collapsed there is no room for it at all,
+            and the badge to the left is the brand at that width. */}
+        {!collapsed && <SaleslyWordmark fontSize={18} />}
       </div>
 
       {/* Nav */}
