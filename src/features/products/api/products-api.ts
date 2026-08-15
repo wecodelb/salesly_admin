@@ -1,6 +1,7 @@
 import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
 import type {
+  AdjustStockPayload,
   AdminItem,
   Brand,
   Category,
@@ -106,6 +107,27 @@ export async function saveItemLevel(
 ): Promise<ItemLevel> {
   const res = await apiClient.post<Envelope<{ data: ItemLevel }>>(
     `${ENDPOINTS.ITEMS}/${itemId}/levels`,
+    payload,
+  )
+  return res.data.data.data
+}
+
+/**
+ * Set what is physically on the shelf for one product in one warehouse.
+ *
+ * A counted figure, not a delta — a stock take produces "there are 42 here",
+ * and asking somebody to work out the difference from what the system believes
+ * is how a miscount becomes a correction in the wrong direction.
+ *
+ * The server refuses a count below what is already reserved on paperwork, which
+ * surfaces here as a 422 naming the promised quantity.
+ */
+export async function adjustItemStock(
+  itemId: number,
+  payload: AdjustStockPayload,
+): Promise<ItemDistribution> {
+  const res = await apiClient.post<Envelope<{ data: ItemDistribution }>>(
+    `${ENDPOINTS.ITEMS}/${itemId}/stock`,
     payload,
   )
   return res.data.data.data

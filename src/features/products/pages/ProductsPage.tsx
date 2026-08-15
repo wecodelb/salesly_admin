@@ -15,6 +15,7 @@ import { useDebounce } from '@/shared/hooks/use-debounce'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { ItemFormDrawer } from '../components/ItemFormDrawer'
 import { ItemLevelsDrawer } from '../components/ItemLevelsDrawer'
+import { StockCountDrawer } from '../components/StockCountDrawer'
 import { useBrands, useCategories, useDeleteItem, useProducts } from '../hooks/use-products'
 import { effectiveUsd, formatLbp, formatUsd, type AdminItem } from '../types'
 
@@ -37,6 +38,7 @@ export function ProductsPage() {
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<AdminItem | null>(null)
   const [leveling, setLeveling] = useState<AdminItem | null>(null)
+  const [counting, setCounting] = useState<AdminItem | null>(null)
 
   const debouncedSearch = useDebounce(search, 250)
 
@@ -226,6 +228,15 @@ export function ProductsPage() {
                 icon: <Gauge size={14} />,
                 onClick: () => setLeveling(p),
               },
+              // Stock is per warehouse, like the reorder level above it, so it
+              // is set from the row rather than from the product form. Until
+              // there is a purchasing module this is the only way it gets in —
+              // without it a product created here is permanently out of stock.
+              {
+                label: 'Set stock',
+                icon: <Boxes size={14} />,
+                onClick: () => setCounting(p),
+              },
             ]}
           />
           <button
@@ -362,6 +373,7 @@ export function ProductsPage() {
       <ItemFormDrawer open={creating} onClose={() => setCreating(false)} />
       <ItemFormDrawer open={!!editing} onClose={() => setEditing(null)} item={editing} />
       <ItemLevelsDrawer open={!!leveling} onClose={() => setLeveling(null)} item={leveling} />
+      <StockCountDrawer open={!!counting} onClose={() => setCounting(null)} item={counting} />
 
       <Modal
         open={!!deleting}

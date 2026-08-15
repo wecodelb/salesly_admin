@@ -354,6 +354,19 @@ export interface SaveItemLevelPayload {
   max_qty?: number | null
 }
 
+/**
+ * A physical count for one product in one warehouse.
+ *
+ * `qty` is what is on the shelf, not a change to it. The server refuses a figure
+ * below what is already reserved on paperwork — that stock is somebody else's
+ * promise, and accepting the count would commit the same goods twice.
+ */
+export interface AdjustStockPayload {
+  warehouse_id: number
+  qty: number
+  memo?: string
+}
+
 /** What an unset level reads as. Never "0" — see ItemLevel above. */
 const NO_LIMIT = 'No limit'
 

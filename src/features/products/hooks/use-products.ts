@@ -12,10 +12,16 @@ import {
   fetchProduct,
   fetchProducts,
   fetchUoms,
+  adjustItemStock,
   saveItemLevel,
   updateItem,
 } from '../api/products-api'
-import type { CreateItemPayload, SaveItemLevelPayload, UpdateItemPayload } from '../types'
+import type {
+  AdjustStockPayload,
+  CreateItemPayload,
+  SaveItemLevelPayload,
+  UpdateItemPayload,
+} from '../types'
 
 const PRODUCTS_KEY = ['admin-products'] as const
 const CATEGORIES_KEY = ['admin-categories'] as const
@@ -71,6 +77,25 @@ export function useSaveItemLevel(itemId: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...PRODUCTS_KEY, itemId, 'levels'] })
       qc.invalidateQueries({ queryKey: [...PRODUCTS_KEY, itemId, 'distribution'] })
+    },
+  })
+}
+
+/**
+ * Set what is on the shelf for one product in one warehouse.
+ *
+ * Invalidates the product list as well as this item's own reads: the list shows
+ * an "Out of stock" pill computed from the same figures, and leaving it stale
+ * means counting stock in and watching the row insist there is none.
+ */
+export function useAdjustItemStock(itemId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: AdjustStockPayload) => adjustItemStock(itemId, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...PRODUCTS_KEY, itemId, 'distribution'] })
+      qc.invalidateQueries({ queryKey: [...PRODUCTS_KEY, itemId, 'levels'] })
+      qc.invalidateQueries({ queryKey: PRODUCTS_KEY })
     },
   })
 }
