@@ -27,9 +27,10 @@ export interface AdminItemUom {
   uom?: { id: number; code: string; name: string }
   /** How many base units this packaging holds. */
   unit: number
-  /** Which packaging the mobile app converts quantities against. Returned by
-   *  the backend, which picks the first one; the admin never sets it, so the
-   *  form doesn't have to carry a field nobody fills in. */
+  /** The unit everything else converts against — the one named at the top of
+   *  the form, always held at a factor of 1. Returned by the backend; the
+   *  Packaging editor lists only the rows where this is false, because the base
+   *  is not a packaging and editing it there would redefine the product. */
   is_base?: boolean
   cost: number
   price_1: number

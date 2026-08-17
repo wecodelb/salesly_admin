@@ -100,7 +100,11 @@ export function ItemFormDrawer({ open, onClose, item }: Props) {
         price2: String(item.price_2 ?? ''),
         price3: String(item.price_3 ?? ''),
         cost: String(item.cost ?? ''),
-        variants: item.uoms ?? [],
+        // Packaging only. The base variant mirrors the unit named at the top of
+        // this form, so listing it here would show "Piece" as Packaging 1 and
+        // invite somebody to edit the product's own unit through a row that
+        // looks like an extra.
+        variants: (item.uoms ?? []).filter((v) => !v.is_base),
       })
     } else {
       setForm(EMPTY)
@@ -176,20 +180,44 @@ export function ItemFormDrawer({ open, onClose, item }: Props) {
       barcodes,
       // Only send variants when the packaging box was actually used; omitting
       // the key leaves whatever the item already has untouched.
+      //
+      // The base goes first and says so. The packaging list describes what sits
+      // *on top of* the product's own unit, so sending only those rows left the
+      // server to guess which was the base — it took the first, which meant
+      // naming Piece up here and adding one Box below came back as a Box-based
+      // product with the Piece silently gone.
       ...(form.variants.length > 0
         ? {
-            uoms: form.variants.map((v) => ({
-              ...(v.id ? { id: v.id } : {}),
-              uom_id: v.uom_id,
-              unit: v.unit,
-              cost: v.cost,
-              price_1: v.price_1,
-              price_2: v.price_2,
-              price_3: v.price_3,
-              weight: v.weight,
-              volume: v.volume,
-              barcodes: v.barcodes.map((b) => b.trim()).filter(Boolean),
-            })),
+            uoms: [
+              {
+                uom_id: Number(form.uomId),
+                unit: 1,
+                is_base: true,
+                cost: Number(form.cost),
+                price_1: price1,
+                price_2: num(form.price2),
+                price_3: num(form.price3),
+                weight: num(form.weight),
+                volume: num(form.volume),
+                // Left empty: the form's own Barcode section is already sent as
+                // `barcodes` and the server attaches those to the base. Sending
+                // them twice would ask it to insert each code two times.
+                barcodes: [] as string[],
+              },
+              ...form.variants.map((v) => ({
+                ...(v.id ? { id: v.id } : {}),
+                uom_id: v.uom_id,
+                unit: v.unit,
+                is_base: false,
+                cost: v.cost,
+                price_1: v.price_1,
+                price_2: v.price_2,
+                price_3: v.price_3,
+                weight: v.weight,
+                volume: v.volume,
+                barcodes: v.barcodes.map((b) => b.trim()).filter(Boolean),
+              })),
+            ],
           }
         : {}),
     }
