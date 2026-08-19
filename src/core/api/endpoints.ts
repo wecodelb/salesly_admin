@@ -9,6 +9,11 @@ export const ENDPOINTS = {
   },
   COMPANY: '/company/info',  // GET  /api/v1/company/info (public)
 
+  // The manager's dashboard, aggregated server-side and returned whole:
+  // today's four figures against yesterday, a 14-day trend, the week's top
+  // salesmen, the latest orders and what customers owe. Gated on orders.view.
+  DASHBOARD_SUMMARY: '/dashboard/summary',
+
   // Inventory
   // GET/POST/PATCH/DELETE /api/v1/items, GET /{id}/distribution,
   // GET+POST /{id}/levels — the per-warehouse reorder points, read with
