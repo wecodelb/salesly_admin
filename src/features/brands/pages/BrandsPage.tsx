@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { MoreVertical, Package, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { brandsExportDoc } from '../brands-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
@@ -151,11 +153,18 @@ export function BrandsPage() {
         title="Brands"
         subtitle="Brands label who makes a product, so the catalogue can be browsed and filtered by manufacturer."
         actions={
-          canManage ? (
-            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-              New brand
-            </Button>
-          ) : undefined
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => brandsExportDoc(filtered, brands.length, search)}
+            />
+            {canManage && (
+              <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+                New brand
+              </Button>
+            )}
+          </>
         }
       />
 

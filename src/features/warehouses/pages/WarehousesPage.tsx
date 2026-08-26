@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, Pencil, Plus, Star, Trash2, Truck, Warehouse as WarehouseIcon } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { warehousesExportDoc } from '../warehouses-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -325,11 +327,18 @@ export function WarehousesPage() {
         title="Warehouses"
         subtitle="The buildings stock is picked from and the depots the salesmen drive — every load starts and ends in one of these."
         actions={
-          canManage ? (
-            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-              New warehouse
-            </Button>
-          ) : undefined
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => warehousesExportDoc(filtered, warehouses.length, debouncedSearch, kindFilter)}
+            />
+            {canManage && (
+              <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+                New warehouse
+              </Button>
+            )}
+          </>
         }
       />
 

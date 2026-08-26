@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { FolderTree, MoreVertical, Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { categoriesExportDoc } from '../categories-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
@@ -156,11 +158,18 @@ export function CategoriesPage() {
         title="Categories"
         subtitle="Groupings that organise the product catalog — every product belongs to one."
         actions={
-          canManage ? (
-            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-              New category
-            </Button>
-          ) : undefined
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => categoriesExportDoc(filtered, categories.length, debouncedSearch)}
+            />
+            {canManage && (
+              <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+                New category
+              </Button>
+            )}
+          </>
         }
       />
 

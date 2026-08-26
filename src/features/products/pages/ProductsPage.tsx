@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Boxes, Eye, FolderTree, Gauge, MoreVertical, Package, PackageCheck, PackageX, Percent, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { productsExportDoc } from '../products-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { KpiCard } from '@/shared/components/KpiCard/KpiCard'
@@ -81,6 +83,26 @@ export function ProductsPage() {
   }, [products])
 
   const activeFilterCount = [categoryFilter, brandFilter, stockFilter].filter(Boolean).length
+
+  // Named in words on the printed page, where the selects that produced them
+  // are not there to be looked at.
+  const exportFilters = useMemo(
+    () => [
+      debouncedSearch.trim() && `Search “${debouncedSearch.trim()}”`,
+      categoryFilter &&
+        `Category: ${categories.find((c) => String(c.id) === categoryFilter)?.name ?? categoryFilter}`,
+      brandFilter &&
+        `Brand: ${brands.find((b) => String(b.id) === brandFilter)?.name ?? brandFilter}`,
+      stockFilter && (stockFilter === 'in' ? 'In stock only' : 'Out of stock only'),
+    ],
+    [debouncedSearch, categoryFilter, brandFilter, stockFilter, categories, brands],
+  )
+
+  // Grouped the way the screen is already narrowed: filtering to one category
+  // and then printing it under a "By category" heading is noise, but an
+  // unfiltered catalog is unreadable flat.
+  const exportGrouping =
+    categoryFilter || brandFilter ? 'none' : ('category' as const)
 
   const clearFilters = () => {
     setCategoryFilter('')
@@ -270,9 +292,18 @@ export function ProductsPage() {
         title="Products"
         subtitle="Catalog, dual pricing & promotions"
         actions={
-          <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-            New product
-          </Button>
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() =>
+                productsExportDoc(filtered, products.length, exportFilters, exportGrouping)
+              }
+            />
+            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+              New product
+            </Button>
+          </>
         }
       />
 

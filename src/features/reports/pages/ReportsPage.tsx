@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { FileText, Printer } from 'lucide-react'
+import { Printer } from 'lucide-react'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { Button } from '@/shared/components/Button'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
@@ -32,6 +33,10 @@ export function ReportsPage() {
   const [to, setTo] = useState('')
 
   const report = REPORTS.find((r) => r.id === reportId) ?? REPORTS[0]
+
+  // The distributor's name, not the app's. Falls back only for a session that
+  // predates the login storing it.
+  const company = useAuthStore((s) => s.user?.company)
 
   const customers = useCustomers()
   const products = useProducts()
@@ -184,15 +189,8 @@ export function ReportsPage() {
       ) : loading ? (
         <LoadingSkeleton />
       ) : (
-        <ReportDocument
-          doc={doc}
-          companyName="Salesly"
-          generatedAt={new Date()}
-        />
+        <ReportDocument doc={doc} companyName={company || 'Salesly'} generatedAt={new Date()} />
       )}
     </>
   )
 }
-
-/** Kept so the icon import earns its place in the picker's empty state. */
-export const REPORT_ICON = FileText

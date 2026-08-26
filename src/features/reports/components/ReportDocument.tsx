@@ -6,6 +6,9 @@ interface Props<Row> {
   companyName: string
   /** When it was run. Stamped so a filed page says how old it is. */
   generatedAt: Date
+  /** Extra classes on the document root — `is-print-only` for a screen that
+   *  carries its export without showing it. */
+  className?: string
 }
 
 /**
@@ -21,11 +24,16 @@ interface Props<Row> {
  * found loose in a folder has to say what it is, whose it is and what the
  * columns mean, or it is waste paper.
  */
-export function ReportDocument<Row>({ doc, companyName, generatedAt }: Props<Row>) {
+export function ReportDocument<Row>({
+  doc,
+  companyName,
+  generatedAt,
+  className,
+}: Props<Row>) {
   const hasRows = doc.groups.some((g) => g.rows.length > 0)
 
   return (
-    <article className="report-doc">
+    <article className={className ? `report-doc ${className}` : 'report-doc'}>
       <header className="report-masthead">
         <div>
           <p className="report-company">{companyName}</p>

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle2, MoreVertical, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { priceListsExportDoc } from '../price-lists-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { KpiCard } from '@/shared/components/KpiCard/KpiCard'
 import { Button } from '@/shared/components/Button'
@@ -158,9 +160,16 @@ export function PriceListsPage() {
         title="Price Lists"
         subtitle="Per-customer price overrides"
         actions={
-          <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-            New price list
-          </Button>
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => priceListsExportDoc(priceLists, priceLists.length)}
+            />
+            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+              New price list
+            </Button>
+          </>
         }
       />
 

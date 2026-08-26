@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { MapPinned, MoreVertical, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { areasExportDoc } from '../areas-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
@@ -167,11 +169,18 @@ export function AreasPage() {
         title="Areas"
         subtitle="The sales territories your customers sit in — they drive route planning and how reporting is broken down."
         actions={
-          canManage ? (
-            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-              New area
-            </Button>
-          ) : undefined
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => areasExportDoc(filtered, areas.length, debouncedSearch)}
+            />
+            {canManage && (
+              <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+                New area
+              </Button>
+            )}
+          </>
         }
       />
 

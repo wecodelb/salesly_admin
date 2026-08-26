@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Coins, FileText, Receipt, Truck, Wallet } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { invoicesExportDoc } from '../invoices-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -98,6 +100,22 @@ export function InvoicesPage() {
 
   const activeFilters =
     (customerId ? 1 : 0) + (salesmanId ? 1 : 0) + (settlement ? 1 : 0)
+
+  // The printed page has to carry the same warning the screen does. A capped
+  // read totals part of the book, and on paper there is no amber banner above
+  // the table to say so — the note goes in the subtitle or it is lost.
+  const exportFilters = useMemo(
+    () => [
+      debouncedSearch.trim() && `Search “${debouncedSearch.trim()}”`,
+      customerId &&
+        `Customer: ${customers.find((c) => String(c.id) === customerId)?.name ?? customerId}`,
+      salesmanId &&
+        `Salesman: ${salesmen.find((s) => String(s.id) === salesmanId)?.name ?? salesmanId}`,
+      settlement && (settlement === 'paid' ? 'Settled only' : 'Unsettled only'),
+      truncated && 'Partial read — most recent invoices only',
+    ],
+    [debouncedSearch, customerId, salesmanId, settlement, truncated, customers, salesmen],
+  )
 
   const columns: Column<Invoice & Record<string, unknown>>[] = [
     {
@@ -211,6 +229,13 @@ export function InvoicesPage() {
       <PageHeader
         title="Invoices"
         subtitle="Every invoice raised, with what has been collected against each."
+        actions={
+          <ExportPdfButton
+            variant="outline"
+            disabled={isLoading || isError}
+            build={() => invoicesExportDoc(filtered, invoices.length, exportFilters)}
+          />
+        }
       />
 
       <StatStrip stats={stats} loading={isLoading} />

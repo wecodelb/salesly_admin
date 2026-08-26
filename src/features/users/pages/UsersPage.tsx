@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { UserPlus, Pencil, Trash2, Ban, CircleCheck, ShieldCheck } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { usersExportDoc } from '../users-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
@@ -223,11 +225,23 @@ export function UsersPage() {
         title="Users"
         subtitle="Team members, roles, and permissions"
         actions={
-          canEdit ? (
-            <Button icon={<UserPlus size={16} />} onClick={openCreate}>
-              Create user
-            </Button>
-          ) : undefined
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() =>
+                usersExportDoc(filtered, users.length, [
+                  debouncedSearch.trim() && `Search “${debouncedSearch.trim()}”`,
+                  roleFilter && `Role: ${roleFilter}`,
+                ])
+              }
+            />
+            {canEdit && (
+              <Button icon={<UserPlus size={16} />} onClick={openCreate}>
+                Create user
+              </Button>
+            )}
+          </>
         }
       />
 

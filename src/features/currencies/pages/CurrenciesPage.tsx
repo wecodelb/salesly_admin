@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Coins, Eye, MoreVertical, Pencil, Plus, Trash2, TrendingUp } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { currenciesExportDoc } from '../currencies-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
 import { Modal } from '@/shared/components/Modal/Modal'
@@ -296,8 +298,16 @@ export function CurrenciesPage() {
             ? `Local currency: ${base.name} (${base.code}). Every other currency converts against it.`
             : 'No local currency set yet — mark one to start converting rates.'
         }
-        // No action here: each panel below carries its own "New …" button, and
-        // a third one up here would be ambiguous about which it adds to.
+        // Export only. Each panel below carries its own "New …" button, and a
+        // third one up here would be ambiguous about which it adds to —
+        // exporting the catalog is not, because there is only one catalog.
+        actions={
+          <ExportPdfButton
+            variant="outline"
+            disabled={isLoading || isError}
+            build={() => currenciesExportDoc(currencies, currencies.length)}
+          />
+        }
       />
 
       <StatStrip stats={stats} loading={isLoading} />

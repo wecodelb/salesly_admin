@@ -20,6 +20,8 @@ import {
   UserX,
 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { customersExportDoc } from '../customers-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { KpiCard } from '@/shared/components/KpiCard/KpiCard'
@@ -195,6 +197,40 @@ export function CustomersPage() {
     statusFilter,
     verifiedFilter,
   ].filter(Boolean).length
+
+  // Said in words on the printed page. The filters are obvious on screen — the
+  // selects are right there — and invisible on a sheet of paper, where a
+  // narrowed list read as the whole book is how a total gets acted on wrongly.
+  const exportFilters = useMemo(() => {
+    const salesmanName =
+      salesmanFilter === 'unassigned'
+        ? 'Unassigned'
+        : salesmen.find((s) => String(s.id) === salesmanFilter)?.name
+    const groupName =
+      customerGroupFilter === 'unset'
+        ? 'Ungrouped'
+        : customerGroups.find((g) => String(g.id) === customerGroupFilter)?.name
+
+    return [
+      debouncedSearch.trim() && `Search “${debouncedSearch.trim()}”`,
+      salesmanFilter && `Salesman: ${salesmanName ?? salesmanFilter}`,
+      customerGroupFilter && `Group: ${groupName ?? customerGroupFilter}`,
+      creditFilter === 'due' && 'With balance',
+      creditFilter === 'over' && 'Over limit',
+      statusFilter && (statusFilter === 'active' ? 'Active only' : 'Inactive only'),
+      verifiedFilter &&
+        (verifiedFilter === 'verified' ? 'Verified only' : 'Unverified only'),
+    ]
+  }, [
+    debouncedSearch,
+    salesmanFilter,
+    customerGroupFilter,
+    creditFilter,
+    statusFilter,
+    verifiedFilter,
+    salesmen,
+    customerGroups,
+  ])
 
   const clearFilters = () => {
     setSalesmanFilter('')
@@ -490,6 +526,13 @@ export function CustomersPage() {
                 Demo data — backend part 1 pending
               </span>
             )}
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() =>
+                customersExportDoc(filtered, customers.length, exportFilters)
+              }
+            />
             {canCreate && (
               <Button icon={<Plus size={16} />} onClick={openCreate}>
                 New customer

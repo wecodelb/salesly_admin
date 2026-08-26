@@ -111,3 +111,27 @@ export function rangeLabel(from: string, to: string): string {
 
   return `${day(from)} – ${day(to)}`
 }
+
+/**
+ * The line printed under a report's title: how much of the whole it is, then
+ * the filters that narrowed it.
+ *
+ * The "of 310" half is the important one. A filtered page with no such note
+ * reads as the complete book, and somebody totals it and acts on the total.
+ */
+export function scopeLine(
+  shown: number,
+  total: number,
+  noun: string,
+  filters: Array<string | false | null | undefined> = [],
+): string {
+  const scope =
+    shown === total ? `${qty(total)} ${noun}` : `${qty(shown)} of ${qty(total)} ${noun}`
+
+  return [scope, ...filters.filter(Boolean)].join(' · ')
+}
+
+/** Adds the numbers a report column totals, ignoring the holes. */
+export function sum<T>(rows: T[], pick: (row: T) => number | null | undefined): number {
+  return rows.reduce((acc, row) => acc + (pick(row) || 0), 0)
+}

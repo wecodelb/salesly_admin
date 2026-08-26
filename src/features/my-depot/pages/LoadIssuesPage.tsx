@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CheckCircle2, Send, Truck } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { depotExportDoc } from '../depot-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -181,6 +183,21 @@ export function LoadIssuesPage() {
       <PageHeader
         title="Load issues"
         subtitle="Every load the warehouse raised — what went out, and whether the salesman has signed for it."
+        actions={
+          <ExportPdfButton
+            variant="outline"
+            disabled={isLoading || isError}
+            build={() =>
+              depotExportDoc(
+                filtered,
+                transfers.length,
+                debouncedSearch,
+                statusFilter && `Status: ${statusFilter}`,
+                'issues',
+              )
+            }
+          />
+        }
       />
 
       <StatStrip stats={stats} loading={isLoading} />

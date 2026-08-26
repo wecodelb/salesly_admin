@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle2, Pencil, Percent, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { promotionsExportDoc } from '../promotions-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { KpiCard } from '@/shared/components/KpiCard/KpiCard'
 import { Button } from '@/shared/components/Button'
@@ -141,9 +143,16 @@ export function PromotionsPage() {
         title="Promotions"
         subtitle="Discounts across the catalog"
         actions={
-          <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-            New promotion
-          </Button>
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => promotionsExportDoc(promotions, promotions.length)}
+            />
+            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+              New promotion
+            </Button>
+          </>
         }
       />
 

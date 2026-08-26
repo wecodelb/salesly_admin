@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Boxes, MoreVertical, Pencil, Plus, Ruler, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { uomsExportDoc } from '../uoms-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
@@ -170,11 +172,18 @@ export function UomsPage() {
         title="Units"
         subtitle="The units your products are measured and sold in — piece, box, kg and so on."
         actions={
-          canManage ? (
-            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-              New unit
-            </Button>
-          ) : undefined
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => uomsExportDoc(filtered, uoms.length, search)}
+            />
+            {canManage && (
+              <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+                New unit
+              </Button>
+            )}
+          </>
         }
       />
 

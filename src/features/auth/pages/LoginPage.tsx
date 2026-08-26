@@ -24,7 +24,7 @@ interface LoginResponse {
       name: string
       email: string
       image?: string
-      companies: unknown[]
+      companies: { id: number; name: string }[]
       role?: { name: string; permissions: Permission[] }
       permissions?: Permission[]
     }
@@ -78,7 +78,16 @@ export function LoginPage() {
 
       setAuth(
         token,
-        { id: String(user.id), name: user.name, email: user.email, avatar: user.image },
+        {
+          id: String(user.id),
+          name: user.name,
+          email: user.email,
+          avatar: user.image,
+          // Printed on every exported PDF. The console is per-company, so the
+          // first membership is the only one — and a report headed "Salesly"
+          // rather than the distributor's own name reads as somebody else's.
+          company: user.companies[0]?.name,
+        },
         role,
         permissions,
       )

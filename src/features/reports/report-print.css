@@ -181,6 +181,18 @@
   display: none;
 }
 
+/*
+ * A document carried by a screen purely so it can be printed.
+ *
+ * Every list screen exports itself by rendering this same document off-screen
+ * rather than by generating a file of its own. One layout, printed from
+ * wherever it was asked for, so a customers PDF run from the Customers page and
+ * one run from Reports cannot look like two different systems.
+ */
+.report-doc.is-print-only {
+  display: none;
+}
+
 /* ── On paper ────────────────────────────────────────────────────────── */
 
 @media print {
@@ -193,6 +205,11 @@
   .report-doc,
   .report-doc * {
     visibility: visible;
+  }
+
+  /* Hidden on screen, and on paper it is the only thing there. */
+  .report-doc.is-print-only {
+    display: block;
   }
 
   .report-doc {

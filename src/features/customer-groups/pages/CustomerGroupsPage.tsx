@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { BadgeCheck, MoreVertical, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { customerGroupsExportDoc } from '../customer-groups-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
@@ -169,11 +171,18 @@ export function CustomerGroupsPage() {
         title="Customer groups"
         subtitle="The labels your team classifies customers with. The customer form picks from this list, in the order you set here."
         actions={
-          canManage ? (
-            <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-              New group
-            </Button>
-          ) : undefined
+          <>
+            <ExportPdfButton
+              variant="outline"
+              disabled={isLoading || isError}
+              build={() => customerGroupsExportDoc(filtered, groups.length, debouncedSearch)}
+            />
+            {canManage && (
+              <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+                New group
+              </Button>
+            )}
+          </>
         }
       />
 
