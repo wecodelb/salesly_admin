@@ -33,7 +33,14 @@ interface FormState {
 
   /// What one unit of the local currency buys of this one, typed at creation.
   rate: string
+
+  /// The day that opening rate comes into force. Same field the New rate
+  /// panel carries, so a currency and a rate are described the same way.
+  effectiveFrom: string
 }
+
+/** Same helper the New rate panel uses, so both open on today. */
+const today = () => new Date().toISOString().slice(0, 10)
 
 const EMPTY: FormState = {
   code: '',
@@ -43,6 +50,7 @@ const EMPTY: FormState = {
   symbolPosition: 'before',
   isBase: false,
   rate: '',
+  effectiveFrom: today(),
 }
 
 export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
@@ -72,9 +80,12 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
         // currency — changing one means recording a new one on the panel
         // beside this, so the whole history stays readable.
         rate: '',
+        effectiveFrom: today(),
       })
     } else {
-      setForm(EMPTY)
+      // Re-read today on every open: a drawer left closed overnight would
+      // otherwise still offer yesterday.
+      setForm({ ...EMPTY, effectiveFrom: today() })
     }
     setErrors({})
   }, [open, currency])
@@ -103,6 +114,8 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
       const rate = Number(form.rate)
       if (form.rate.trim() === '' || Number.isNaN(rate) || rate <= 0)
         e.rate = 'Enter what 1 ' + (baseCode ?? 'unit of the local currency') + ' buys'
+
+      if (!form.effectiveFrom) e.effectiveFrom = 'Pick a start date'
     }
 
     setErrors(e)
@@ -144,7 +157,9 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
           // Sent with the currency rather than posted after it: the server
           // writes both in one transaction, so the catalog can never hold an
           // active currency that nothing is able to convert.
-          ...(form.isBase ? {} : { rate: Number(form.rate) }),
+          ...(form.isBase
+            ? {}
+            : { rate: Number(form.rate), effective_at: form.effectiveFrom }),
         } as CreateCurrencyPayload)
         return created.id
       },
@@ -273,20 +288,66 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
               </p>
             ) : (
               <>
+                {/* Written out as the sentence it is — local currency, the
+                    number, then what one of it buys — so there is never a
+                    question of which way round the figure goes. Deliberately
+                    identical to the New rate panel: it is the same statement
+                    about the same thing, and two layouts for one sentence is
+                    how an admin ends up entering it backwards in one of them. */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm text-[var(--text-primary)] whitespace-nowrap">
+                      1 {baseCode ?? 'local'}
+                    </span>
+                    <span className="font-mono text-sm text-[var(--text-muted)]">=</span>
+                    <div className="flex-1 min-w-0">
+                      <Input
+                        type="number"
+                        min={0}
+                        step="any"
+                        value={form.rate}
+                        onChange={(e) => set('rate', e.target.value)}
+                        aria-label={`1 ${baseCode ?? 'local currency'} = ? ${
+                          form.code.trim() || 'currency'
+                        }`}
+                        aria-describedby={errors.rate ? 'currency-rate-error' : undefined}
+                        placeholder="89500"
+                        className={errors.rate ? 'border-[var(--accent-red)]' : ''}
+                      />
+                    </div>
+                    {/* The code as it is being typed. Falls back to the same
+                        muted placeholder the rate panel uses before a currency
+                        is picked. */}
+                    <span
+                      className={[
+                        'font-mono text-sm whitespace-nowrap',
+                        form.code.trim()
+                          ? 'text-[var(--text-primary)]'
+                          : 'text-[var(--text-muted)]',
+                      ].join(' ')}
+                    >
+                      {form.code.trim() || 'currency'}
+                    </span>
+                  </div>
+                  {errors.rate && (
+                    <p id="currency-rate-error" className="text-xs text-[var(--accent-red)]">
+                      {errors.rate}
+                    </p>
+                  )}
+                </div>
+
                 <Input
-                  label={`What does 1 ${baseCode ?? 'unit of the local currency'} buy?`}
-                  type="number"
-                  min={0}
-                  step="any"
-                  value={form.rate}
-                  onChange={(e) => set('rate', e.target.value)}
-                  error={errors.rate}
-                  placeholder="89500"
+                  label="From"
+                  type="date"
+                  value={form.effectiveFrom}
+                  onChange={(e) => set('effectiveFrom', e.target.value)}
+                  error={errors.effectiveFrom}
                 />
+
                 <p className="-mt-2 text-xs text-[var(--text-muted)]">
-                  Required. A currency with no rate cannot be converted, so it would not appear on a
-                  salesman’s collect screen and could not be priced on a receipt. You can record a
-                  new rate any time on the panel beside this — this one just gets it started.
+                  A currency with no rate cannot be converted, so it would not appear on a
+                  salesman’s collect screen and could not be priced on a receipt. Later rates go on
+                  the Exchange rates panel — this one just gets it started.
                 </p>
               </>
             )}
