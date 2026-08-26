@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -35,6 +36,13 @@ function clockTime(iso: string): string {
   return at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 }
 
+/** "12 Mar" — for naming a single day that is not today. */
+function shortDay(iso: string): string {
+  const at = new Date(`${iso}T00:00:00`)
+  if (Number.isNaN(at.getTime())) return iso
+  return at.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
 /**
  * The manager's cockpit, at company scope.
  *
@@ -49,10 +57,59 @@ function clockTime(iso: string): string {
  * was the single number on this screen a manager would have acted on. What is
  * shown instead is what is genuinely known: the balance, and whether it has
  * passed the credit limit somebody actually set.
+ *
+ * Every figure answers the same window. The cards, the trend and the ranking
+ * all follow the dates at the top, and the cards say which period they are —
+ * a "Sales today" heading over last week's figure is the kind of quiet mismatch
+ * that teaches people not to trust a dashboard.
+ *
+ * What is deliberately never dated is what customers owe. A balance is true
+ * now, not as at last Tuesday, and narrowing it to the window would report a
+ * debt that has since been paid.
  */
+
+/** The windows a manager actually asks for, as offsets from today. */
+const PRESETS: { label: string; days: number }[] = [
+  { label: 'Today', days: 1 },
+  { label: '7 days', days: 7 },
+  { label: '30 days', days: 30 },
+  { label: '90 days', days: 90 },
+]
+
+const isoDay = (offsetDays = 0): string => {
+  const at = new Date()
+  at.setDate(at.getDate() - offsetDays)
+  return at.toISOString().slice(0, 10)
+}
+
 export function DashboardPage() {
   const navigate = useNavigate()
-  const { data, isLoading, isError, refetch, isFetching } = useDashboardSummary()
+
+  // Empty means today — the server's own default, so a first load asks for
+  // nothing and gets what this screen has always shown.
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+
+  const { data, isLoading, isError, refetch, isFetching } = useDashboardSummary({
+    from: from || undefined,
+    to: to || undefined,
+  })
+
+  const applyPreset = (days: number) => {
+    if (days === 1) {
+      setFrom('')
+      setTo('')
+      return
+    }
+    setFrom(isoDay(days - 1))
+    setTo(isoDay(0))
+  }
+
+  /** Which preset, if any, the current window matches — so one can look chosen. */
+  const activePreset = (days: number): boolean => {
+    if (days === 1) return !from && !to
+    return from === isoDay(days - 1) && to === isoDay(0)
+  }
 
   const openCustomer = (customerId: number | null) => {
     if (customerId != null) navigate(`/customers/${customerId}`)
@@ -71,7 +128,22 @@ export function DashboardPage() {
     )
   }
 
-  const today = data?.today
+  const totals = data?.totals
+
+  /**
+   * What the cards call the window.
+   *
+   * A card headed "Sales today" is telling a lie the moment somebody picks last
+   * week, and a figure that misnames its own period is worse than one carrying
+   * no period at all — the reader has no way to know it moved.
+   */
+  const periodWord = !data
+    ? ''
+    : data.period.is_today
+      ? 'today'
+      : data.period.days === 1
+        ? `on ${shortDay(data.period.from)}`
+        : `· ${data.period.days} days`
 
   return (
     <>
@@ -91,40 +163,94 @@ export function DashboardPage() {
         }
       />
 
-      {/* The four figures of the day, each against yesterday. */}
+      {/* The window everything below answers to. Presets first because they are
+          what gets used; the two dates are there for the month somebody has to
+          reconcile. */}
+      <div className="mb-6 flex flex-wrap items-end gap-3 rounded-[var(--radius-card)] bg-[var(--bg-surface)] p-3 shadow-[var(--shadow-card)]">
+        <div className="flex flex-wrap gap-1.5">
+          {PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => applyPreset(preset.days)}
+              className={[
+                'rounded-[var(--radius-pill)] px-3 py-1.5 text-xs font-semibold transition-colors',
+                activePreset(preset.days)
+                  ? 'bg-[var(--accent-primary)] text-white'
+                  : 'bg-[var(--bg-surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+              ].join(' ')}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="ml-auto flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
+              From
+            </span>
+            <input
+              type="date"
+              value={from}
+              max={to || undefined}
+              onChange={(e) => setFrom(e.target.value)}
+              className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-1 text-xs text-[var(--text-primary)]"
+            />
+          </label>
+          <label className="flex flex-col gap-0.5">
+            <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--text-muted)]">
+              To
+            </span>
+            <input
+              type="date"
+              value={to}
+              min={from || undefined}
+              onChange={(e) => setTo(e.target.value)}
+              className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-1 text-xs text-[var(--text-primary)]"
+            />
+          </label>
+          {data && !data.period.is_today && (
+            <span className="pb-1 text-[11px] text-[var(--text-muted)]">
+              vs {shortDay(data.period.compared_from)} – {shortDay(data.period.compared_to)}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* The four figures for the window, each against the window before it. */}
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          title="Sales today"
-          value={today ? money(today.sales.value) : '—'}
-          change={today?.sales.change}
+          title={`Sales ${periodWord}`}
+          value={totals ? money(totals.sales.value) : '—'}
+          change={totals?.sales.change}
           icon={<DollarSign size={18} />}
           accent="primary"
           loading={isLoading}
         />
         <StatCard
-          title="Orders today"
-          value={today ? String(today.orders.value) : '—'}
-          change={today?.orders.change}
+          title={`Orders ${periodWord}`}
+          value={totals ? String(totals.orders.value) : '—'}
+          change={totals?.orders.change}
           icon={<ShoppingCart size={18} />}
           accent="green"
           loading={isLoading}
         />
         <StatCard
-          title="Collected today"
-          value={today ? money(today.collected.value) : '—'}
-          change={today?.collected.change}
+          title={`Collected ${periodWord}`}
+          value={totals ? money(totals.collected.value) : '—'}
+          change={totals?.collected.change}
           icon={<Wallet size={18} />}
           accent="amber"
           loading={isLoading}
         />
         <StatCard
           title="Visits done"
-          value={today ? `${today.visits.done}/${today.visits.started}` : '—'}
+          value={totals ? `${totals.visits.done}/${totals.visits.started}` : '—'}
           footnote={
-            today
-              ? today.visits.started === 0
-                ? 'No calls started today'
-                : `${today.visits.started - today.visits.done} still open`
+            totals
+              ? totals.visits.started === 0
+                ? 'No calls started'
+                : `${totals.visits.started - totals.visits.done} still open`
               : undefined
           }
           icon={<MapPin size={18} />}
@@ -137,7 +263,7 @@ export function DashboardPage() {
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <section className={`lg:col-span-2 ${CARD}`}>
           <div className="mb-4 flex items-baseline justify-between">
-            <h2 className={SECTION_TITLE}>Sales — last 14 days</h2>
+            <h2 className={SECTION_TITLE}>{data ? `Sales — last ${data.sales_trend.length} days` : 'Sales trend'}</h2>
             <span className="font-mono text-xs text-[var(--text-muted)]">
               {data
                 ? money(data.sales_trend.reduce((sum, d) => sum + d.value, 0)) + ' total'
@@ -152,7 +278,7 @@ export function DashboardPage() {
         </section>
 
         <section className={CARD}>
-          <h2 className={`${SECTION_TITLE} mb-4`}>Top salesmen — this week</h2>
+          <h2 className={`${SECTION_TITLE} mb-4`}>{periodWord ? `Top salesmen ${periodWord}` : 'Top salesmen'}</h2>
           {isLoading || !data ? (
             <div className="flex flex-col gap-4">
               {Array.from({ length: 4 }).map((_, i) => (

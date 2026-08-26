@@ -1,0 +1,259 @@
+/*
+ * How a report looks on screen, and how it looks on paper.
+ *
+ * The two are deliberately close but not identical. On screen it sits on the
+ * console's surface with the sidebar beside it; printed, everything that is not
+ * the report is gone and the page belongs to the document alone.
+ *
+ * The rules that matter for print are the ones nobody notices when they work:
+ * headings repeating on every page, a group never orphaned from its first rows,
+ * and a table row never split across a page break. Get those wrong and the PDF
+ * is technically correct and unusable.
+ */
+
+/* ── On screen ───────────────────────────────────────────────────────── */
+
+.report-doc {
+  background: #fff;
+  color: #111827;
+  padding: 28px 32px;
+  border-radius: var(--radius-card, 12px);
+  box-shadow: var(--shadow-card, 0 1px 3px rgb(0 0 0 / 0.1));
+  /* A4 proportions on screen, so what is laid out is what prints. */
+  max-width: 900px;
+  margin: 0 auto;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.report-masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #0a3d8f;
+  margin-bottom: 16px;
+}
+
+.report-company {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0a3d8f;
+  margin: 0;
+}
+
+.report-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 2px 0 0;
+  color: #111827;
+}
+
+.report-subtitle {
+  font-size: 11px;
+  color: #6b7280;
+  margin: 3px 0 0;
+}
+
+.report-stamp {
+  text-align: right;
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.report-stamp p {
+  margin: 0;
+}
+
+.report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+  padding: 10px 14px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 18px;
+}
+
+.report-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.report-summary-label {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.report-summary-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-group {
+  margin-bottom: 20px;
+}
+
+.report-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.report-group-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0a3d8f;
+  margin: 0;
+}
+
+.report-group-caption {
+  font-size: 10px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-table th,
+.report-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+}
+
+.report-table th {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #9ca3af;
+  font-weight: 700;
+}
+
+/* Figures line up under one another or they cannot be scanned down a column. */
+.report-table .is-money,
+.report-table .is-number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.report-table .is-date {
+  white-space: nowrap;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background: #fafafa;
+}
+
+.report-table tfoot td {
+  font-weight: 700;
+  border-top: 1px solid #9ca3af;
+  border-bottom: none;
+  background: #f9fafb;
+}
+
+.report-empty {
+  padding: 40px 0;
+  text-align: center;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.report-footer {
+  display: none;
+}
+
+/* ── On paper ────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Everything that is not the report. The console's shell, the sidebar, the
+     controls that produced this — none of it belongs on the page. */
+  body * {
+    visibility: hidden;
+  }
+
+  .report-doc,
+  .report-doc * {
+    visibility: visible;
+  }
+
+  .report-doc {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    max-width: none;
+    box-shadow: none;
+    border-radius: 0;
+    font-size: 10.5px;
+  }
+
+  /* The masthead repeats at the top of every sheet: a page four found loose in
+     a folder has to say what it is and whose it is. */
+  .report-masthead {
+    position: running(masthead);
+  }
+
+  @page {
+    size: A4;
+    margin: 14mm 12mm 16mm;
+  }
+
+  /* A heading with no rows under it is an orphan; a group split immediately
+     after its title reads as an empty section. */
+  .report-group {
+    break-inside: auto;
+  }
+
+  .report-group-head {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  /* What actually makes a long table readable across pages. */
+  .report-table thead {
+    display: table-header-group;
+  }
+
+  .report-table tfoot {
+    display: table-footer-group;
+  }
+
+  .report-table tr {
+    break-inside: avoid;
+  }
+
+  /* Zebra striping costs toner and adds nothing on paper, where the hairlines
+     are already doing the work. */
+  .report-table tbody tr:nth-child(even) {
+    background: transparent;
+  }
+
+  .report-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #6b7280;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 4px;
+    margin-top: 10px;
+  }
+}

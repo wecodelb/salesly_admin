@@ -25,7 +25,7 @@ export interface VisitProgress {
   started: number
 }
 
-export interface TodayBlock {
+export interface PeriodTotals {
   sales: Metric
   orders: Metric
   collected: Metric
@@ -90,7 +90,17 @@ export interface Outstanding {
 export interface DashboardSummary {
   generated_at: string
   currency: string
-  today: TodayBlock
+  /** What was asked for, echoed back — so the screen can say which period
+   *  these figures are, rather than leaving them to be assumed as today. */
+  period: {
+    from: string
+    to: string
+    days: number
+    is_today: boolean
+    compared_from: string
+    compared_to: string
+  }
+  totals: PeriodTotals
   sales_trend: TrendPoint[]
   top_salesmen: SalesmanTotal[]
   recent_orders: RecentOrder[]

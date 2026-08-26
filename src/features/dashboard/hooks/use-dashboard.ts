@@ -12,10 +12,12 @@ const DASHBOARD_KEY = ['admin-dashboard-summary'] as const
  * often a manager glances at it and nowhere near often enough to matter to the
  * database.
  */
-export function useDashboardSummary() {
+export function useDashboardSummary(range: { from?: string; to?: string } = {}) {
   return useQuery({
-    queryKey: DASHBOARD_KEY,
-    queryFn: fetchDashboardSummary,
+    // The window is part of the key: two periods are two answers, and sharing
+    // one cache entry would show last week the figures for today.
+    queryKey: [...DASHBOARD_KEY, range.from ?? null, range.to ?? null],
+    queryFn: () => fetchDashboardSummary(range),
     refetchInterval: 60_000,
     refetchOnWindowFocus: true,
     // A stale figure on screen beats a spinner replacing one: while a refetch

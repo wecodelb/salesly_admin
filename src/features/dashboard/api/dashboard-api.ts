@@ -15,7 +15,16 @@ interface Envelope<T> {
  * takings only mean something beside yesterday's — and eight round trips would
  * let the cards disagree with each other while they landed one by one.
  */
-export async function fetchDashboardSummary(): Promise<DashboardSummary> {
-  const res = await apiClient.get<Envelope<DashboardSummary>>(ENDPOINTS.DASHBOARD_SUMMARY)
+export async function fetchDashboardSummary(
+  range: { from?: string; to?: string } = {},
+): Promise<DashboardSummary> {
+  const res = await apiClient.get<Envelope<DashboardSummary>>(ENDPOINTS.DASHBOARD_SUMMARY, {
+    // Omitted rather than sent empty: the server defaults to today, and a blank
+    // date on the query string is a different thing from no date at all.
+    params: {
+      ...(range.from ? { from: range.from } : {}),
+      ...(range.to ? { to: range.to } : {}),
+    },
+  })
   return res.data.data
 }

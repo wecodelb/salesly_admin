@@ -16,7 +16,15 @@ import type { DashboardSummary } from '../types'
 const BASE: DashboardSummary = {
   generated_at: '2026-08-19T11:55:02+00:00',
   currency: 'USD',
-  today: {
+  period: {
+    from: '2026-08-19',
+    to: '2026-08-19',
+    days: 1,
+    is_today: true,
+    compared_from: '2026-08-18',
+    compared_to: '2026-08-18',
+  },
+  totals: {
     sales: { value: 4280, previous: 3820, change: 12 },
     orders: { value: 32, previous: 30, change: 6.7 },
     collected: { value: 1150, previous: 1200, change: -4.2 },
@@ -135,8 +143,8 @@ describe('DashboardPage', () => {
   it('shows a dash, never a percentage, when yesterday was nothing', async () => {
     await renderDashboard({
       ...BASE,
-      today: {
-        ...BASE.today,
+      totals: {
+        ...BASE.totals,
         sales: { value: 500, previous: 0, change: null },
       },
     })
