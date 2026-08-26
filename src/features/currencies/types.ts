@@ -33,6 +33,17 @@ export interface CreateCurrencyPayload {
   decimal_places?: number
   symbol_position?: SymbolPosition
   is_base?: boolean
+
+  /** What one unit of the local currency buys of this one.
+   *
+   *  Required by the server unless this is the local currency itself, and
+   *  written in the same transaction as the currency — so the catalog can never
+   *  hold an active currency nothing is able to convert. */
+  rate?: number
+
+  /** Backdates the opening rate, for a catalog being brought in line with books
+   *  that already exist. Defaults to now. */
+  effective_at?: string
 }
 
 /** The code is set once at creation — the backend rejects any update carrying

@@ -5,7 +5,11 @@ import { Select } from '@/shared/components/Select'
 import { Button } from '@/shared/components/Button'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
-import { useCreateCurrency, useUpdateCurrency } from '../hooks/use-currencies'
+import {
+  useCreateCurrency,
+  useCurrencies,
+  useUpdateCurrency,
+} from '../hooks/use-currencies'
 import type {
   CreateCurrencyPayload,
   Currency,
@@ -26,6 +30,9 @@ interface FormState {
   decimalPlaces: string
   symbolPosition: SymbolPosition
   isBase: boolean
+
+  /// What one unit of the local currency buys of this one, typed at creation.
+  rate: string
 }
 
 const EMPTY: FormState = {
@@ -35,11 +42,16 @@ const EMPTY: FormState = {
   decimalPlaces: '2',
   symbolPosition: 'before',
   isBase: false,
+  rate: '',
 }
 
 export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
   const isEdit = !!currency
   const { run } = useActionProgress()
+  const { data: currencies = [] } = useCurrencies()
+  // What the rate is quoted against, so the field can say so rather than
+  // leaving the admin to guess which way round the number goes.
+  const baseCode = currencies.find((c) => c.is_base)?.code
   const createCurrency = useCreateCurrency()
   const updateCurrency = useUpdateCurrency()
 
@@ -56,6 +68,10 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
         decimalPlaces: String(currency.decimal_places ?? 2),
         symbolPosition: currency.symbol_position ?? 'before',
         isBase: currency.is_base,
+        // Not editable here. A rate is a dated record, not a property of the
+        // currency — changing one means recording a new one on the panel
+        // beside this, so the whole history stays readable.
+        rate: '',
       })
     } else {
       setForm(EMPTY)
@@ -76,6 +92,18 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
     const dp = Number(form.decimalPlaces)
     if (form.decimalPlaces.trim() === '' || Number.isNaN(dp) || dp < 0 || dp > 6)
       e.decimalPlaces = 'Enter a number between 0 and 6'
+
+    // A new currency arrives with its rate or not at all. Without one it cannot
+    // be converted, so it is invisible to the salesman's collect screen and
+    // unusable on a receipt — a currency that appears in this list and then
+    // silently does not work anywhere is worse than one nobody created.
+    //
+    // The local currency is exempt: it is worth one of itself.
+    if (!isEdit && !form.isBase) {
+      const rate = Number(form.rate)
+      if (form.rate.trim() === '' || Number.isNaN(rate) || rate <= 0)
+        e.rate = 'Enter what 1 ' + (baseCode ?? 'unit of the local currency') + ' buys'
+    }
 
     setErrors(e)
     return Object.keys(e).length === 0
@@ -113,6 +141,10 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
         const created = await createCurrency.mutateAsync({
           ...shared,
           code: form.code.trim().toUpperCase(),
+          // Sent with the currency rather than posted after it: the server
+          // writes both in one transaction, so the catalog can never hold an
+          // active currency that nothing is able to convert.
+          ...(form.isBase ? {} : { rate: Number(form.rate) }),
         } as CreateCurrencyPayload)
         return created.id
       },
@@ -221,14 +253,44 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
         </section>
 
         {!form.isBase && (
-          // Rates live in their own section on the Currencies screen, not in
-          // here: a rate is a dated entry in a history that keeps growing,
-          // while this drawer describes what the currency *is* — one is edited
-          // once in a while, the other every time the market moves.
-          <p className="text-xs text-[var(--text-muted)] border-t border-[var(--border-default)] pt-4">
-            Exchange rates are set in the Exchange rates panel on the Currencies screen, where each
-            new rate is added to this currency’s history.
-          </p>
+          <section className="flex flex-col gap-4 border-t border-[var(--border-default)] pt-5">
+            <h3
+              className="text-sm font-semibold tracking-wide text-[var(--heading-accent)]"
+              style={{ textShadow: '0 0 14px var(--heading-glow)' }}
+            >
+              Opening rate
+            </h3>
+
+            {isEdit ? (
+              // A rate is a dated entry in a history that keeps growing, while
+              // this drawer describes what the currency *is*. Changing one is
+              // recording a new one, which is what the panel beside this does —
+              // editing the number in place would rewrite what past documents
+              // were priced at.
+              <p className="text-xs text-[var(--text-muted)]">
+                Rates change in the Exchange rates panel on this screen, where each new one is added
+                to this currency’s history.
+              </p>
+            ) : (
+              <>
+                <Input
+                  label={`What does 1 ${baseCode ?? 'unit of the local currency'} buy?`}
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={form.rate}
+                  onChange={(e) => set('rate', e.target.value)}
+                  error={errors.rate}
+                  placeholder="89500"
+                />
+                <p className="-mt-2 text-xs text-[var(--text-muted)]">
+                  Required. A currency with no rate cannot be converted, so it would not appear on a
+                  salesman’s collect screen and could not be priced on a receipt. You can record a
+                  new rate any time on the panel beside this — this one just gets it started.
+                </p>
+              </>
+            )}
+          </section>
         )}
       </div>
     </SideDrawer>
