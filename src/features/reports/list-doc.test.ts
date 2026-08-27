@@ -12,7 +12,7 @@ import { uomsExportDoc } from '@/features/uoms/uoms-export'
 import { warehousesExportDoc } from '@/features/warehouses/warehouses-export'
 import { listDoc, searchNote } from './list-doc'
 import type { Area } from '@/features/areas/types'
-import type { Currency } from '@/features/products/types'
+import type { Currency, ExchangeRate } from '@/features/currencies/types'
 import type { CustomerGroup } from '@/features/customer-groups/types'
 import type { DepotTransfer } from '@/features/my-depot/types'
 import type { PriceList } from '@/features/price-lists/types'
@@ -183,38 +183,124 @@ describe('currencies', () => {
       ...over,
     }) as Currency
 
-  it('renders a sample on the side the symbol actually sits', () => {
-    const col = currenciesExportDoc([], 0).columns.find(
-      (c) => c.header === 'Renders as',
-    )!
+  const rate = (over: Partial<ExchangeRate> = {}) =>
+    ({
+      id: 1,
+      currency_id: 2,
+      currency: { id: 2, code: 'LBP', symbol: 'L.L' },
+      rate: 89500,
+      effective_at: '2026-01-01',
+      effective_to: null,
+      created_by_name: 'Admin',
+      created_at: '2026-01-01 09:00',
+      ...over,
+    }) as ExchangeRate
 
-    expect(col.value(currency())).toBe('$1.00')
-    expect(col.value(currency({ symbol: 'ل.ل', symbol_position: 'after' }))).toBe(
-      '1.00ل.ل',
-    )
+  type Doc = ReturnType<typeof currenciesExportDoc>
+
+  const catalog = (doc: Doc) => doc.groups.find((g) => g.key === 'catalog')!
+  const history = (doc: Doc) => doc.groups.find((g) => g.key === 'rates')
+
+  /** One printed cell of one group, by column heading. */
+  const cell = (group: Doc['groups'][number], header: string, index = 0) =>
+    group.columns!.find((c) => c.header === header)!.value(group.rows[index])
+
+  it('renders a sample on the side the symbol actually sits', () => {
+    const doc = currenciesExportDoc([
+      currency(),
+      currency({ id: 2, symbol: 'ل.ل', symbol_position: 'after' }),
+    ])
+
+    expect(cell(catalog(doc), 'Renders as', 0)).toBe('$1.00')
+    expect(cell(catalog(doc), 'Renders as', 1)).toBe('1.00ل.ل')
   })
 
   it('drops the decimals for a currency that has none', () => {
-    const col = currenciesExportDoc([], 0).columns.find(
-      (c) => c.header === 'Renders as',
-    )!
+    const doc = currenciesExportDoc([
+      currency({ code: 'LBP', symbol: 'L', decimal_places: 0 }),
+    ])
 
-    expect(col.value(currency({ code: 'LBP', symbol: 'L', decimal_places: 0 }))).toBe('L1')
+    expect(cell(catalog(doc), 'Renders as')).toBe('L1')
   })
 
   it('names the base on the page, because every rate is quoted against it', () => {
-    const doc = currenciesExportDoc(
-      [currency(), currency({ id: 2, code: 'EUR', is_base: false })],
-      2,
-    )
+    const doc = currenciesExportDoc([
+      currency(),
+      currency({ id: 2, code: 'EUR', is_base: false }),
+    ])
 
     expect(doc.summary).toContainEqual({ label: 'Base', value: 'USD' })
   })
 
   it('says so rather than printing a blank when no base is set', () => {
-    const doc = currenciesExportDoc([currency({ is_base: false })], 1)
+    const doc = currenciesExportDoc([currency({ is_base: false })])
 
     expect(doc.summary).toContainEqual({ label: 'Base', value: '—' })
+  })
+
+  it('prints the exchange rates as well as the catalog', () => {
+    // A catalog is unusable on paper without the rates it converts at, and a
+    // rate history means nothing without the currency names beside it.
+    const doc = currenciesExportDoc([currency()], [rate()])
+
+    expect(doc.groups.map((g) => g.title)).toEqual(['Currencies', 'Exchange rates'])
+    expect(cell(history(doc)!, 'Rate')).toContain('1 USD = 89,500 LBP')
+  })
+
+  it('gives each table its own columns', () => {
+    // The two are not the same shape, and printing rates under currency
+    // headings would be worse than not printing them at all.
+    const doc = currenciesExportDoc([currency()], [rate()])
+
+    expect(catalog(doc).columns!.map((c) => c.header)).toContain('Symbol')
+    expect(history(doc)!.columns!.map((c) => c.header)).toEqual([
+      'Rate',
+      'In force',
+      'Until',
+      'Recorded',
+    ])
+  })
+
+  it('marks the rate in force by position, not by end date', () => {
+    // Entries recorded while an end date was still asked for left effective_to
+    // null, so that field cannot separate the current rate from the ones it
+    // replaced. Newest-first order is the only trustworthy signal — the same
+    // rule the screen itself uses.
+    const doc = currenciesExportDoc(
+      [currency()],
+      [rate({ id: 2, rate: 90000 }), rate({ id: 1, rate: 89500 })],
+    )
+
+    expect(cell(history(doc)!, 'Rate', 0)).toContain('(current)')
+    expect(cell(history(doc)!, 'Rate', 1)).not.toContain('(current)')
+  })
+
+  it('closes a superseded window where its successor opens', () => {
+    const doc = currenciesExportDoc(
+      [currency()],
+      [
+        rate({ id: 2, rate: 90000, effective_at: '2026-02-01' }),
+        rate({ id: 1, rate: 89500, effective_at: '2026-01-01' }),
+      ],
+    )
+
+    expect(cell(history(doc)!, 'Until', 0)).toBe('still in force')
+    expect(cell(history(doc)!, 'Until', 1)).toBe('2026-02-01')
+  })
+
+  it('leaves the rates table out entirely when there are none', () => {
+    const doc = currenciesExportDoc([currency()], [])
+
+    expect(doc.groups.map((g) => g.key)).toEqual(['catalog'])
+  })
+
+  it('falls back to the company list for a rate with no currency embedded', () => {
+    const doc = currenciesExportDoc(
+      [currency(), currency({ id: 2, code: 'LBP', is_base: false })],
+      [rate({ currency: null })],
+    )
+
+    expect(cell(history(doc)!, 'Rate')).toContain('LBP')
   })
 })
 

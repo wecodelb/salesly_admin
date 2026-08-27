@@ -131,3 +131,51 @@ describe('ExportPdfButton', () => {
     expect(build).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('when the document cannot be built', () => {
+  it('says so on screen instead of doing nothing at all', async () => {
+    // The worst failure this button had: a builder that throws made the click
+    // a no-op — no print, no dialog, no message, nothing in the UI to report.
+    const boom = vi.fn(() => {
+      throw new Error('rate is not a number')
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(<ExportPdfButton build={boom} />)
+    await userEvent.click(button())
+
+    expect(print).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toHaveTextContent(/rate is not a number/)
+  })
+
+  it('leaves the reason in the console for whoever has to fix it', async () => {
+    const boom = vi.fn(() => {
+      throw new Error('boom')
+    })
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(<ExportPdfButton build={boom} />)
+    await userEvent.click(button())
+
+    expect(logged).toHaveBeenCalled()
+  })
+
+  it('clears the message once an export succeeds', async () => {
+    let explode = true
+    const flaky = vi.fn(() => {
+      if (explode) throw new Error('boom')
+      return doc
+    })
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(<ExportPdfButton build={flaky} />)
+    await userEvent.click(button())
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+
+    explode = false
+    await userEvent.click(button())
+
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(print).toHaveBeenCalledOnce()
+  })
+})

@@ -76,7 +76,12 @@ export function ReportDocument<Row>({
       ) : (
         doc.groups
           .filter((group) => group.rows.length > 0)
-          .map((group) => (
+          .map((group) => {
+            // A group may carry its own columns, for a document that prints two
+            // tables of different shapes under one masthead.
+            const cols = group.columns ?? doc.columns
+
+            return (
             <section key={group.key} className="report-group">
               {/* Omitted when a report has one unnamed group — an ungrouped
                   list should not carry a heading that says nothing. */}
@@ -91,7 +96,7 @@ export function ReportDocument<Row>({
 
               <table className="report-table">
                 <colgroup>
-                  {doc.columns.map((col, i) => (
+                  {cols.map((col, i) => (
                     <col key={i} style={col.width ? { width: col.width } : undefined} />
                   ))}
                 </colgroup>
@@ -99,7 +104,7 @@ export function ReportDocument<Row>({
                     the headings at the top of every printed page. */}
                 <thead>
                   <tr>
-                    {doc.columns.map((col, i) => (
+                    {cols.map((col, i) => (
                       <th key={i} className={`is-${col.kind ?? 'text'}`}>
                         {col.header}
                       </th>
@@ -109,7 +114,7 @@ export function ReportDocument<Row>({
                 <tbody>
                   {group.rows.map((row, r) => (
                     <tr key={r}>
-                      {doc.columns.map((col, i) => (
+                      {cols.map((col, i) => (
                         <td key={i} className={`is-${col.kind ?? 'text'}`}>
                           {col.value(row)}
                         </td>
@@ -117,13 +122,13 @@ export function ReportDocument<Row>({
                     </tr>
                   ))}
                 </tbody>
-                {doc.columns.some((c) => c.total) && (
+                {cols.some((c) => c.total) && (
                   <tfoot>
                     <tr>
-                      {doc.columns.map((col, i) => (
+                      {cols.map((col, i) => (
                         <td key={i} className={`is-${col.kind ?? 'text'}`}>
                           {col.total
-                            ? formatTotal(group.rows.reduce((sum, r) => sum + col.total!(r), 0), col.kind)
+                            ? formatTotal(totalOf(group.rows, col.total), col.kind)
                             : i === 0
                               ? 'Total'
                               : ''}
@@ -134,7 +139,8 @@ export function ReportDocument<Row>({
                 )}
               </table>
             </section>
-          ))
+            )
+          })
       )}
 
       <footer className="report-footer">
@@ -143,6 +149,23 @@ export function ReportDocument<Row>({
       </footer>
     </article>
   )
+}
+
+/**
+ * Adds a column down a group, skipping what cannot be added.
+ *
+ * A column's `total` is typed as returning a number, and on a row with a hole
+ * in it — a figure the endpoint left out — it returns undefined instead. Added
+ * naively that makes the whole column total NaN, which prints in the footer as
+ * the word "NaN" and reads as a broken system to whoever is holding the page.
+ * Skipping the bad rows totals what could be totalled, which is both the honest
+ * answer and the one somebody can act on.
+ */
+function totalOf<Row>(rows: Row[], total: (row: Row) => number): number {
+  return rows.reduce((sum, row) => {
+    const value = total(row)
+    return Number.isFinite(value) ? sum + value : sum
+  }, 0)
 }
 
 function formatTotal(value: number, kind: string | undefined): string {

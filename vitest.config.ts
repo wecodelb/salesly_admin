@@ -23,5 +23,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // The export suite renders every list page in the console, several times
+    // each. Those are genuinely slower than a unit test, and at the 5s default
+    // they fail under parallel load while passing on their own — a flake that
+    // teaches people to re-run rather than to read the failure.
+    testTimeout: 20000,
   },
 })

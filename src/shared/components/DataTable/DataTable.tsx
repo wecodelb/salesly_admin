@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ChevronUp, ChevronDown, ChevronsUpDown, Inbox } from 'lucide-react'
 import type { SortState } from '@/core/types/common'
 
@@ -29,6 +29,15 @@ interface Props<T> {
   emptyIcon?: ReactNode
   /** Rendered under the empty message, e.g. a "New category" button. */
   emptyAction?: ReactNode
+  /**
+   * The rows as the table is actually showing them — sorted, in order.
+   *
+   * The sort lives in here rather than in the page, so a page has no other way
+   * to know what its own table looks like. Export needs exactly that: a PDF
+   * printed in a different order from the table it was run from is a PDF nobody
+   * can check against the screen. Fired on a change, not every render.
+   */
+  onVisibleRows?: (rows: T[]) => void
 }
 
 const ALIGN = {
@@ -50,8 +59,13 @@ export function DataTable<T extends Record<string, unknown>>({
   emptyMessage = 'No data found',
   emptyIcon,
   emptyAction,
+  onVisibleRows,
 }: Props<T>) {
   const [sort, setSort] = useState<SortState | null>(null)
+
+  // Read inside the sort without being a dependency of it — see the memo below.
+  const columnsRef = useRef(columns)
+  columnsRef.current = columns
 
   const toggleSort = (field: string) => {
     setSort((prev) =>
@@ -61,21 +75,33 @@ export function DataTable<T extends Record<string, unknown>>({
     )
   }
 
-  const sorted = [...data].sort((a, b) => {
-    if (!sort) return 0
-    const read = columns.find((col) => col.key === sort.field)?.sortValue
-    const aVal = read ? read(a) : a[sort.field]
-    const bVal = read ? read(b) : b[sort.field]
-    if (aVal == null) return 1
-    if (bVal == null) return -1
-    // Numbers compare numerically; anything else falls back to a natural
-    // string compare so "Item 2" sorts before "Item 10".
-    const cmp =
-      typeof aVal === 'number' && typeof bVal === 'number'
-        ? aVal - bVal
-        : String(aVal).localeCompare(String(bVal), undefined, { numeric: true })
-    return sort.direction === 'asc' ? cmp : -cmp
-  })
+  // Memoised on the data and the sort alone. `columns` is rebuilt on every
+  // render by most pages, so keying on it would make this a fresh array each
+  // time and turn the effect below into a loop.
+  const sorted = useMemo(() => {
+    const rows = [...data]
+    if (!sort) return rows
+
+    const read = columnsRef.current.find((col) => col.key === sort.field)?.sortValue
+
+    return rows.sort((a, b) => {
+      const aVal = read ? read(a) : a[sort.field]
+      const bVal = read ? read(b) : b[sort.field]
+      if (aVal == null) return 1
+      if (bVal == null) return -1
+      // Numbers compare numerically; anything else falls back to a natural
+      // string compare so "Item 2" sorts before "Item 10".
+      const cmp =
+        typeof aVal === 'number' && typeof bVal === 'number'
+          ? aVal - bVal
+          : String(aVal).localeCompare(String(bVal), undefined, { numeric: true })
+      return sort.direction === 'asc' ? cmp : -cmp
+    })
+  }, [data, sort])
+
+  useEffect(() => {
+    onVisibleRows?.(sorted)
+  }, [sorted, onVisibleRows])
 
   return (
     <div className="overflow-x-auto rounded-[var(--radius-card)] border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-sm)]">

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Coins, FileText, Receipt, Truck, Wallet } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { invoicesExportDoc } from '../invoices-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
@@ -116,6 +117,11 @@ export function InvoicesPage() {
     ],
     [debouncedSearch, customerId, salesmanId, settlement, truncated, customers, salesmen],
   )
+
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(filtered)
 
   const columns: Column<Invoice & Record<string, unknown>>[] = [
     {
@@ -233,7 +239,7 @@ export function InvoicesPage() {
           <ExportPdfButton
             variant="outline"
             disabled={isLoading || isError}
-            build={() => invoicesExportDoc(filtered, invoices.length, exportFilters)}
+            build={() => invoicesExportDoc(shownRows(), invoices.length, exportFilters)}
           />
         }
       />
@@ -309,6 +315,7 @@ export function InvoicesPage() {
       />
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={filtered as (Invoice & Record<string, unknown>)[]}
         keyField="id"

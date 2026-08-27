@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { MapPinned, MoreVertical, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { areasExportDoc } from '../areas-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -84,6 +85,11 @@ export function AreasPage() {
       },
     ]
   }, [areas])
+
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(filtered)
 
   const columns: Column<Area & Record<string, unknown>>[] = [
     {
@@ -173,7 +179,7 @@ export function AreasPage() {
             <ExportPdfButton
               variant="outline"
               disabled={isLoading || isError}
-              build={() => areasExportDoc(filtered, areas.length, debouncedSearch)}
+              build={() => areasExportDoc(shownRows(), areas.length, debouncedSearch)}
             />
             {canManage && (
               <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
@@ -189,6 +195,7 @@ export function AreasPage() {
       <FilterBar search={search} onSearch={setSearch} searchPlaceholder="Search by name or code…" />
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={filtered as (Area & Record<string, unknown>)[]}
         keyField="id"

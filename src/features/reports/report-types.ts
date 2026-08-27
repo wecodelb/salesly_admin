@@ -32,6 +32,13 @@ export interface ReportGroup<Row> {
   /** A line under the title: counts, subtotals, whatever the group is about. */
   caption?: string
   rows: Row[]
+  /**
+   * Columns for this group alone, where a document carries two tables that are
+   * not the same shape — the currency catalog and the rate history behind it,
+   * for instance. Falls back to the document's own columns, which is what every
+   * ordinary grouped report uses.
+   */
+  columns?: ReportColumn<Row>[]
 }
 
 export interface ReportDocument<Row> {

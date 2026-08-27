@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { BadgeCheck, MoreVertical, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { customerGroupsExportDoc } from '../customer-groups-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -90,6 +91,11 @@ export function CustomerGroupsPage() {
     ]
   }, [groups])
 
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(filtered)
+
   const columns: Column<CustomerGroup & Record<string, unknown>>[] = [
     {
       key: 'sort_order',
@@ -175,7 +181,7 @@ export function CustomerGroupsPage() {
             <ExportPdfButton
               variant="outline"
               disabled={isLoading || isError}
-              build={() => customerGroupsExportDoc(filtered, groups.length, debouncedSearch)}
+              build={() => customerGroupsExportDoc(shownRows(), groups.length, debouncedSearch)}
             />
             {canManage && (
               <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
@@ -191,6 +197,7 @@ export function CustomerGroupsPage() {
       <FilterBar search={search} onSearch={setSearch} searchPlaceholder="Search by name…" />
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={filtered as (CustomerGroup & Record<string, unknown>)[]}
         keyField="id"

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { CheckCircle2, Pencil, Percent, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { promotionsExportDoc } from '../promotions-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { KpiCard } from '@/shared/components/KpiCard/KpiCard'
@@ -49,6 +50,11 @@ export function PromotionsPage() {
       () => deletePromotion.mutateAsync(target.id),
     )
   }
+
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(promotions)
 
   const columns: Column<Promotion & Record<string, unknown>>[] = [
     {
@@ -147,7 +153,7 @@ export function PromotionsPage() {
             <ExportPdfButton
               variant="outline"
               disabled={isLoading || isError}
-              build={() => promotionsExportDoc(promotions, promotions.length)}
+              build={() => promotionsExportDoc(shownRows(), promotions.length)}
             />
             <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
               New promotion
@@ -180,6 +186,7 @@ export function PromotionsPage() {
       </div>
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={promotions as (Promotion & Record<string, unknown>)[]}
         keyField="id"

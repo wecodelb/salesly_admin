@@ -304,8 +304,8 @@ export function CurrenciesPage() {
         actions={
           <ExportPdfButton
             variant="outline"
-            disabled={isLoading || isError}
-            build={() => currenciesExportDoc(currencies, currencies.length)}
+            disabled={isLoading || ratesLoading || isError}
+            build={() => currenciesExportDoc(currencies, rates)}
           />
         }
       />

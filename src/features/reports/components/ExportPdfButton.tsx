@@ -43,6 +43,7 @@ export function ExportPdfButton<Row>({
 }: Props<Row>) {
   const company = useAuthStore((s) => s.user?.company)
   const [printing, setPrinting] = useState<{ doc: Doc<Row>; at: Date } | null>(null)
+  const [failed, setFailed] = useState<string | null>(null)
 
   // The document is torn down when the dialog closes rather than on the line
   // after print(): browsers disagree about whether window.print() blocks, and
@@ -54,9 +55,23 @@ export function ExportPdfButton<Row>({
   }, [])
 
   const print = useCallback(() => {
+    let doc: Doc<Row>
+    try {
+      doc = build()
+    } catch (error) {
+      // A builder that throws used to make this button do nothing whatsoever:
+      // no print, no dialog, no message. That is the hardest possible failure
+      // to report or diagnose — "I click it and nothing happens" — so it says
+      // so on screen instead, and leaves the reason in the console.
+      console.error('Export failed while building the document', error)
+      setFailed(error instanceof Error ? error.message : 'Unknown error')
+      return
+    }
+
+    setFailed(null)
     // flushSync, not a plain setState: window.print() runs synchronously on the
     // next line and would otherwise find nothing in the DOM to print.
-    flushSync(() => setPrinting({ doc: build(), at: new Date() }))
+    flushSync(() => setPrinting({ doc, at: new Date() }))
     window.print()
   }, [build])
 
@@ -70,6 +85,16 @@ export function ExportPdfButton<Row>({
       >
         {label}
       </Button>
+
+      {failed && (
+        <span
+          role="alert"
+          title={failed}
+          className="text-xs text-[var(--accent-red)] max-w-[220px] truncate"
+        >
+          Couldn't build the PDF — {failed}
+        </span>
+      )}
 
       {/* Portalled to the body. The print rules lay the document out against
           the page, and left inside a header's action bar it would be positioned

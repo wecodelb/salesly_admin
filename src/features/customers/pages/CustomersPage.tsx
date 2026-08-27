@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { customersExportDoc } from '../customers-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -321,6 +322,11 @@ export function CustomersPage() {
       : []),
   ]
 
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(filtered)
+
   const columns: Column<AdminCustomer & Record<string, unknown>>[] = [
     {
       key: 'name',
@@ -530,7 +536,7 @@ export function CustomersPage() {
               variant="outline"
               disabled={isLoading || isError}
               build={() =>
-                customersExportDoc(filtered, customers.length, exportFilters)
+                customersExportDoc(shownRows(), customers.length, exportFilters)
               }
             />
             {canCreate && (
@@ -666,6 +672,7 @@ export function CustomersPage() {
       />
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={filtered as (AdminCustomer & Record<string, unknown>)[]}
         keyField="id"

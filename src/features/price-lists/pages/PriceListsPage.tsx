@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { CheckCircle2, MoreVertical, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { priceListsExportDoc } from '../price-lists-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { KpiCard } from '@/shared/components/KpiCard/KpiCard'
@@ -57,6 +58,11 @@ export function PriceListsPage() {
       () => deletePriceList.mutateAsync(target.id),
     )
   }
+
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(priceLists)
 
   const columns: Column<PriceList & Record<string, unknown>>[] = [
     {
@@ -164,7 +170,7 @@ export function PriceListsPage() {
             <ExportPdfButton
               variant="outline"
               disabled={isLoading || isError}
-              build={() => priceListsExportDoc(priceLists, priceLists.length)}
+              build={() => priceListsExportDoc(shownRows(), priceLists.length)}
             />
             <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
               New price list
@@ -197,6 +203,7 @@ export function PriceListsPage() {
       </div>
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={priceLists as (PriceList & Record<string, unknown>)[]}
         keyField="id"

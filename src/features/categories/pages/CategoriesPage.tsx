@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FolderTree, MoreVertical, Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { categoriesExportDoc } from '../categories-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -81,6 +82,11 @@ export function CategoriesPage() {
       },
     ]
   }, [categories])
+
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(filtered)
 
   const columns: Column<Category & Record<string, unknown>>[] = [
     {
@@ -162,7 +168,7 @@ export function CategoriesPage() {
             <ExportPdfButton
               variant="outline"
               disabled={isLoading || isError}
-              build={() => categoriesExportDoc(filtered, categories.length, debouncedSearch)}
+              build={() => categoriesExportDoc(shownRows(), categories.length, debouncedSearch)}
             />
             {canManage && (
               <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
@@ -182,6 +188,7 @@ export function CategoriesPage() {
       />
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={filtered as (Category & Record<string, unknown>)[]}
         keyField="id"

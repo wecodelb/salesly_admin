@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Boxes, Eye, FolderTree, Gauge, MoreVertical, Package, PackageCheck, PackageX, Percent, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { productsExportDoc } from '../products-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -135,6 +136,11 @@ export function ProductsPage() {
       () => deleteItem.mutateAsync(target.id),
     )
   }
+
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(filtered)
 
   const columns: Column<AdminItem & Record<string, unknown>>[] = [
     {
@@ -297,7 +303,7 @@ export function ProductsPage() {
               variant="outline"
               disabled={isLoading || isError}
               build={() =>
-                productsExportDoc(filtered, products.length, exportFilters, exportGrouping)
+                productsExportDoc(shownRows(), products.length, exportFilters, exportGrouping)
               }
             />
             <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
@@ -393,6 +399,7 @@ export function ProductsPage() {
       />
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={filtered as (AdminItem & Record<string, unknown>)[]}
         keyField="id"

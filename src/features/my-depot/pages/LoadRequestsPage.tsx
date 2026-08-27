@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Inbox, PackagePlus, Truck, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
 import { depotExportDoc } from '../depot-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
@@ -133,6 +134,11 @@ export function LoadRequestsPage() {
       () => rejectRequest.mutateAsync(request.id),
     )
 
+  // What the table is actually showing, in the order it shows them.
+  // DataTable owns the sort, so this is the page's only way to print rows
+  // in the order somebody reads them on screen.
+  const { rows: shownRows, onVisibleRows } = useShownRows(filtered)
+
   const columns: Column<DepotTransfer & Record<string, unknown>>[] = [
     {
       key: 'trs_number',
@@ -251,8 +257,8 @@ export function LoadRequestsPage() {
             disabled={isLoading || isError}
             build={() =>
               depotExportDoc(
-                filtered,
-                transfers.length,
+                shownRows(),
+                requests.length,
                 debouncedSearch,
                 statusFilter && `Status: ${statusFilter}`,
                 'requests',
@@ -288,6 +294,7 @@ export function LoadRequestsPage() {
       />
 
       <DataTable
+        onVisibleRows={onVisibleRows}
         columns={columns}
         data={filtered as (DepotTransfer & Record<string, unknown>)[]}
         keyField="id"
