@@ -43,6 +43,10 @@ export const ENDPOINTS = {
   CUSTOMER_GROUPS: '/customer-groups', // GET/POST/PATCH/DELETE — company's own status vocabulary
   DELIVERIES: '/deliveries',
   INVOICES: '/deliveries/invoices',
+  // Every receipt the company has taken, newest first. A sibling of the two
+  // above rather than a customer sub-route: the question it answers is "what
+  // came in today", not "what did this shop pay".
+  COLLECTIONS: '/collections',
 
   // Suppliers
   SUPPLIERS: '/suppliers',

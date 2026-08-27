@@ -39,6 +39,11 @@ const FIXTURES: Record<string, unknown[]> = {
     { id: 2, trs_number: 'SI-2', trs_date: '20/06/2026 11:00', customer: 'Bakery Nour', customer_id: 2, salesman: { id: 2, name: 'Sara' }, total_qty: 8, total_price: 250, paid_amount: 0, due_amount: 250, is_van_sale: true, rows: [] },
     { id: 3, trs_number: 'SI-3', trs_date: '21/06/2026 09:00', customer: 'Zahle Depot', customer_id: 3, salesman: { id: 1, name: 'Ahmad' }, total_qty: 4, total_price: 60, paid_amount: 20, due_amount: 40, is_van_sale: false, rows: [] },
   ],
+  '/collections': [
+    { id: 1, trs_number: 'RC-1', trs_date: '15/03/2026 10:30', notes: null, customer: 'Corner Shop', customer_id: 1, amount: 100, payment_method: 'cash', source: 'balance', currency: 'USD', exchange_rate: 89500, payments: [{ method: 'cash', currency: 'USD', amount: 100, value: 100, exchange_rate: null }], allocations: [{ invoice_id: 1, was_due: 300, applied: 100, still_due: 200 }], balance_before: 300, balance_after: 200, salesman: { id: 1, name: 'Ahmad' } },
+    { id: 2, trs_number: 'RC-2', trs_date: '16/03/2026 09:00', notes: null, customer: 'Bakery Nour', customer_id: 2, amount: 60, payment_method: 'cash', source: 'invoice', currency: 'USD', exchange_rate: 89500, payments: [{ method: 'cash', currency: 'USD', amount: 40, value: 40, exchange_rate: null }, { method: 'whish', currency: 'LBP', amount: 1790000, value: 20, exchange_rate: 89500 }], allocations: [], balance_before: 60, balance_after: 0, salesman: { id: 2, name: 'Sara' } },
+    { id: 3, trs_number: 'RC-3', trs_date: '17/03/2026 14:00', notes: null, customer: 'Zahle Depot', customer_id: 3, amount: 25, payment_method: 'cash', source: 'balance', currency: 'USD', exchange_rate: 89500, payments: [{ method: 'cash', currency: 'USD', amount: 25, value: 25, exchange_rate: null }], allocations: [], balance_before: 150, balance_after: 125, salesman: { id: 1, name: 'Ahmad' } },
+  ],
   '/users': [
     { id: 1, name: 'Ahmad Khalil', email: 'ahmad@co.com', phone: '03 111 222', image: null, role: 'salesman', permissions: ['a', 'b'], status: 'active' },
     { id: 2, name: 'Sara Fares', email: 'sara@co.com', phone: null, image: null, role: 'salesman', permissions: ['a'], status: 'active' },
@@ -222,6 +227,22 @@ const SCREENS: Screen[] = [
       keeps: 'Rami Manager',
       drops: 'Ahmad Khalil',
       scope: '1 of 3 users',
+    },
+  },
+  {
+    name: 'Collections',
+    load: async () =>
+      (await import('@/features/collections/pages/CollectionsPage')).CollectionsPage,
+    ready: 'RC-1',
+    title: 'Collections',
+    scope: '3 collections',
+    prints: ['RC-1', 'RC-2', 'RC-3'],
+    filter: {
+      box: /receipt number/,
+      query: 'bakery',
+      keeps: 'RC-2',
+      drops: 'RC-1',
+      scope: '1 of 3 collections',
     },
   },
   {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { areasExportDoc } from '@/features/areas/areas-export'
 import { brandsExportDoc } from '@/features/brands/brands-export'
 import { categoriesExportDoc } from '@/features/categories/categories-export'
+import { collectionsExportDoc } from '@/features/collections/collections-export'
 import { currenciesExportDoc } from '@/features/currencies/currencies-export'
 import { customerGroupsExportDoc } from '@/features/customer-groups/customer-groups-export'
 import { depotExportDoc } from '@/features/my-depot/depot-export'
@@ -12,6 +13,7 @@ import { uomsExportDoc } from '@/features/uoms/uoms-export'
 import { warehousesExportDoc } from '@/features/warehouses/warehouses-export'
 import { listDoc, searchNote } from './list-doc'
 import type { Area } from '@/features/areas/types'
+import type { Collection } from '@/features/collections/types'
 import type { Currency, ExchangeRate } from '@/features/currencies/types'
 import type { CustomerGroup } from '@/features/customer-groups/types'
 import type { DepotTransfer } from '@/features/my-depot/types'
@@ -483,5 +485,74 @@ describe('depot paperwork', () => {
     )
 
     expect(doc.summary).toContainEqual({ label: 'Units', value: '100' })
+  })
+})
+
+describe('collections', () => {
+  const collection = (over: Partial<Collection> = {}) =>
+    ({
+      id: 1,
+      trs_number: 'RC-1',
+      trs_date: '15/03/2026 10:30',
+      customer: 'Corner Shop',
+      customer_id: 1,
+      amount: 100,
+      payment_method: 'cash',
+      source: 'balance',
+      payments: [{ method: 'cash', currency: 'USD', amount: 100, value: 100, exchange_rate: null }],
+      allocations: [],
+      balance_before: 300,
+      balance_after: 200,
+      salesman: { id: 1, name: 'Ahmad' },
+      ...over,
+    }) as unknown as Collection
+
+  it('prints both ways money arrives, and says which', () => {
+    // Money taken against one invoice used to write no receipt at all, so a
+    // page printing only balance collections was quietly short.
+    const doc = collectionsExportDoc(
+      [collection(), collection({ id: 2, source: 'invoice' })],
+      2,
+      [],
+    )
+    const against = doc.columns.find((c) => c.header === 'Against')!
+
+    expect(against.value(collection())).toBe('Balance')
+    expect(against.value(collection({ source: 'invoice' }))).toBe('One invoice')
+    expect(doc.summary).toContainEqual({ label: 'Against invoice', value: '1' })
+  })
+
+  it('spells out a mixed receipt rather than naming the largest tender', () => {
+    // A 60/40 cash-and-whish receipt labelled "Cash" is a lie the row tells
+    // silently, and on paper there is nobody to ask.
+    const mixed = collection({
+      payment_method: 'cash',
+      payments: [
+        { method: 'cash', currency: 'USD', amount: 40, value: 40, exchange_rate: null },
+        { method: 'whish', currency: 'LBP', amount: 1790000, value: 20, exchange_rate: 89500 },
+      ],
+    } as Partial<Collection>)
+    const method = collectionsExportDoc([], 0, []).columns.find((c) => c.header === 'Method')!
+
+    expect(method.value(mixed)).toBe('Cash + Whish')
+  })
+
+  it('totals only what it printed', () => {
+    const doc = collectionsExportDoc([collection(), collection({ id: 2, amount: 25 })], 9, [])
+
+    expect(doc.summary).toContainEqual({ label: 'Collected', value: '$125.00' })
+    expect(doc.subtitle).toContain('2 of 9 collections')
+  })
+
+  it('counts the shops, not the receipts, when asked how many customers paid', () => {
+    // Two receipts from one shop is one customer, and a day of collecting is
+    // read in shops visited.
+    const doc = collectionsExportDoc(
+      [collection(), collection({ id: 2, customer_id: 1 }), collection({ id: 3, customer_id: 2 })],
+      3,
+      [],
+    )
+
+    expect(doc.summary).toContainEqual({ label: 'Customers', value: '2' })
   })
 })

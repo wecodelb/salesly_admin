@@ -6,6 +6,7 @@ import { brandsExportDoc } from '@/features/brands/brands-export'
 import { categoriesExportDoc } from '@/features/categories/categories-export'
 import { currenciesExportDoc } from '@/features/currencies/currencies-export'
 import { customerGroupsExportDoc } from '@/features/customer-groups/customer-groups-export'
+import { collectionsExportDoc } from '@/features/collections/collections-export'
 import { customersExportDoc } from '@/features/customers/customers-export'
 import { depotExportDoc } from '@/features/my-depot/depot-export'
 import { invoicesExportDoc } from '@/features/invoices/invoices-export'
@@ -103,6 +104,7 @@ const HOSTILE: unknown[] = [
 const rows = HOSTILE as any[]
 
 const DOCS: [string, ReportDocument<unknown>][] = [
+  ['collections', collectionsExportDoc(rows, 99, [])],
   ['customers', customersExportDoc(rows, 99, [])],
   ['products (flat)', productsExportDoc(rows, 99, [], 'none')],
   ['products (by category)', productsExportDoc(rows, 99, [], 'category')],
@@ -191,6 +193,7 @@ describe('building a document over broken rows', () => {
 
 describe('building a document over nothing at all', () => {
   const empties: [string, ReportDocument<unknown>][] = [
+    ['collections', collectionsExportDoc([], 0, [])],
     ['customers', customersExportDoc([], 0, [])],
     ['products', productsExportDoc([], 0, [], 'category')],
     ['invoices', invoicesExportDoc([], 0, [])],
