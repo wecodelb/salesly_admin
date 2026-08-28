@@ -23,8 +23,8 @@ export function invoicesExportDoc(
     columns: [
       { header: 'Invoice', value: (i) => text(i.trs_number), width: '12%' },
       { header: 'Date', kind: 'date', value: (i) => day(i.trs_date), width: '12%' },
-      { header: 'Customer', value: (i) => text(i.customer), width: '22%' },
-      { header: 'Salesman', value: (i) => text(i.salesman?.name), width: '15%' },
+      { header: 'Customer', value: (i) => text(i.customer), width: '21%' },
+      { header: 'Salesman', value: (i) => text(i.salesman?.name), width: '14%' },
       {
         header: 'Units',
         kind: 'number',

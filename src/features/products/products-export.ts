@@ -1,4 +1,4 @@
-import { money, qty, scopeLine, sum, text } from '@/features/reports/report-format'
+import { counted, money, qty, scopeLine, sum, text } from '@/features/reports/report-format'
 import type { ReportDocument, ReportGroup } from '@/features/reports/report-types'
 import type { AdminItem } from './types'
 
@@ -77,7 +77,7 @@ function groupProducts(
     .map(([title, group]) => ({
       key: title,
       title,
-      caption: `${qty(group.length)} products · ${qty(sum(group, (p) => p.available_qty))} units`,
+      caption: `${counted(group.length, 'product')} · ${counted(sum(group, (p) => p.available_qty), 'unit')}`,
       rows: group,
     }))
 }

@@ -135,3 +135,13 @@ export function scopeLine(
 export function sum<T>(rows: T[], pick: (row: T) => number | null | undefined): number {
   return rows.reduce((acc, row) => acc + (pick(row) || 0), 0)
 }
+
+/**
+ * A count with its noun, singular when it is one.
+ *
+ * "1 products" is the kind of thing nobody notices on screen and everybody
+ * notices on a printed page, because paper is read slowly.
+ */
+export function counted(n: number, singular: string, plural = `${singular}s`): string {
+  return `${qty(n)} ${n === 1 ? singular : plural}`
+}

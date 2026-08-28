@@ -115,7 +115,7 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
       if (form.rate.trim() === '' || Number.isNaN(rate) || rate <= 0)
         e.rate = 'Enter what 1 ' + (baseCode ?? 'unit of the local currency') + ' buys'
 
-      if (!form.effectiveFrom) e.effectiveFrom = 'Pick a start date'
+      if (!form.effectiveFrom) e.effectiveFrom = 'Pick the day it applies from'
     }
 
     setErrors(e)
@@ -337,7 +337,7 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
                 </div>
 
                 <Input
-                  label="From"
+                  label="As of"
                   type="date"
                   value={form.effectiveFrom}
                   onChange={(e) => set('effectiveFrom', e.target.value)}

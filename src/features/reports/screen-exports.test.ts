@@ -181,7 +181,9 @@ describe('the products document', () => {
     )
 
     expect(doc.groups.map((g) => g.title)).toEqual(['Drinks', 'Snacks'])
-    expect(doc.groups[0].caption).toContain('1 products')
+    // Singular when it is one: paper is read slowly, and "1 products" is the
+    // kind of thing nobody notices on screen and everybody notices in print.
+    expect(doc.groups[0].caption).toContain('1 product ·')
   })
 
   it('prints flat when asked, with no heading saying nothing', () => {

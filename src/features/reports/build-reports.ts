@@ -1,7 +1,7 @@
 import type { AdminCustomer } from '@/features/customers/types'
 import type { AdminItem } from '@/features/products/types'
 import type { Invoice } from '@/features/invoices/types'
-import { day, money, qty, rangeLabel, text, within } from './report-format'
+import { counted, day, money, qty, rangeLabel, text, within } from './report-format'
 import type {
   ReportDefinition,
   ReportDocument,
@@ -211,7 +211,7 @@ function customerBook(input: BuildInput): ReportDocument<any> {
     title: 'Customer book',
     subtitle: breakdownLabel('customers', input.breakdown),
     columns: customerColumns(),
-    groups: withCounts(groups, (g) => `${g.rows.length} customers · ${money(sum(g.rows, (r) => r.balance))} owed`),
+    groups: withCounts(groups, (g) => `${counted(g.rows.length, 'customer')} · ${money(sum(g.rows, (r) => r.balance))} owed`),
     summary: [
       { label: 'Customers', value: qty(rows.length) },
       { label: 'Owing', value: qty(owing.length) },
@@ -349,7 +349,7 @@ function catalog(input: BuildInput): ReportDocument<any> {
         width: '14%',
       },
     ],
-    groups: withCounts(groups, (g) => `${g.rows.length} products`),
+    groups: withCounts(groups, (g) => counted(g.rows.length, 'product')),
     summary: [
       { label: 'Products', value: qty(rows.length) },
       { label: 'In stock', value: qty(rows.filter((r) => (r.stock ?? 0) > 0).length) },
@@ -417,7 +417,7 @@ function bestsellers(input: BuildInput): ReportDocument<any> {
         width: '12%',
       },
     ],
-    groups: withCounts(groups, (g) => `${g.rows.length} products · ${money(sum(g.rows, (r: any) => r.value))}`),
+    groups: withCounts(groups, (g) => `${counted(g.rows.length, 'product')} · ${money(sum(g.rows, (r: any) => r.value))}`),
     summary: [
       { label: 'Products sold', value: qty(rows.length) },
       { label: 'Units', value: qty(sum(rows, (r) => r.units)) },

@@ -71,7 +71,7 @@ export function ExchangeRateFormDrawer({ open, onClose, currencies, baseCode, cu
     if (!form.currencyId) e.currencyId = 'Pick a currency'
     if (form.rate.trim() === '' || Number.isNaN(Number(form.rate)) || Number(form.rate) <= 0)
       e.rate = 'Enter a positive rate'
-    if (!form.effectiveFrom) e.effectiveFrom = 'Pick a start date'
+    if (!form.effectiveFrom) e.effectiveFrom = 'Pick the day it applies from'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -179,7 +179,7 @@ export function ExchangeRateFormDrawer({ open, onClose, currencies, baseCode, cu
         </div>
 
         <Input
-          label="From"
+          label="As of"
           type="date"
           value={form.effectiveFrom}
           onChange={(e) => set('effectiveFrom', e.target.value)}
