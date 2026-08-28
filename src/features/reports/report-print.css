@@ -274,3 +274,194 @@
     margin-top: 10px;
   }
 }
+
+/* ── An invoice, as a document ────────────────────────────────────────── */
+
+/*
+ * The customer's copy, rendered in the console.
+ *
+ * A report is a table; an invoice is a letter with a table in it. It needs a
+ * bill-to block, a totals stack that reads bottom-right the way every invoice
+ * anybody has ever been handed does, and a line for a signature. Built on
+ * `.report-doc` so the print machinery — hide everything else, repeat the
+ * headings, never split a row — is the same one the reports use rather than a
+ * second copy of it that drifts.
+ */
+
+.invoice-parties {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 18px;
+}
+
+.invoice-party {
+  flex: 1;
+  min-width: 0;
+}
+
+.invoice-party h3 {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin: 0 0 4px;
+}
+
+.invoice-party p {
+  margin: 0;
+  font-size: 11.5px;
+  color: #111827;
+  line-height: 1.5;
+}
+
+.invoice-party p.is-name {
+  font-weight: 700;
+}
+
+/* The totals sit right, under the last money column, because that is where a
+   reader's eye already is by the time they reach them. */
+.invoice-totals {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.invoice-totals dl {
+  min-width: 240px;
+  margin: 0;
+}
+
+.invoice-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 3px 0;
+}
+
+.invoice-totals dt {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.invoice-totals dd {
+  margin: 0;
+  font-size: 11.5px;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.invoice-totals .is-grand {
+  border-top: 1px solid #9ca3af;
+  border-bottom: 1px solid #9ca3af;
+  margin: 4px 0;
+  padding: 6px 0;
+}
+
+.invoice-totals .is-grand dt,
+.invoice-totals .is-grand dd {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+}
+
+/* What is still owed is the only figure on the page anybody can still act on. */
+.invoice-totals .is-due dd {
+  font-weight: 700;
+  color: #b45309;
+}
+
+.invoice-totals .is-settled dd {
+  font-weight: 700;
+  color: #047857;
+}
+
+.invoice-tenders {
+  margin-top: 18px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 10px 14px;
+}
+
+.invoice-tenders h3 {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin: 0 0 6px;
+}
+
+.invoice-tenders li {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  font-size: 11px;
+  padding: 2px 0;
+  list-style: none;
+}
+
+.invoice-tenders ul {
+  margin: 0;
+  padding: 0;
+}
+
+.invoice-tenders .is-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.invoice-note {
+  margin-top: 16px;
+  font-size: 11px;
+  color: #374151;
+}
+
+.invoice-note strong {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+  margin-bottom: 2px;
+}
+
+.invoice-signature {
+  display: flex;
+  justify-content: space-between;
+  gap: 48px;
+  margin-top: 34px;
+}
+
+.invoice-signature div {
+  flex: 1;
+}
+
+/* A ruled line where the customer will sign, or a note that he already did. */
+.invoice-signature .is-rule {
+  border-bottom: 1px solid #9ca3af;
+  height: 26px;
+  margin-bottom: 4px;
+}
+
+.invoice-signature span {
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.invoice-signature .is-signed {
+  font-size: 10px;
+  color: #047857;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+@media print {
+  /* Nothing here needs a page of its own, but a signature block split from the
+     line it belongs under is a document nobody can countersign. */
+  .invoice-signature,
+  .invoice-totals,
+  .invoice-tenders {
+    break-inside: avoid;
+  }
+}

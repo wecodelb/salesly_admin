@@ -1,19 +1,18 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, MapPin, PenLine, Receipt } from 'lucide-react'
+import { ArrowLeft, MapPin, PenLine, Printer } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { Button } from '@/shared/components/Button'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
 import { StatStrip } from '@/shared/components/StatStrip/StatStrip'
-import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
+import { useAuthStore } from '@/core/auth/auth-store'
+import { InvoiceCard } from '../components/InvoiceCard'
 import { useInvoice } from '../hooks/use-invoices'
 import {
-  describeTender,
   formatMoney,
   formatQty,
   invoicePill,
   paymentMethodLabel,
-  type InvoiceRow,
 } from '../types'
 
 /**
@@ -29,6 +28,8 @@ export function InvoiceDetailPage() {
 
   const invoiceId = id ? Number(id) : null
   const { data: invoice, isLoading, isError, refetch } = useInvoice(invoiceId)
+  // The distributor's name on the printed copy, not the app's.
+  const company = useAuthStore((state) => state.user?.company)
 
   const back = (
     <Button variant="ghost" icon={<ArrowLeft size={15} />} onClick={() => navigate('/invoices')}>
@@ -62,63 +63,6 @@ export function InvoiceDetailPage() {
     { label: 'Units', value: formatQty(invoice?.total_qty ?? 0) },
   ]
 
-  const columns: Column<InvoiceRow & Record<string, unknown>>[] = [
-    {
-      key: 'item_name',
-      header: 'Product',
-      render: (row) => (
-        <div className="min-w-0">
-          <div className="truncate text-[var(--text-primary)]">{row.item_name}</div>
-          <div className="font-mono text-xs text-[var(--text-muted)]">{row.item_code}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'trs_qty',
-      header: 'Sold',
-      align: 'right',
-      // In the packaging it was sold in, with the base quantity underneath: the
-      // first is what the customer agreed to, the second is what left the depot.
-      render: (row) => (
-        <div className="flex flex-col items-end">
-          <span className="font-mono text-sm tabular-nums text-[var(--text-primary)]">
-            {formatQty(row.trs_qty)} {row.uom_name}
-          </span>
-          {row.qty !== row.trs_qty && (
-            <span className="text-xs text-[var(--text-muted)]">
-              {formatQty(row.qty)} base
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: 'price',
-      header: 'Unit price',
-      align: 'right',
-      render: (row) => (
-        <span className="font-mono text-sm tabular-nums text-[var(--text-secondary)]">
-          {formatMoney(row.price)}
-        </span>
-      ),
-    },
-    {
-      key: 'line_total',
-      header: 'Line total',
-      align: 'right',
-      // Recomputed from the two figures beside it rather than read off a field,
-      // so the arithmetic on screen is visibly the arithmetic of the row.
-      render: (row) => (
-        <span className="font-mono text-sm font-medium tabular-nums text-[var(--text-primary)]">
-          {formatMoney(row.qty * row.price)}
-        </span>
-      ),
-    },
-  ]
-
-  const rows = invoice?.rows ?? []
-  const tenders = invoice?.payments ?? []
-
   return (
     <>
       <PageHeader
@@ -133,6 +77,17 @@ export function InvoiceDetailPage() {
         actions={
           <div className="flex items-center gap-2">
             {pill && <StatusPill status={pill.status} label={pill.label} />}
+            {/* The card below is already the only `.report-doc` on the page, and
+                the print rules hide everything that is not one — so this needs
+                no hidden second copy, only the browser's own dialog. */}
+            <Button
+              variant="outline"
+              icon={<Printer size={16} />}
+              onClick={() => window.print()}
+              disabled={isLoading || isError || !invoice}
+            >
+              Print invoice
+            </Button>
             {back}
           </div>
         }
@@ -164,56 +119,11 @@ export function InvoiceDetailPage() {
         />
       </section>
 
-      {/* Only for the sales that took more than one tender. On a plain cash sale
-          "Paid by" above already says everything, and a one-row breakdown
-          repeating it would read as though something more complicated happened. */}
-      {tenders.length > 1 && (
-        <section className="mb-5 rounded-[var(--radius-card)] border border-[var(--border-subtle)] px-4 py-3">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            How it was paid
-          </h3>
-          <ul className="flex flex-col gap-1.5">
-            {tenders.map((tender, i) => (
-              <li
-                key={`${tender.method}-${i}`}
-                className="flex items-baseline justify-between gap-3 text-sm"
-              >
-                <span
-                  className={
-                    tender.method === 'account'
-                      ? 'text-[var(--accent-amber)]'
-                      : 'text-[var(--text-secondary)]'
-                  }
-                >
-                  {describeTender(tender)}
-                  {tender.reference ? (
-                    <span className="ml-2 text-xs text-[var(--text-muted)]">
-                      {tender.reference}
-                    </span>
-                  ) : null}
-                </span>
-                <span className="font-mono text-sm text-[var(--text-primary)]">
-                  {formatMoney(tender.value)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <DataTable
-        columns={columns}
-        data={rows as (InvoiceRow & Record<string, unknown>)[]}
-        keyField="id"
-        loading={isLoading}
-        emptyIcon={<Receipt size={30} />}
-        emptyMessage="This invoice has no lines."
-      />
-
-      {invoice?.notes && (
-        <p className="mt-4 rounded-[var(--radius-card)] border border-[var(--border-subtle)] px-4 py-3 text-sm text-[var(--text-secondary)]">
-          {invoice.notes}
-        </p>
+      {/* The customer's copy. Everything above it is the console's own view
+          of the sale — was it signed, where was the van — and everything in
+          it is what the customer was handed at the counter. */}
+      {invoice && (
+        <InvoiceCard invoice={invoice} companyName={company || 'Salesly'} />
       )}
     </>
   )

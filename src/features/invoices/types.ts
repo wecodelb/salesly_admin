@@ -58,6 +58,21 @@ export interface Invoice {
 
   salesman?: { id: number; name: string } | null
 
+  /**
+   * The customer's own details, as the document was raised. Sent by the API and
+   * needed by the printed copy — an invoice without an address on it is not one
+   * anybody can post.
+   */
+  customer_phone?: string
+  customer_address?: string
+
+  /**
+   * The lira rate this invoice was written at, stamped when it was raised. A
+   * copy printed next month has to quote the customer the figure he was given,
+   * not today's.
+   */
+  exchange_rate?: number | null
+
   /** Where the signature image sits in storage, relative to the public disk. */
   signature_path: string | null
   latitude: number | null
