@@ -1,23 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import {
-  LayoutDashboard, Map, Activity, ShoppingCart, FileText, RotateCcw, Banknote,
-  MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent, Coins,
-  BarChart2, Trophy, UserCog, CreditCard, Key, MessageCircle, Shield, Settings,
-  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes, Warehouse,
-  ChevronLeft, Zap, type LucideIcon,
-} from 'lucide-react'
+import { ChevronLeft, Zap } from 'lucide-react'
 import { SaleslyWordmark } from '@/shared/components/SaleslyWordmark/SaleslyWordmark'
 import { NAV_GROUPS, type NavBadge } from './nav-config'
+import { ICON_MAP } from './nav-icons'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS, type Permission } from '@/core/auth/permissions'
 import { usePendingLoadRequestCount } from '@/features/my-depot/hooks/use-my-depot'
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  LayoutDashboard, Map, Activity, ShoppingCart, FileText, RotateCcw, Banknote,
-  MapPin, Route, CheckSquare, Users, Building2, Package, Tags, Percent, Coins,
-  BarChart2, Trophy, UserCog, CreditCard, Key, MessageCircle, Shield, Settings,
-  FolderTree, Tag, MapPinned, Ruler, BadgeCheck, Truck, Boxes, Warehouse,
-}
 
 interface Props {
   collapsed: boolean
