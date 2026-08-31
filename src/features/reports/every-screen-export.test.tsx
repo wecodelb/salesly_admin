@@ -74,6 +74,14 @@ const FIXTURES: Record<string, unknown[]> = {
     { id: 2, code: 'BOX', name: 'Box', items_count: 0, packagings_count: 6 },
     { id: 3, code: 'PAL', name: 'Pallet', items_count: 0, packagings_count: 0 },
   ],
+  // One of each shape the screen has to tell apart: a standard out-only type
+  // with history, a standard both-ways one, and a switched-off custom type
+  // nothing has been written under.
+  '/adjustment-types': [
+    { id: 1, code: 'damaged', name: 'Damaged', direction: 'out', is_active: true, is_system: true, sort_order: 3, memo: '', rows_count: 7 },
+    { id: 2, code: 'adjust', name: 'Adjust quantity', direction: 'both', is_active: true, is_system: true, sort_order: 5, memo: 'Recount', rows_count: 0 },
+    { id: 3, code: 'theft', name: 'Shrinkage', direction: 'out', is_active: false, is_system: false, sort_order: 9, memo: '', rows_count: 0 },
+  ],
   '/currencies': [
     { id: 1, code: 'USD', name: 'US Dollar', symbol: '$', decimal_places: 2, symbol_position: 'before', is_base: true, is_active: true },
     { id: 2, code: 'LBP', name: 'Lebanese Pound', symbol: 'L.L', decimal_places: 0, symbol_position: 'after', is_base: false, is_active: true },
@@ -319,6 +327,22 @@ const SCREENS: Screen[] = [
       keeps: 'Pallet',
       drops: 'Piece',
       scope: '1 of 3 units',
+    },
+  },
+  {
+    name: 'Adjustment Types',
+    load: async () =>
+      (await import('@/features/adjustments/pages/AdjustmentTypesPage')).AdjustmentTypesPage,
+    ready: 'Damaged',
+    title: 'Adjustment types',
+    scope: '3 types',
+    prints: ['Damaged', 'Adjust quantity', 'Shrinkage'],
+    filter: {
+      box: /name or code/,
+      query: 'shrink',
+      keeps: 'Shrinkage',
+      drops: 'Damaged',
+      scope: '1 of 3 types',
     },
   },
   {

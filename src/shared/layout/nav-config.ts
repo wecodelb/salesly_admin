@@ -93,6 +93,10 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'areas', label: 'Areas', icon: 'MapPinned', path: '/areas', permission: 'customers.view' },
       { key: 'customer-groups', label: 'Customer Groups', icon: 'BadgeCheck', path: '/customer-groups', permission: 'customers.view' },
       { key: 'uoms', label: 'Units', icon: 'Ruler', path: '/uoms', permission: 'products.view' },
+      // Beside the other reference lists rather than under Depot with the
+      // sheets: this is the vocabulary somebody sets up once, not the daily
+      // paperwork. Same reason the server gates writing it on preferences.manage.
+      { key: 'adjustment-types', label: 'Adjustment Types', icon: 'SlidersHorizontal', path: '/adjustment-types', permission: 'adjustments.view' },
       { key: 'currencies', label: 'Currencies', icon: 'Coins', path: '/currencies', permission: 'exchange_rates.view' },
     ],
   },

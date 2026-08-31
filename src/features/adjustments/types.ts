@@ -181,6 +181,52 @@ export function directionLabel(direction: string | null | undefined): string {
   return '—'
 }
 
+// ─── The types themselves ───────────────────────────────────────────────────
+
+/**
+ * How a type's direction reads on the screen that manages them.
+ *
+ * Not "In"/"Out"/"Both", which are the row's words: here the reader is being
+ * told what the *type* permits, and "Out only" says the rule where "Out" would
+ * look like a fact about one movement.
+ */
+export function directionWord(direction: AdjustmentDirection | string): string {
+  if (direction === 'in') return 'In only'
+  if (direction === 'out') return 'Out only'
+  if (direction === 'both') return 'Either way'
+  return '—'
+}
+
+/**
+ * Whether this type can be removed outright.
+ *
+ * Two separate reasons it cannot, and they are not interchangeable. The five
+ * seeded with the company are permanent — every installation needs somewhere
+ * to put an opening count and a broken crate. And any type with sheets behind
+ * it has to keep existing so those sheets keep saying what they said, and so a
+ * report grouping by type has something to group by.
+ *
+ * The server enforces both; this is so the screen offers the right action
+ * rather than a button that will come back refused.
+ */
+export function canDeleteType(type: AdjustmentType): boolean {
+  return !type.is_system && !(type.rows_count ?? 0)
+}
+
+/** Why it cannot be deleted, in the words the modal should use. */
+export function undeletableBecause(type: AdjustmentType): string | null {
+  if (type.is_system) {
+    return 'This is one of the standard types every company has. It can be renamed or switched off, but not removed.'
+  }
+
+  const used = type.rows_count ?? 0
+  if (used > 0) {
+    return `${used} adjustment ${used === 1 ? 'row has' : 'rows have'} been written under this type. Switch it off instead — the sheets behind it have to keep saying what they said.`
+  }
+
+  return null
+}
+
 /** Which way a type lets a row go, in words, for the drawer. */
 export function directionOptions(
   type: AdjustmentType | undefined,

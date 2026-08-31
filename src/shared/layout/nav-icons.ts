@@ -2,7 +2,7 @@ import {
   Activity, BadgeCheck, Banknote, BarChart2, Building2, CheckSquare, Coins,
   ClipboardList, CreditCard, FileText, FolderTree, Inbox, Key, LayoutDashboard, Map, MapPin,
   MapPinned, MessageCircle, Package, Percent, RotateCcw, Route, Ruler, Settings,
-  Shield, ShoppingCart, Tag, Tags, Trophy, Truck, UserCog, Warehouse,
+  Shield, ShoppingCart, SlidersHorizontal, Tag, Tags, Trophy, Truck, UserCog, Warehouse,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -20,5 +20,5 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   Activity, BadgeCheck, Banknote, BarChart2, Building2, CheckSquare, Coins,
   ClipboardList, CreditCard, FileText, FolderTree, Inbox, Key, LayoutDashboard, Map, MapPin,
   MapPinned, MessageCircle, Package, Percent, RotateCcw, Route, Ruler, Settings,
-  Shield, ShoppingCart, Tag, Tags, Trophy, Truck, UserCog, Warehouse,
+  Shield, ShoppingCart, SlidersHorizontal, Tag, Tags, Trophy, Truck, UserCog, Warehouse,
 }

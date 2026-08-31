@@ -19,6 +19,7 @@ const ReturnsPage      = lazy(() => import('@/features/returns/pages/ReturnsPage
 const CollectionsPage  = lazy(() => import('@/features/collections/pages/CollectionsPage').then(m => ({ default: m.CollectionsPage })))
 const AdjustmentsPage  = lazy(() => import('@/features/adjustments/pages/AdjustmentsPage').then(m => ({ default: m.AdjustmentsPage })))
 const AdjustmentDetailPage = lazy(() => import('@/features/adjustments/pages/AdjustmentDetailPage').then(m => ({ default: m.AdjustmentDetailPage })))
+const AdjustmentTypesPage = lazy(() => import('@/features/adjustments/pages/AdjustmentTypesPage').then(m => ({ default: m.AdjustmentTypesPage })))
 const VisitsPage       = lazy(() => import('@/features/visits/pages/VisitsPage').then(m => ({ default: m.VisitsPage })))
 const RoutesPage       = lazy(() => import('@/features/routes/pages/RoutesPage').then(m => ({ default: m.RoutesPage })))
 const TasksPage        = lazy(() => import('@/features/tasks/pages/TasksPage').then(m => ({ default: m.TasksPage })))
@@ -144,6 +145,11 @@ export const router = createBrowserRouter([
       { path: 'areas',        Component: makePage(AreasPage, P.CUSTOMERS_VIEW) },
       { path: 'customer-groups', Component: makePage(CustomerGroupsPage, P.CUSTOMERS_VIEW) },
       { path: 'uoms',         Component: makePage(UomsPage, P.PRODUCTS_VIEW) },
+      // A sibling of /adjustments rather than a child, so it can never be
+      // swallowed by the `adjustments/:id` pattern above. Reading is gated on
+      // adjustments.view like the sheets themselves; writing needs
+      // preferences.manage, which the screen checks.
+      { path: 'adjustment-types', Component: makePage(AdjustmentTypesPage, P.ADJUSTMENTS_VIEW) },
       { path: 'reports',      Component: makePage(ReportsPage, P.REPORTS_VIEW) },
       { path: 'leaderboard',  Component: makePage(LeaderboardPage, P.LEADERBOARD_VIEW) },
       { path: 'users',        Component: makePage(UsersPage, P.USERS_VIEW) },
