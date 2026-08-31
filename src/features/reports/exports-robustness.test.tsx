@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
+import { adjustmentsExportDoc } from '@/features/adjustments/adjustments-export'
 import { areasExportDoc } from '@/features/areas/areas-export'
 import { brandsExportDoc } from '@/features/brands/brands-export'
 import { categoriesExportDoc } from '@/features/categories/categories-export'
@@ -111,6 +112,7 @@ const DOCS: [string, ReportDocument<unknown>][] = [
   ['products (by brand)', productsExportDoc(rows, 99, [], 'brand')],
   ['invoices', invoicesExportDoc(rows, 99, [])],
   ['team', usersExportDoc(rows, 99, [])],
+  ['adjustments', adjustmentsExportDoc(rows, 99, [])],
   ['areas', areasExportDoc(rows, 99, '')],
   ['brands', brandsExportDoc(rows, 99, '')],
   ['categories', categoriesExportDoc(rows, 99, '')],
@@ -198,6 +200,7 @@ describe('building a document over nothing at all', () => {
     ['products', productsExportDoc([], 0, [], 'category')],
     ['invoices', invoicesExportDoc([], 0, [])],
     ['team', usersExportDoc([], 0, [])],
+    ['adjustments', adjustmentsExportDoc([], 0, [])],
     ['areas', areasExportDoc([], 0, '')],
     ['currencies', currenciesExportDoc([], [])],
     ['warehouses', warehousesExportDoc([], 0, '', '')],

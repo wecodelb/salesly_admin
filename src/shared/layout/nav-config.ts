@@ -64,6 +64,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // yes, and that is not a thing to find out by opening the screen.
       { key: 'load-requests', label: 'Load Requests', icon: 'Inbox', path: '/load-requests', permission: 'depot.view', badge: 'pending-load-requests' },
       { key: 'load-issues', label: 'Load Issues', icon: 'Truck', path: '/load-issues', permission: 'depot.view' },
+      { key: 'adjustments', label: 'Adjustments', icon: 'ClipboardList', path: '/adjustments', permission: 'adjustments.view' },
       // No separate stock entry. What each place holds is on the warehouse list
       // and on the warehouse itself, which is where somebody looking for it
       // already is.

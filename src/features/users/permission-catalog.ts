@@ -86,6 +86,17 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
+    // Approving is its own row because it is its own trust: writing a sheet
+    // records a claim about the shelf, approving one moves the stock. Whoever
+    // holds approve signs their own off on the way in.
+    label: 'Adjustments',
+    items: [
+      { key: PERMISSIONS.ADJUSTMENTS_VIEW, label: 'View adjustments' },
+      { key: PERMISSIONS.ADJUSTMENTS_CREATE, label: 'Write an adjustment' },
+      { key: PERMISSIONS.ADJUSTMENTS_APPROVE, label: 'Approve adjustments (moves stock)' },
+    ],
+  },
+  {
     // The four halves of a depot movement, split the way the business splits
     // them: the salesman asks and signs, the warehouse decides and loads.
     label: 'Depot',

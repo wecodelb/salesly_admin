@@ -48,6 +48,12 @@ export const ENDPOINTS = {
   // came in today", not "what did this shop pay".
   COLLECTIONS: '/collections',
 
+  // Stock that moves without a sale behind it: a broken crate, an expired
+  // pallet, an opening count. Reading is gated apart from writing, and writing
+  // apart from approving.
+  ADJUSTMENTS: '/adjustments',
+  ADJUSTMENT_TYPES: '/adjustment-types',
+
   // Suppliers
   SUPPLIERS: '/suppliers',
 

@@ -17,6 +17,8 @@ const OrdersPage       = lazy(() => import('@/features/orders/pages/OrdersPage')
 const InvoicesPage     = lazy(() => import('@/features/invoices/pages/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
 const ReturnsPage      = lazy(() => import('@/features/returns/pages/ReturnsPage').then(m => ({ default: m.ReturnsPage })))
 const CollectionsPage  = lazy(() => import('@/features/collections/pages/CollectionsPage').then(m => ({ default: m.CollectionsPage })))
+const AdjustmentsPage  = lazy(() => import('@/features/adjustments/pages/AdjustmentsPage').then(m => ({ default: m.AdjustmentsPage })))
+const AdjustmentDetailPage = lazy(() => import('@/features/adjustments/pages/AdjustmentDetailPage').then(m => ({ default: m.AdjustmentDetailPage })))
 const VisitsPage       = lazy(() => import('@/features/visits/pages/VisitsPage').then(m => ({ default: m.VisitsPage })))
 const RoutesPage       = lazy(() => import('@/features/routes/pages/RoutesPage').then(m => ({ default: m.RoutesPage })))
 const TasksPage        = lazy(() => import('@/features/tasks/pages/TasksPage').then(m => ({ default: m.TasksPage })))
@@ -99,6 +101,11 @@ export const router = createBrowserRouter([
       { path: 'invoices/:id', Component: makePage(InvoiceDetailPage, P.INVOICES_VIEW) },
       { path: 'returns',      Component: makePage(ReturnsPage, P.RETURNS_VIEW) },
       { path: 'collections',  Component: makePage(CollectionsPage, P.COLLECTIONS_VIEW) },
+      // Stock that moved without a sale. Reading is its own key; writing and
+      // approving are gated inside the screens, because approving is what
+      // actually moves the shelf.
+      { path: 'adjustments',      Component: makePage(AdjustmentsPage, P.ADJUSTMENTS_VIEW) },
+      { path: 'adjustments/:id',  Component: makePage(AdjustmentDetailPage, P.ADJUSTMENTS_VIEW) },
       { path: 'visits',       Component: makePage(VisitsPage, P.VISITS_CHECKIN) },
       { path: 'routes',       Component: makePage(RoutesPage, P.ROUTE_VIEW) },
       { path: 'tasks',        Component: makePage(TasksPage, P.TASKS_VIEW) },

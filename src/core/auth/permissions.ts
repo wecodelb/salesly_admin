@@ -26,6 +26,16 @@ export const PERMISSIONS = {
   REPORTS_VIEW: 'reports.view',
   LEADERBOARD_VIEW: 'leaderboard.view',
   PRODUCTS_VIEW: 'products.view',
+  /** Reading the adjustment sheets and the types the company recognises. */
+  ADJUSTMENTS_VIEW: 'adjustments.view',
+  /** Writing one down. On its own this records a claim and moves no stock. */
+  ADJUSTMENTS_CREATE: 'adjustments.create',
+  /**
+   * Signing one off, which is what actually moves the stock. Separate from
+   * creating on purpose: whoever walks the aisle and finds three broken crates
+   * is not always the person trusted to write three crates off the books.
+   */
+  ADJUSTMENTS_APPROVE: 'adjustments.approve',
   /** Seeing depot loads, load requests, and what is in a depot right now. */
   DEPOT_VIEW: 'depot.view',
   /** Asking the warehouse for a load — the salesman's half of a transfer. */
@@ -71,6 +81,9 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.REPORTS_VIEW,
     PERMISSIONS.LEADERBOARD_VIEW,
     PERMISSIONS.PRODUCTS_VIEW,
+    PERMISSIONS.ADJUSTMENTS_VIEW,
+    PERMISSIONS.ADJUSTMENTS_CREATE,
+    PERMISSIONS.ADJUSTMENTS_APPROVE,
     PERMISSIONS.DEPOT_VIEW,
     PERMISSIONS.DEPOT_REQUEST,
     PERMISSIONS.DEPOT_ISSUE,
@@ -89,5 +102,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.TASKS_COMPLETE,
     PERMISSIONS.LEADERBOARD_VIEW,
     PERMISSIONS.PRODUCTS_VIEW,
+    // Reads them and writes none, like the rest of a supervisor's set.
+    PERMISSIONS.ADJUSTMENTS_VIEW,
   ],
 }

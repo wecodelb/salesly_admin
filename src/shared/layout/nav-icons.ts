@@ -1,6 +1,6 @@
 import {
   Activity, BadgeCheck, Banknote, BarChart2, Building2, CheckSquare, Coins,
-  CreditCard, FileText, FolderTree, Inbox, Key, LayoutDashboard, Map, MapPin,
+  ClipboardList, CreditCard, FileText, FolderTree, Inbox, Key, LayoutDashboard, Map, MapPin,
   MapPinned, MessageCircle, Package, Percent, RotateCcw, Route, Ruler, Settings,
   Shield, ShoppingCart, Tag, Tags, Trophy, Truck, UserCog, Warehouse,
   type LucideIcon,
@@ -18,7 +18,7 @@ import {
  */
 export const ICON_MAP: Record<string, LucideIcon> = {
   Activity, BadgeCheck, Banknote, BarChart2, Building2, CheckSquare, Coins,
-  CreditCard, FileText, FolderTree, Inbox, Key, LayoutDashboard, Map, MapPin,
+  ClipboardList, CreditCard, FileText, FolderTree, Inbox, Key, LayoutDashboard, Map, MapPin,
   MapPinned, MessageCircle, Package, Percent, RotateCcw, Route, Ruler, Settings,
   Shield, ShoppingCart, Tag, Tags, Trophy, Truck, UserCog, Warehouse,
 }
