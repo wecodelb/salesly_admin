@@ -217,6 +217,31 @@ describe('what the table says', () => {
     expect(within(await rowFor('Shrinkage')).queryByText('Standard')).toBeNull()
   })
 
+  it('offers the status filter at all', async () => {
+    // It was passed to FilterBar as a child once. FilterBar renders a `filters`
+    // prop and nothing else, so the control silently never appeared — the page
+    // looked right, every test passed, and the filter simply was not there.
+    renderPage()
+    await screen.findByText('Damaged')
+
+    // By role, not by text: "Status" is also a column header, and matching
+    // that would pass with no filter on the page at all.
+    expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument()
+  })
+
+  it('narrows to the switched-off ones when asked', async () => {
+    renderPage()
+    await screen.findByText('Damaged')
+
+    await userEvent.click(screen.getByRole('button', { name: /status/i }))
+    // By role: "Switched off" is also the status pill on the Shrinkage row,
+    // and clicking that would prove nothing.
+    await userEvent.click(await screen.findByRole('option', { name: /switched off/i }))
+
+    await waitFor(() => expect(screen.queryByText('Damaged')).toBeNull())
+    expect(screen.getByText('Shrinkage')).toBeInTheDocument()
+  })
+
   it('shows the switched-off ones, which is the whole point of this screen', async () => {
     renderPage()
 

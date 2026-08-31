@@ -287,22 +287,32 @@ export function AdjustmentTypesPage() {
         search={search}
         onSearch={setSearch}
         searchPlaceholder="Search by name or code…"
-      >
-        <FilterSelect
-          label="Status"
-          value={activity}
-          onChange={setActivity}
-          allLabel="All types"
-          options={[
-            { value: 'active', label: 'In use', count: types.filter((t) => t.is_active).length },
-            {
-              value: 'inactive',
-              label: 'Switched off',
-              count: types.filter((t) => !t.is_active).length,
-            },
-          ]}
-        />
-      </FilterBar>
+        activeCount={activity ? 1 : 0}
+        onClearFilters={() => setActivity('')}
+        filters={
+          <div className="w-48">
+            <FilterSelect
+              label="Status"
+              value={activity}
+              onChange={setActivity}
+              allLabel="All types"
+              icon={<Power size={14} />}
+              options={[
+                {
+                  value: 'active',
+                  label: 'In use',
+                  count: types.filter((t) => t.is_active).length,
+                },
+                {
+                  value: 'inactive',
+                  label: 'Switched off',
+                  count: types.filter((t) => !t.is_active).length,
+                },
+              ]}
+            />
+          </div>
+        }
+      />
 
       <DataTable
         onVisibleRows={onVisibleRows}
