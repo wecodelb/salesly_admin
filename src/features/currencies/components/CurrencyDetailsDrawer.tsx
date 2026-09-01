@@ -106,7 +106,7 @@ export function CurrencyDetailsDrawer({ currency, onClose, onEdit, canManage, ba
                   <p className="mt-1 text-xs text-[var(--text-muted)]">
                     {current.effective_to
                       ? `${current.effective_at} → ${current.effective_to}`
-                      : `From ${current.effective_at}`}
+                      : `As of ${current.effective_at}`}
                   </p>
                 </div>
               ) : (
@@ -142,7 +142,7 @@ export function CurrencyDetailsDrawer({ currency, onClose, onEdit, canManage, ba
                       title: formatRate(r.rate),
                       subtitle: until
                         ? `${r.effective_at} → ${until}`
-                        : `From ${r.effective_at}`,
+                        : `As of ${r.effective_at}`,
                       meta:
                         [r.created_by_name, r.created_at].filter(Boolean).join(' · ') || undefined,
                     }

@@ -479,6 +479,30 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
               </div>
             </div>
 
+            {/* Above the limit it governs, not below it. Whether this customer
+                gets credit at all is the decision; the cap is a detail of that
+                decision, and a number that appears and vanishes as the box is
+                ticked reads as an answer to a question asked underneath it. */}
+            <label className="inline-flex items-start gap-2 cursor-pointer">
+              {/* Labelled explicitly rather than by the wrapper, whose text runs
+                  on into the explanation underneath. */}
+              <input
+                type="checkbox"
+                aria-label="Allow credit"
+                checked={form.allowCredit}
+                onChange={(e) => set('allowCredit', e.target.checked)}
+                className="mt-0.5 accent-[var(--accent-primary)] cursor-pointer"
+              />
+              <span className="text-sm text-[var(--text-primary)]">
+                Allow credit
+                <span className="block text-xs text-[var(--text-muted)]">
+                  {form.allowCredit
+                    ? 'Invoices may be left partly or wholly unpaid, up to the limit.'
+                    : 'Cash only — every invoice must be settled in full at the door.'}
+                </span>
+              </span>
+            </label>
+
             <div className="flex gap-3">
               <div className="flex-1 min-w-0">
                 <SearchableSelect
@@ -511,26 +535,6 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
                 ) : null}
               </div>
             </div>
-
-            <label className="inline-flex items-start gap-2 cursor-pointer">
-              {/* Labelled explicitly rather than by the wrapper, whose text runs
-                  on into the explanation underneath. */}
-              <input
-                type="checkbox"
-                aria-label="Allow credit"
-                checked={form.allowCredit}
-                onChange={(e) => set('allowCredit', e.target.checked)}
-                className="mt-0.5 accent-[var(--accent-primary)] cursor-pointer"
-              />
-              <span className="text-sm text-[var(--text-primary)]">
-                Allow credit
-                <span className="block text-xs text-[var(--text-muted)]">
-                  {form.allowCredit
-                    ? 'Invoices may be left partly or wholly unpaid, up to the limit.'
-                    : 'Cash only — every invoice must be settled in full at the door.'}
-                </span>
-              </span>
-            </label>
           </section>
         </div>
 

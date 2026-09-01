@@ -115,7 +115,7 @@ export function CurrencyFormDrawer({ open, onClose, currency }: Props) {
       if (form.rate.trim() === '' || Number.isNaN(rate) || rate <= 0)
         e.rate = 'Enter what 1 ' + (baseCode ?? 'unit of the local currency') + ' buys'
 
-      if (!form.effectiveFrom) e.effectiveFrom = 'Pick the day it applies from'
+      if (!form.effectiveFrom) e.effectiveFrom = 'Pick the day it takes effect'
     }
 
     setErrors(e)
