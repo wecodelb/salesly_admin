@@ -4,6 +4,7 @@ import { useToast } from '@/shared/hooks/use-toast'
 import {
   acceptDepotTransfer,
   approveLoadRequest,
+  approveUnload,
   cancelDepotTransfer,
   createDepotTransfer,
   createLoadRequest,
@@ -13,9 +14,12 @@ import {
   fetchDepotTransfer,
   fetchDepotTransfers,
   fetchPendingLoadRequestCount,
+  fetchPendingUnloadCount,
+  fetchUnloads,
   fetchWarehouses,
   issueDepotTransfer,
   rejectLoadRequest,
+  rejectUnload,
   updateDepotTransfer,
 } from '../api/my-depot-api'
 import type {
@@ -32,6 +36,8 @@ const TRANSFERS_KEY = ['depot-transfers'] as const
 const STOCK_KEY = ['depot-stock'] as const
 const WAREHOUSES_KEY = ['admin-warehouses'] as const
 const PENDING_REQUESTS_KEY = ['depot-pending-requests'] as const
+const UNLOADS_KEY = ['depot-unloads'] as const
+const PENDING_UNLOADS_KEY = ['depot-pending-unloads'] as const
 
 /** How often the pending-request badge asks again. Long enough that a browser
  *  left open all day is not a load on the server, short enough that a salesman
@@ -53,6 +59,12 @@ function useInvalidateDepot() {
     qc.invalidateQueries({ queryKey: TRANSFERS_KEY })
     qc.invalidateQueries({ queryKey: STOCK_KEY })
     qc.invalidateQueries({ queryKey: PENDING_REQUESTS_KEY })
+    // The unload lists ride along for the same reason. An unload is an LI, so
+    // issuing or cancelling one from the transfers screen changes what the
+    // Unloads screen is showing — and answering one changes the badge that
+    // sent somebody there.
+    qc.invalidateQueries({ queryKey: UNLOADS_KEY })
+    qc.invalidateQueries({ queryKey: PENDING_UNLOADS_KEY })
   }
 }
 
@@ -274,6 +286,47 @@ export function useAcceptDepotTransfer() {
       acceptDepotTransfer(id, payload),
     onSuccess: settled,
   })
+}
+
+// ─── Unloads ────────────────────────────────────────────────────────────────
+
+/** Everything the salesmen have sent back, answered or not. */
+export function useUnloads() {
+  return useQuery({ queryKey: UNLOADS_KEY, queryFn: () => fetchUnloads() })
+}
+
+/**
+ * The badge: how many unloads are waiting on somebody here.
+ *
+ * Its own key and its own poll rather than sharing the load-request count.
+ * They are two different queues answered by two different screens, and one
+ * number covering both would send somebody to the wrong one.
+ */
+export function usePendingUnloadCount(enabled = true) {
+  return useQuery({
+    queryKey: PENDING_UNLOADS_KEY,
+    queryFn: () => fetchPendingUnloadCount(),
+    enabled,
+    refetchInterval: PENDING_POLL_MS,
+    // Same two overrides as the request badge, for the same reason: this is a
+    // queue somebody is waiting in, not a catalog.
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  })
+}
+
+export function useApproveUnload() {
+  const settled = useDepotWriteSettled()
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: AcceptTransferPayload }) =>
+      approveUnload(id, payload),
+    onSuccess: settled,
+  })
+}
+
+export function useRejectUnload() {
+  const settled = useDepotWriteSettled()
+  return useMutation({ mutationFn: (id: number) => rejectUnload(id), onSuccess: settled })
 }
 
 export function useCreateLoadRequest() {

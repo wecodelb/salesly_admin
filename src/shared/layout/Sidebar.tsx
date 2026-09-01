@@ -5,7 +5,10 @@ import { NAV_GROUPS, type NavBadge } from './nav-config'
 import { ICON_MAP } from './nav-icons'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS, type Permission } from '@/core/auth/permissions'
-import { usePendingLoadRequestCount } from '@/features/my-depot/hooks/use-my-depot'
+import {
+  usePendingLoadRequestCount,
+  usePendingUnloadCount,
+} from '@/features/my-depot/hooks/use-my-depot'
 
 
 interface Props {
@@ -19,9 +22,14 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
   // renders for everyone, and asking on behalf of a user who would be refused
   // is a 403 every half-minute.
   const { data: pendingLoadRequests = 0 } = usePendingLoadRequestCount(can(PERMISSIONS.DEPOT_VIEW))
+  const { data: pendingUnloads = 0 } = usePendingUnloadCount(can(PERMISSIONS.DEPOT_VIEW))
 
   const badgeCount = (badge?: NavBadge): number =>
-    badge === 'pending-load-requests' ? pendingLoadRequests : 0
+    badge === 'pending-load-requests'
+      ? pendingLoadRequests
+      : badge === 'pending-unloads'
+        ? pendingUnloads
+        : 0
 
   return (
     <aside

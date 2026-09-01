@@ -114,6 +114,15 @@ const FIXTURES: Record<string, unknown[]> = {
     { id: 2, company_id: 1, uuid: null, trs_type: 'LI', trs_number: 'LI-1', trs_date: '16/03/2026 08:00', status: 'CONFIRMED', is_in_transit: true, src_id: 1, source: { id: 1, name: 'Main store' }, destination: { id: 2, name: 'Van 3' }, salesman: { id: 1, name: 'Ahmad' }, created_by: 1, created_by_name: 'Admin', confirmed_at: null, confirmed_by: null, confirmed_by_name: null, total_qty: 60, total_cost: 0, total_weight: 0 },
     { id: 3, company_id: 1, uuid: null, trs_type: 'TRI', trs_number: 'TRI-1', trs_date: '17/03/2026 18:00', status: 'COMPLETED', is_in_transit: false, src_id: 2, source: { id: 2, name: 'Van 3' }, destination: { id: 1, name: 'Main store' }, salesman: { id: 1, name: 'Ahmad' }, created_by: 1, created_by_name: 'Admin', confirmed_at: '17/03/2026 18:05', confirmed_by: 1, confirmed_by_name: 'Ahmad', total_qty: 5, total_cost: 0, total_weight: 0 },
   ],
+  // Stock coming back the other way: LI documents whose SOURCE is a depot.
+  // One still waiting, one already taken back, one refused — the three states
+  // the screen has to tell apart, and a mix so a total over "held on vans"
+  // cannot pass by counting everything.
+  '/depot-transfers?flow=unload': [
+    { id: 11, company_id: 1, uuid: null, trs_type: 'LI', trs_number: 'UL-1', trs_date: '20/03/2026 19:10', status: 'DRAFT', is_in_transit: false, src_id: null, source: { id: 2, name: 'Van 3', is_depot: true }, destination: { id: 1, name: 'Main store', is_depot: false }, salesman: { id: 1, name: 'Ahmad' }, created_by: 1, created_by_name: 'Ahmad', confirmed_at: null, confirmed_by: null, confirmed_by_name: null, total_qty: 25, total_cost: 0, total_weight: 0 },
+    { id: 12, company_id: 1, uuid: null, trs_type: 'LI', trs_number: 'UL-2', trs_date: '19/03/2026 18:40', status: 'COMPLETED', is_in_transit: false, src_id: null, source: { id: 3, name: 'Van 7', is_depot: true }, destination: { id: 1, name: 'Main store', is_depot: false }, salesman: { id: 2, name: 'Sara' }, created_by: 2, created_by_name: 'Sara', confirmed_at: '19/03/2026 19:00', confirmed_by: 1, confirmed_by_name: 'Admin', total_qty: 40, total_cost: 0, total_weight: 0 },
+    { id: 13, company_id: 1, uuid: null, trs_type: 'LI', trs_number: 'UL-3', trs_date: '18/03/2026 18:15', status: 'CANCELED', is_in_transit: false, src_id: null, source: { id: 2, name: 'Van 3', is_depot: true }, destination: { id: 1, name: 'Main store', is_depot: false }, salesman: { id: 1, name: 'Ahmad' }, created_by: 1, created_by_name: 'Ahmad', confirmed_at: null, confirmed_by: null, confirmed_by_name: null, total_qty: 10, total_cost: 0, total_weight: 0 },
+  ],
 }
 
 /** A customer row, with the fields every customer screen expects present. */
@@ -134,11 +143,17 @@ function row(over: Record<string, unknown>) {
 // goes through — so each page's own request code runs for real.
 vi.mock('@/core/api/client', () => ({
   apiClient: {
-    get: async (url: string) => {
-      const key = Object.keys(FIXTURES).find(
-        (k) => url === k || url.startsWith(`${k}?`),
-      )
-      if (!key) throw new Error(`No fixture for GET ${url}`)
+    get: async (url: string, config?: { params?: Record<string, unknown> }) => {
+      // The unloads list is the same endpoint as the transfers list, narrowed
+      // by a param rather than a path — an unload is an LI pointing the other
+      // way, not a resource of its own. Keying on the URL alone would hand the
+      // Unloads screen the loading paperwork and quietly prove nothing.
+      const key =
+        config?.params?.flow === 'unload'
+          ? '/depot-transfers?flow=unload'
+          : Object.keys(FIXTURES).find((k) => url === k || url.startsWith(`${k}?`))
+
+      if (!key || !FIXTURES[key]) throw new Error(`No fixture for GET ${url}`)
       return { data: { status: 'success', message: null, data: { data: FIXTURES[key] } } }
     },
     post: async () => ({ data: { status: 'success', message: null, data: { data: {} } } }),
@@ -415,6 +430,21 @@ const SCREENS: Screen[] = [
       keeps: 'LI-1',
       drops: 'LI-2',
       scope: '1 of 2 loads',
+    },
+  },
+  {
+    name: 'Unloads',
+    load: async () => (await import('@/features/my-depot/pages/UnloadsPage')).UnloadsPage,
+    ready: 'UL-1',
+    title: 'Unloads',
+    scope: '3 unloads',
+    prints: ['UL-1', 'UL-2', 'UL-3'],
+    filter: {
+      box: /unload number/,
+      query: 'UL-2',
+      keeps: 'UL-2',
+      drops: 'UL-1',
+      scope: '1 of 3 unloads',
     },
   },
 ]

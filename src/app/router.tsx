@@ -26,6 +26,7 @@ const TasksPage        = lazy(() => import('@/features/tasks/pages/TasksPage').t
 const CustomersPage    = lazy(() => import('@/features/customers/pages/CustomersPage').then(m => ({ default: m.CustomersPage })))
 const LoadRequestsPage  = lazy(() => import('@/features/my-depot/pages/LoadRequestsPage').then(m => ({ default: m.LoadRequestsPage })))
 const LoadIssuesPage    = lazy(() => import('@/features/my-depot/pages/LoadIssuesPage').then(m => ({ default: m.LoadIssuesPage })))
+const UnloadsPage = lazy(() => import('@/features/my-depot/pages/UnloadsPage').then(m => ({ default: m.UnloadsPage })))
 const DepotTransferDetailPage = lazy(() => import('@/features/my-depot/pages/DepotTransferDetailPage').then(m => ({ default: m.DepotTransferDetailPage })))
 const WarehousesPage   = lazy(() => import('@/features/warehouses/pages/WarehousesPage').then(m => ({ default: m.WarehousesPage })))
 const WarehouseDetailPage = lazy(() => import('@/features/warehouses/pages/WarehouseDetailPage').then(m => ({ default: m.WarehouseDetailPage })))
@@ -121,6 +122,10 @@ export const router = createBrowserRouter([
       { path: 'load-requests',       Component: makePage(LoadRequestsPage, P.DEPOT_VIEW) },
       { path: 'load-requests/:id',   Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },
       { path: 'load-issues',         Component: makePage(LoadIssuesPage, P.DEPOT_VIEW) },
+      // Stock coming back off the vans. Reading is depot.view like the rest of
+      // the chain; answering one needs depot.issue, which the screen checks —
+      // the route cannot, because it is the same key that reads the list.
+      { path: 'unloads',             Component: makePage(UnloadsPage, P.DEPOT_VIEW) },
       { path: 'load-issues/:id',     Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },
       // Kept so older links and the detail page's own Back still resolve.
       { path: 'depot-transfers/:id', Component: makePage(DepotTransferDetailPage, P.DEPOT_VIEW) },

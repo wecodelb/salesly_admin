@@ -34,6 +34,10 @@ export const ENDPOINTS = {
   // one prefix because they are one flow.
   DEPOT_TRANSFERS: '/depot-transfers',   // GET/POST, /{id} GET/POST/DELETE, /{id}/issue|cancel|accept
   LOAD_REQUESTS: '/depot-transfers/load-requests', // POST, /{id}/approve, /{id}/reject
+  // The return leg. Same documents as a load pointing the other way, so the
+  // list is read off /depot-transfers with flow=unload rather than from a
+  // resource of its own; only the two answers have paths here.
+  UNLOADS: '/depot-transfers/unloads', // /{id}/approve, /{id}/reject
   DEPOT_STOCK: '/depot-stock', // GET — every depot at once, a line each
   MY_DEPOT: '/my-depot',     // GET(+?warehouse_id) — what a depot holds now
 

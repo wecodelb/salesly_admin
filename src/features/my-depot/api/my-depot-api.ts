@@ -125,6 +125,84 @@ export async function fetchPendingLoadRequestCount(): Promise<number> {
   return body?.pagination?.total ?? body?.data?.length ?? 0
 }
 
+// ─── Unloads: what the salesman is sending back ─────────────────────────────
+//
+// An unload is a load pointing the other way — the same LI document, its
+// source being a depot instead of its destination. There is no separate list
+// endpoint and there should not be: `flow` asks the question of the two
+// warehouse columns the document already carries.
+
+/**
+ * Every unload, newest first — pending ones and the ones already answered.
+ *
+ * Read whole rather than a page at a time, like the transfers list beside it,
+ * because the strip above the table totals what is on screen.
+ */
+export async function fetchUnloads(perPage = 200): Promise<DepotTransfer[]> {
+  const all: DepotTransfer[] = []
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const res = await apiClient.get<Envelope<ListData<DepotTransfer>>>(ENDPOINTS.DEPOT_TRANSFERS, {
+      params: { flow: 'unload', trs_type: 'LI', per_page: perPage, page },
+    })
+
+    const body = res.data.data
+    all.push(...(body?.data ?? []))
+
+    if (page >= (body?.pagination?.last_page ?? 1)) break
+  }
+
+  return all
+}
+
+/**
+ * How many are waiting on somebody here.
+ *
+ * DRAFT is the whole state: an unload sits as a draft holding the goods
+ * reserved on the salesman's van, and until this number is zero there is stock
+ * he cannot sell and the warehouse has not taken.
+ */
+export async function fetchPendingUnloadCount(): Promise<number> {
+  const res = await apiClient.get<Envelope<ListData<DepotTransfer>>>(ENDPOINTS.DEPOT_TRANSFERS, {
+    params: { flow: 'unload', trs_type: 'LI', status: 'DRAFT', per_page: 1 },
+  })
+
+  const body = res.data.data
+  return body?.pagination?.total ?? body?.data?.length ?? 0
+}
+
+/**
+ * Take the goods back. One call issues and accepts, because there is no
+ * journey to record — the salesman is at the bay with the crates.
+ *
+ * `rows` carries only the lines being signed for short; silence on a line
+ * means it came off the van as declared.
+ */
+export async function approveUnload(
+  id: number,
+  payload: AcceptTransferPayload,
+): Promise<DepotAcceptResult> {
+  const res = await apiClient.post<Envelope<AcceptResponse>>(
+    `${ENDPOINTS.UNLOADS}/${id}/approve`,
+    payload,
+  )
+  const body = res.data.data
+
+  return {
+    transfer: body.transfer,
+    issue: body.issue,
+    discrepancy_qty: body.discrepancy_qty,
+    warnings: capacityWarnings(body),
+  }
+}
+
+/** Refuse it. The reservation is dropped and the goods stay on his van. */
+export async function rejectUnload(id: number): Promise<DepotWriteResult> {
+  const res = await apiClient.post<Envelope<WriteResponse>>(`${ENDPOINTS.UNLOADS}/${id}/reject`)
+  const body = res.data.data
+  return { transfer: body.transfer, warnings: capacityWarnings(body) }
+}
+
 /** One document with its lines, the document behind it and its acceptance. */
 export async function fetchDepotTransfer(id: number): Promise<DepotTransfer> {
   const res = await apiClient.get<Envelope<{ data: DepotTransfer }>>(

@@ -575,6 +575,48 @@ export const TYPE_LABELS: Record<DepotTransferType, string> = {
   TRI: 'Acceptance',
 }
 
+// ─── Unloads ────────────────────────────────────────────────────────────────
+//
+// An unload is not a document type. It is an LI whose SOURCE is a depot: the
+// same pair of documents as a load, pointing the other way. The direction
+// lives in the two warehouse columns, which is why nothing here reads a flag.
+
+/** Stock leaving a depot rather than arriving at one. */
+export function isUnload(t: Pick<DepotTransfer, 'trs_type' | 'source'>): boolean {
+  return t.trs_type === 'LI' && !!t.source?.is_depot
+}
+
+/**
+ * Waiting on the warehouse.
+ *
+ * DRAFT is the whole state: the goods are reserved on the van, still counted
+ * as the salesman's and no longer sellable, and nothing moves until somebody
+ * answers. It is the only status with an action attached.
+ */
+export function isPendingUnload(t: Pick<DepotTransfer, 'trs_type' | 'status' | 'source'>): boolean {
+  return isUnload(t) && t.status === 'DRAFT'
+}
+
+/**
+ * How an unload reads.
+ *
+ * Its own vocabulary rather than [transferPill]'s, because the words for a
+ * load are wrong in this direction — "Load issued" on stock coming back off a
+ * van describes the opposite of what happened. Three states, matching what the
+ * salesman's phone shows him: waiting, taken back, refused.
+ */
+export function unloadPill(
+  t: Pick<DepotTransfer, 'status'>,
+): { status: string; label: string } {
+  if (t.status === 'DRAFT') return { status: 'pending', label: 'Awaiting approval' }
+  if (t.status === 'COMPLETED') return { status: 'success', label: 'Taken back' }
+  // CONFIRMED should not survive a round trip — approving issues and accepts
+  // in one call — but a half-finished one must still read as in-flight rather
+  // than as an unanswered request somebody could act on twice.
+  if (t.status === 'CONFIRMED') return { status: 'warning', label: 'On the bay' }
+  return { status: 'error', label: 'Refused' }
+}
+
 /**
  * The API formats every timestamp as `d/m/Y H:i` (DateTimeHelper), which
  * `new Date()` reads as month-first and silently mangles — 03/11 becomes March

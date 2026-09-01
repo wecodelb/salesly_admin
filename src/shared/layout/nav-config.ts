@@ -5,7 +5,7 @@ import type { Permission } from '@/core/auth/permissions'
  * because the number is fetched where it is rendered — nav-config is a static
  * description of the menu and has no business holding state.
  */
-export type NavBadge = 'pending-load-requests'
+export type NavBadge = 'pending-load-requests' | 'pending-unloads'
 
 export interface NavItem {
   key: string
@@ -64,6 +64,10 @@ export const NAV_GROUPS: NavGroup[] = [
       // yes, and that is not a thing to find out by opening the screen.
       { key: 'load-requests', label: 'Load Requests', icon: 'Inbox', path: '/load-requests', permission: 'depot.view', badge: 'pending-load-requests' },
       { key: 'load-issues', label: 'Load Issues', icon: 'Truck', path: '/load-issues', permission: 'depot.view' },
+      // The other end of the day. Badged for the same reason Load Requests is:
+      // an unload nobody answers is stock frozen on a van, which is not a
+      // thing to find out by opening the screen.
+      { key: 'unloads', label: 'Unloads', icon: 'Undo2', path: '/unloads', permission: 'depot.view', badge: 'pending-unloads' },
       { key: 'adjustments', label: 'Adjustments', icon: 'ClipboardList', path: '/adjustments', permission: 'adjustments.view' },
       // No separate stock entry. What each place holds is on the warehouse list
       // and on the warehouse itself, which is where somebody looking for it
