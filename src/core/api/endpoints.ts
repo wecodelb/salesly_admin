@@ -38,6 +38,11 @@ export const ENDPOINTS = {
   // list is read off /depot-transfers with flow=unload rather than from a
   // resource of its own; only the two answers have paths here.
   UNLOADS: '/depot-transfers/unloads', // /{id}/approve, /{id}/reject
+
+  // Goods a customer handed back. Read-only here: a return is taken at the
+  // counter with the shop standing there, so there is nothing for the office
+  // to approve after the fact.
+  SALES_RETURNS: '/sales-returns',
   DEPOT_STOCK: '/depot-stock', // GET — every depot at once, a line each
   MY_DEPOT: '/my-depot',     // GET(+?warehouse_id) — what a depot holds now
 

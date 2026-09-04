@@ -118,6 +118,14 @@ const FIXTURES: Record<string, unknown[]> = {
   // One still waiting, one already taken back, one refused — the three states
   // the screen has to tell apart, and a mix so a total over "held on vans"
   // cannot pass by counting everything.
+  // One credited in full and one that left a refund owing -- the distinction
+  // the whole screen turns on, and a mix so a total over 'refunds owing'
+  // cannot pass by summing everything.
+  '/sales-returns': [
+    { id: 1, trs_number: 14, trs_date: '20/03/2026 17:10', status: 'CONFIRMED', customer_id: 1, customer: { id: 1, code: 'C1', name: 'Corner Shop' }, salesman: { id: 1, name: 'Ahmad' }, warehouse: { id: 2, code: 'DP1', name: 'Van 3' }, currency: 'USD', exchange_rate: 0, total_qty: 4, total_price: 20, credit_value: 20, credit_applied: 20, credit_excess: 0, memo: '', rows_count: 1 },
+    { id: 2, trs_number: 15, trs_date: '19/03/2026 16:00', status: 'CONFIRMED', customer_id: 2, customer: { id: 2, code: 'C2', name: 'Bakery Nour' }, salesman: { id: 2, name: 'Sara' }, warehouse: { id: 3, code: 'DP2', name: 'Van 7' }, currency: 'USD', exchange_rate: 0, total_qty: 6, total_price: 30, credit_value: 30, credit_applied: 18, credit_excess: 12, memo: '', rows_count: 2 },
+    { id: 3, trs_number: 16, trs_date: '18/03/2026 15:30', status: 'CONFIRMED', customer_id: 3, customer: { id: 3, code: 'C3', name: 'Zahle Depot' }, salesman: { id: 1, name: 'Ahmad' }, warehouse: { id: 2, code: 'DP1', name: 'Van 3' }, currency: 'USD', exchange_rate: 0, total_qty: 2, total_price: 10, credit_value: 10, credit_applied: 10, credit_excess: 0, memo: '', rows_count: 1 },
+  ],
   '/depot-transfers?flow=unload': [
     { id: 11, company_id: 1, uuid: null, trs_type: 'LI', trs_number: 'UL-1', trs_date: '20/03/2026 19:10', status: 'DRAFT', is_in_transit: false, src_id: null, source: { id: 2, name: 'Van 3', is_depot: true }, destination: { id: 1, name: 'Main store', is_depot: false }, salesman: { id: 1, name: 'Ahmad' }, created_by: 1, created_by_name: 'Ahmad', confirmed_at: null, confirmed_by: null, confirmed_by_name: null, total_qty: 25, total_cost: 0, total_weight: 0 },
     { id: 12, company_id: 1, uuid: null, trs_type: 'LI', trs_number: 'UL-2', trs_date: '19/03/2026 18:40', status: 'COMPLETED', is_in_transit: false, src_id: null, source: { id: 3, name: 'Van 7', is_depot: true }, destination: { id: 1, name: 'Main store', is_depot: false }, salesman: { id: 2, name: 'Sara' }, created_by: 2, created_by_name: 'Sara', confirmed_at: '19/03/2026 19:00', confirmed_by: 1, confirmed_by_name: 'Admin', total_qty: 40, total_cost: 0, total_weight: 0 },
@@ -430,6 +438,21 @@ const SCREENS: Screen[] = [
       keeps: 'LI-1',
       drops: 'LI-2',
       scope: '1 of 2 loads',
+    },
+  },
+  {
+    name: 'Sales returns',
+    load: async () => (await import('@/features/returns/pages/ReturnsPage')).ReturnsPage,
+    ready: '#14',
+    title: 'Sales returns',
+    scope: '3 returns',
+    prints: ['#14', '#15', '#16'],
+    filter: {
+      box: /return number/,
+      query: 'nour',
+      keeps: '#15',
+      drops: '#14',
+      scope: '1 of 3 returns',
     },
   },
   {
