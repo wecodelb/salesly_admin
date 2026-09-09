@@ -1,6 +1,10 @@
 import { describe as group, expect, it } from 'vitest'
 import {
+  clockTime,
+  dayKey,
+  dayLabel,
   describe,
+  groupByDay,
   formatAmount,
   formatDwell,
   hasAmount,
@@ -93,5 +97,46 @@ group('how long he was inside', () => {
 
   it('says nothing about a visit still open', () => {
     expect(formatDwell(event({ kind: 'visit', minutes: null }))).toBe('—')
+  })
+})
+
+group('cutting the feed into days', () => {
+  const now = new Date('2026-09-09T12:00:00')
+
+  it('keeps the order and breaks on the day', () => {
+    const days = groupByDay([
+      event({ id: 'a', at: '2026-09-09T11:00:00' }),
+      event({ id: 'b', at: '2026-09-09T09:00:00' }),
+      event({ id: 'c', at: '2026-09-08T17:00:00' }),
+    ])
+
+    expect(days).toHaveLength(2)
+    expect(days[0].events.map((e) => e.id)).toEqual(['a', 'b'])
+    expect(days[1].events.map((e) => e.id)).toEqual(['c'])
+  })
+
+  it('names the two days anybody thinks in', () => {
+    // "09/09/2026" is not how a manager says today.
+    expect(dayLabel(dayKey('2026-09-09T08:00:00'), now)).toBe('Today')
+    expect(dayLabel(dayKey('2026-09-08T08:00:00'), now)).toBe('Yesterday')
+    expect(dayLabel(dayKey('2026-09-01T08:00:00'), now)).not.toBe('Today')
+  })
+
+  it('does not lose a document written without a date', () => {
+    const days = groupByDay([event({ id: 'x', at: null })])
+
+    expect(days[0].key).toBe('unknown')
+    expect(dayLabel('unknown', now)).toBe('Undated')
+  })
+})
+
+group('the time on the rail', () => {
+  it('is a 24-hour clock', () => {
+    expect(clockTime('2026-09-09T14:05:00')).toBe('14:05')
+  })
+
+  it('survives a missing or broken date', () => {
+    expect(clockTime(null)).toBe('—')
+    expect(clockTime('nonsense')).toBe('—')
   })
 })

@@ -154,3 +154,74 @@ export function formatDwell(event: ActivityEvent): string {
   const rest = minutes % 60
   return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`
 }
+
+/** The calendar day an event belongs to, as `YYYY-MM-DD` in local time. */
+export function dayKey(iso: string | null): string {
+  if (!iso) return 'unknown'
+
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return 'unknown'
+
+  const month = `${d.getMonth() + 1}`.padStart(2, '0')
+  const day = `${d.getDate()}`.padStart(2, '0')
+  return `${d.getFullYear()}-${month}-${day}`
+}
+
+export interface ActivityDay {
+  key: string
+  events: ActivityEvent[]
+}
+
+/**
+ * The feed cut into days, in the order it arrived.
+ *
+ * A stream with no day breaks reads as one endless list, and the reader ends up
+ * checking timestamps to work out where yesterday started — which is the
+ * screen's job, not his.
+ */
+export function groupByDay(events: ActivityEvent[]): ActivityDay[] {
+  const days: ActivityDay[] = []
+
+  for (const event of events) {
+    const key = dayKey(event.at)
+    const last = days[days.length - 1]
+
+    if (last && last.key === key) last.events.push(event)
+    else days.push({ key, events: [event] })
+  }
+
+  return days
+}
+
+/**
+ * "Today", "Yesterday", else the date.
+ *
+ * Nobody reads "09/09/2026" and thinks "today"; the two nearest days are the
+ * ones this screen is mostly about, so they get their names.
+ */
+export function dayLabel(key: string, now: Date = new Date()): string {
+  if (key === 'unknown') return 'Undated'
+
+  if (key === dayKey(now.toISOString())) return 'Today'
+
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (key === dayKey(yesterday.toISOString())) return 'Yesterday'
+
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+/** The clock time an event happened, for the rail down the left. */
+export function clockTime(iso: string | null): string {
+  if (!iso) return '—'
+
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false })
+}
