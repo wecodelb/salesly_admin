@@ -13,6 +13,7 @@ export const ENDPOINTS = {
   // today's four figures against yesterday, a 14-day trend, the week's top
   // salesmen, the latest orders and what customers owe. Gated on orders.view.
   DASHBOARD_SUMMARY: '/dashboard/summary',
+  ACTIVITY: '/activity',
 
   // Inventory
   // GET/POST/PATCH/DELETE /api/v1/items, GET /{id}/distribution,
