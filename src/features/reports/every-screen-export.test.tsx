@@ -6,6 +6,16 @@ import type { ComponentType } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/core/auth/auth-store'
+import { sheetModel } from './excel-export'
+import type { ReportDocument } from './report-types'
+
+// The workbook writer itself is covered in excel-export.test.ts; here it is
+// the join that matters — which document each screen hands it.
+const excel = vi.fn(async (..._args: unknown[]) => 'export.xlsx')
+vi.mock('./excel-export', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./excel-export')>()),
+  downloadExcel: (...args: unknown[]) => excel(...args),
+}))
 
 /**
  * Every export button on every screen, driven the way a person drives it.
@@ -475,6 +485,7 @@ const SCREENS: Screen[] = [
 let print: ReturnType<typeof vi.fn>
 
 beforeEach(() => {
+  excel.mockClear()
   print = vi.fn()
   vi.stubGlobal('print', print)
   // Admin bypasses every permission check, so no header is gated away.
@@ -530,17 +541,46 @@ async function waitForNarrowed(gone: string) {
   })
 }
 
+const exportButton = () => screen.getByRole('button', { name: /^export/i })
+
+/** Export ▾, then a format — the two clicks a person makes. */
+async function exportAs(format: RegExp) {
+  await userEvent.click(exportButton())
+  await userEvent.click(screen.getByRole('menuitem', { name: format }))
+}
+
 async function exportFrom(s: Screen) {
   await open(s)
-  await userEvent.click(screen.getByRole('button', { name: /export pdf/i }))
+  await exportAs(/pdf/i)
   return doc()
 }
 
 describe.each(SCREENS.map((s) => [s.name, s] as const))('%s', (_name, s) => {
-  it('has an Export PDF button on it', async () => {
+  it('has an Export button offering PDF and Excel', async () => {
     await open(s)
 
-    expect(screen.getByRole('button', { name: /export pdf/i })).toBeEnabled()
+    expect(exportButton()).toBeEnabled()
+    await userEvent.click(exportButton())
+    expect(screen.getByRole('menuitem', { name: /pdf/i })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: /excel/i })).toBeInTheDocument()
+  })
+
+  it('writes the same rows, as real figures, to an Excel workbook', async () => {
+    // The workbook is built from the very document the PDF prints, so the
+    // rows must match — and no cell may carry the text a broken figure prints.
+    await open(s)
+    await exportAs(/excel/i)
+
+    await waitFor(() => expect(excel).toHaveBeenCalledOnce())
+    const [sent] = excel.mock.calls[0] as [ReportDocument<unknown>]
+    const model = sheetModel(sent, { company: 'Nestle Lebanon', generatedAt: new Date() })
+    const cells = model.groups.flatMap((g) => g.rows.flat())
+    const text = cells.filter((c): c is string => typeof c === 'string').join(' ')
+
+    expect(sent.title).toBe(s.title)
+    for (const printed of s.prints) expect(text).toContain(printed)
+    expect(cells.some((c) => typeof c === 'number' && Number.isNaN(c))).toBe(false)
+    expect(text).not.toMatch(/NaN|undefined|Invalid Date|\[object Object\]/)
   })
 
   it('prints a document when it is clicked', async () => {
@@ -604,7 +644,7 @@ describe.each(SCREENS.map((s) => [s.name, s] as const))('%s', (_name, s) => {
     // before exporting — otherwise this would test the unfiltered list again.
     await waitForNarrowed(s.filter.drops)
 
-    await userEvent.click(screen.getByRole('button', { name: /export pdf/i }))
+    await exportAs(/pdf/i)
     const printed = doc()
 
     expect(within(printed).getAllByText(s.filter.keeps).length).toBeGreaterThan(0)
@@ -620,7 +660,7 @@ describe.each(SCREENS.map((s) => [s.name, s] as const))('%s', (_name, s) => {
     await userEvent.type(screen.getByPlaceholderText(s.filter.box), s.filter.query)
     await waitForNarrowed(s.filter.drops)
 
-    await userEvent.click(screen.getByRole('button', { name: /export pdf/i }))
+    await exportAs(/pdf/i)
     const subtitle = doc().querySelector('.report-subtitle')!.textContent
 
     expect(subtitle).toContain(s.filter.scope)

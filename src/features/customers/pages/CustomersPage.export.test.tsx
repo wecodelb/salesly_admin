@@ -118,13 +118,19 @@ async function renderCustomers() {
   await screen.findByText('Corner Shop')
 }
 
-const exportButton = () => screen.getByRole('button', { name: /export pdf/i })
+const exportButton = () => screen.getByRole('button', { name: /^export/i })
+
+/** Export ▾, then PDF — the two clicks a person makes. */
+async function exportAsPdf() {
+  await userEvent.click(exportButton())
+  await userEvent.click(screen.getByRole('menuitem', { name: /pdf/i }))
+}
 const doc = () => document.querySelector('.report-doc.is-print-only') as HTMLElement
 
 describe('exporting Customers', () => {
   it('prints a document at all, and prints it once', async () => {
     await renderCustomers()
-    await userEvent.click(exportButton())
+    await exportAsPdf()
 
     expect(print).toHaveBeenCalledOnce()
     expect(doc()).not.toBeNull()
@@ -132,7 +138,7 @@ describe('exporting Customers', () => {
 
   it('prints every customer on screen when nothing is filtered', async () => {
     await renderCustomers()
-    await userEvent.click(exportButton())
+    await exportAsPdf()
 
     const table = within(doc())
     expect(table.getByText('Corner Shop')).toBeInTheDocument()
@@ -149,7 +155,7 @@ describe('exporting Customers', () => {
     await userEvent.type(screen.getByPlaceholderText(/search/i), 'bakery')
     await waitFor(() => expect(screen.queryByText('Corner Shop')).toBeNull())
 
-    await userEvent.click(exportButton())
+    await exportAsPdf()
 
     const table = within(doc())
     expect(table.getByText('Bakery Nour')).toBeInTheDocument()
@@ -166,7 +172,7 @@ describe('exporting Customers', () => {
     await userEvent.type(screen.getByPlaceholderText(/search/i), 'bakery')
     await waitFor(() => expect(screen.queryByText('Corner Shop')).toBeNull())
 
-    await userEvent.click(exportButton())
+    await exportAsPdf()
 
     // Bakery Nour owes nothing; the other two owe $550 between them.
     expect(doc().textContent).toContain('$0.00')
@@ -175,7 +181,7 @@ describe('exporting Customers', () => {
 
   it('heads the page with the company, not with Salesly', async () => {
     await renderCustomers()
-    await userEvent.click(exportButton())
+    await exportAsPdf()
 
     expect(doc().textContent).toContain('Nestle Lebanon')
   })
@@ -184,7 +190,7 @@ describe('exporting Customers', () => {
     // credit_limit is null on two of these three rows, which is exactly the
     // shape that used to total to NaN.
     await renderCustomers()
-    await userEvent.click(exportButton())
+    await exportAsPdf()
 
     const foot = doc().querySelector('.report-table tfoot')
     expect(foot).not.toBeNull()
@@ -194,7 +200,7 @@ describe('exporting Customers', () => {
 
   it('leaves nothing behind on screen once the dialog closes', async () => {
     await renderCustomers()
-    await userEvent.click(exportButton())
+    await exportAsPdf()
     expect(doc()).not.toBeNull()
 
     window.dispatchEvent(new Event('afterprint'))

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Inbox, PackagePlus, Truck, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { depotExportDoc } from '../depot-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -252,7 +252,7 @@ export function LoadRequestsPage() {
         title="Load requests"
         subtitle="What each salesman has asked the warehouse for, and what became of it."
         actions={
-          <ExportPdfButton
+          <ExportButton
             variant="outline"
             disabled={isLoading || isError}
             build={() =>
