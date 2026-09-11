@@ -17,11 +17,16 @@ const PLAIN = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 2,
 })
 
-/** `$1,234.50`, and `—` for nothing at all. */
+/**
+ * `$1,234.50`, `-$20.00`, and `—` for nothing at all.
+ *
+ * The minus goes before the currency sign: `$-20.00` is what a formatter
+ * prints, not what an accountant writes.
+ */
 export function money(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—'
 
-  return `$${MONEY.format(value)}`
+  return value < 0 ? `-$${MONEY.format(-value)}` : `$${MONEY.format(value)}`
 }
 
 /** A count or a quantity. */
@@ -48,8 +53,13 @@ export function day(value: string | Date | null | undefined): string {
   })
 }
 
-export function text(value: string | null | undefined): string {
-  const trimmed = (value ?? '').trim()
+/**
+ * A text cell. Takes a number too: several endpoints send document numbers as
+ * integers, and a formatter that only accepted strings took down the whole
+ * screen the moment one arrived — mid-export, with the page already printing.
+ */
+export function text(value: string | number | null | undefined): string {
+  const trimmed = String(value ?? '').trim()
 
   return trimmed === '' ? '—' : trimmed
 }

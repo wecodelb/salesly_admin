@@ -21,6 +21,12 @@ export interface ReportColumn<Row> {
   value: (row: Row) => string
   /** A raw number for the footer total, when this column is worth totalling. */
   total?: (row: Row) => number
+  /**
+   * The cell as a spreadsheet should hold it — a real number or date rather
+   * than the formatted text. Optional: money and number columns fall back to
+   * `total`, then to reading their own formatted text back.
+   */
+  raw?: (row: Row) => string | number | Date | null
   /** Narrow columns keep a printed table readable; widths are hints, not rules. */
   width?: string
 }

@@ -25,7 +25,7 @@ describe('money', () => {
   })
 
   it('keeps a negative visible rather than swallowing the sign', () => {
-    expect(money(-40)).toBe('$-40.00')
+    expect(money(-40)).toBe('-$40.00')
   })
 })
 
@@ -120,10 +120,27 @@ describe('rangeLabel', () => {
   })
 })
 
+describe('negative money', () => {
+  it('puts the minus before the currency sign', () => {
+    // A month of returns and no sales nets out below zero, and "$-120.62"
+    // reads as a typo on a printed page.
+    expect(money(-120.62)).toBe('-$120.62')
+    expect(money(-0.5)).toBe('-$0.50')
+  })
+})
+
 describe('text', () => {
   it('turns a blank into a dash so a cell is never mysteriously empty', () => {
     expect(text('  ')).toBe('—')
     expect(text(null)).toBe('—')
     expect(text('Corner Shop')).toBe('Corner Shop')
+  })
+
+  it('takes a number, which is how several endpoints send document numbers', () => {
+    // A string-only formatter crashed the Load requests, Load issues and
+    // Unloads screens mid-export the moment a real integer `trs_number`
+    // reached it — the fixtures had all been strings.
+    expect(text(417)).toBe('417')
+    expect(text(0)).toBe('0')
   })
 })
