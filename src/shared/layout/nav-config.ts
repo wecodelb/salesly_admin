@@ -5,7 +5,7 @@ import type { Permission } from '@/core/auth/permissions'
  * because the number is fetched where it is rendered — nav-config is a static
  * description of the menu and has no business holding state.
  */
-export type NavBadge = 'pending-load-requests' | 'pending-unloads'
+export type NavBadge = 'pending-load-requests' | 'pending-unloads' | 'online-now'
 
 export interface NavItem {
   key: string
@@ -31,7 +31,10 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', path: '/dashboard' },
       { key: 'live-map', label: 'Live Map', icon: 'Map', path: '/live-map' },
-      { key: 'activity', label: 'Activity', icon: 'Activity', path: '/activity' },
+      // The badge is who the app has heard from in the last ten minutes, in
+      // green: unlike the depot counts it is not something waiting on the
+      // office, it is the team being out there.
+      { key: 'activity', label: 'Activity', icon: 'Activity', path: '/activity', permission: 'orders.view', badge: 'online-now' },
     ],
   },
   {
