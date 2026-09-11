@@ -20,7 +20,7 @@ import {
   UserX,
 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { customersExportDoc } from '../customers-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -532,7 +532,7 @@ export function CustomersPage() {
                 Demo data — backend part 1 pending
               </span>
             )}
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() =>

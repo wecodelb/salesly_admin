@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Zap, Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
 import { useAuthStore } from '@/core/auth/auth-store'
@@ -130,9 +130,6 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-3 shadow-lg">
-            <Zap size={28} className="text-white" />
-          </div>
           {/* Still an h1 — the mark is the page's heading, and it is real text,
               so it is read out as the name rather than skipped as an image. */}
           <h1 className="m-0">
