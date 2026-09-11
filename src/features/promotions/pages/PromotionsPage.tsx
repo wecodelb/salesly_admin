@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle2, Pencil, Percent, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { promotionsExportDoc } from '../promotions-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -150,7 +150,7 @@ export function PromotionsPage() {
         subtitle="Discounts across the catalog"
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => promotionsExportDoc(shownRows(), promotions.length)}
