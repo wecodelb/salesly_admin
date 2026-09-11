@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { BadgeCheck, MoreVertical, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { customerGroupsExportDoc } from '../customer-groups-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -178,7 +178,7 @@ export function CustomerGroupsPage() {
         subtitle="The labels your team classifies customers with. The customer form picks from this list, in the order you set here."
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => customerGroupsExportDoc(shownRows(), groups.length, debouncedSearch)}

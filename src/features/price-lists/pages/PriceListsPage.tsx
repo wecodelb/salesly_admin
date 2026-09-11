@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CheckCircle2, MoreVertical, Pencil, Plus, Tags, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { priceListsExportDoc } from '../price-lists-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -167,7 +167,7 @@ export function PriceListsPage() {
         subtitle="Per-customer price overrides"
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => priceListsExportDoc(shownRows(), priceLists.length)}

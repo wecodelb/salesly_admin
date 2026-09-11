@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { PackageCheck, Undo2, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { unloadsExportDoc } from '../unloads-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -219,7 +219,7 @@ export function UnloadsPage() {
         title="Unloads"
         subtitle="Stock coming back off the vans. Nothing moves until you take it back."
         actions={
-          <ExportPdfButton
+          <ExportButton
             variant="outline"
             disabled={isLoading || isError}
             build={() =>

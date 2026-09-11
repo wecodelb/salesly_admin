@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AlertTriangle, Banknote, Coins, Receipt, Store, Users, Wallet } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
@@ -255,7 +255,7 @@ export function CollectionsPage() {
         title="Collections"
         subtitle="Money taken against what customers owe, and where it landed"
         actions={
-          <ExportPdfButton
+          <ExportButton
             variant="outline"
             disabled={isLoading || isError}
             build={() => collectionsExportDoc(shownRows(), collections.length, exportFilters)}
