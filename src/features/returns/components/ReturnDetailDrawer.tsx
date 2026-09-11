@@ -124,7 +124,10 @@ export function ReturnDetailDrawer({ document, onClose }: Props) {
                     {formatQty(row.trs_qty)} {row.uom_name}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-right tabular-nums text-[var(--text-secondary)]">
-                    {formatMoney(row.unit_price)}
+                    {/* The line's price is per piece; the quantity beside it is
+                        in the line's own unit. Priced per that unit, so a box
+                        of twelve reads as a box, and qty × price = value. */}
+                    {formatMoney(row.unit_price * (row.unit || 1))}
                   </td>
                   <td className="whitespace-nowrap px-4 py-2.5 text-right font-medium tabular-nums text-[var(--text-primary)]">
                     {formatMoney(row.line_value)}

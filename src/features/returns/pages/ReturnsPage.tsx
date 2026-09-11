@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AlertTriangle, PackageCheck, RotateCcw } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { returnsExportDoc } from '../returns-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -188,7 +188,7 @@ export function ReturnsPage() {
         title="Sales returns"
         subtitle="Goods handed back at the counter, and the credit that went with them."
         actions={
-          <ExportPdfButton
+          <ExportButton
             variant="outline"
             disabled={isLoading || isError}
             build={() =>

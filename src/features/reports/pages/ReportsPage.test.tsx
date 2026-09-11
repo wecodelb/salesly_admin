@@ -114,7 +114,7 @@ async function renderReports() {
 
   const view = render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/reports?tab=lists']}>
         <ReportsPage />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -127,7 +127,7 @@ async function renderReports() {
   return view
 }
 
-const exportButton = () => screen.getByRole('button', { name: /export pdf/i })
+const exportButton = () => screen.getByRole('button', { name: /^export/i })
 
 /** The picker button for a report. Its name also becomes the document title,
  *  so a bare getByText would match two nodes once the report is showing. */
@@ -151,15 +151,27 @@ afterEach(() => {
 })
 
 describe('the Export button', () => {
-  it('prints the page, which is the whole of the export', async () => {
+  it('prints the page, which is the whole of the PDF', async () => {
     const print = vi.fn()
     vi.stubGlobal('print', print)
     await renderReports()
 
     await userEvent.click(exportButton())
+    await userEvent.click(screen.getByRole('menuitem', { name: /pdf/i }))
 
     expect(print).toHaveBeenCalledOnce()
+    // The document is already on screen; a second, print-only copy would
+    // come out of the printer twice.
+    expect(document.querySelector('.report-doc.is-print-only')).toBeNull()
     vi.unstubAllGlobals()
+  })
+
+  it('offers the same report as an Excel workbook', async () => {
+    await renderReports()
+
+    await userEvent.click(exportButton())
+
+    expect(screen.getByRole('menuitem', { name: /excel/i })).toBeInTheDocument()
   })
 
   it('will not fire while the figures are still loading', async () => {
