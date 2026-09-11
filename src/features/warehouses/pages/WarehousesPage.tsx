@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MoreVertical, Pencil, Plus, Star, Trash2, Truck, Warehouse as WarehouseIcon } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { warehousesExportDoc } from '../warehouses-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -334,7 +334,7 @@ export function WarehousesPage() {
         subtitle="The buildings stock is picked from and the depots the salesmen drive — every load starts and ends in one of these."
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => warehousesExportDoc(shownRows(), warehouses.length, debouncedSearch, kindFilter)}

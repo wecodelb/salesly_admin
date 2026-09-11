@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { UserPlus, Pencil, Trash2, Ban, CircleCheck, ShieldCheck } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { usersExportDoc } from '../users-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -232,7 +232,7 @@ export function UsersPage() {
         subtitle="Team members, roles, and permissions"
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() =>

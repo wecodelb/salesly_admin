@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { ChevronLeft, Zap } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { SaleslyWordmark } from '@/shared/components/SaleslyWordmark/SaleslyWordmark'
 import { NAV_GROUPS, type NavBadge } from './nav-config'
 import { ICON_MAP } from './nav-icons'
@@ -9,6 +9,7 @@ import {
   usePendingLoadRequestCount,
   usePendingUnloadCount,
 } from '@/features/my-depot/hooks/use-my-depot'
+import { useOnlineCount } from '@/features/activity/hooks/use-activity'
 
 
 interface Props {
@@ -24,12 +25,16 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
   const { data: pendingLoadRequests = 0 } = usePendingLoadRequestCount(can(PERMISSIONS.DEPOT_VIEW))
   const { data: pendingUnloads = 0 } = usePendingUnloadCount(can(PERMISSIONS.DEPOT_VIEW))
 
+  const { data: onlineNow = 0 } = useOnlineCount(can(PERMISSIONS.ORDERS_VIEW))
+
   const badgeCount = (badge?: NavBadge): number =>
     badge === 'pending-load-requests'
       ? pendingLoadRequests
       : badge === 'pending-unloads'
         ? pendingUnloads
-        : 0
+        : badge === 'online-now'
+          ? onlineNow
+          : 0
 
   return (
     <aside
@@ -41,12 +46,13 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-white/5 min-h-[64px]">
-        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-blue)] flex items-center justify-center flex-shrink-0">
-          <Zap size={16} className="text-white" />
-        </div>
-        {/* The same mark, just small. Collapsed there is no room for it at all,
-            and the badge to the left is the brand at that width. */}
-        {!collapsed && <SaleslyWordmark fontSize={18} />}
+        {/* The wordmark alone, as on the splash. Collapsed there is no room
+            for it, so the app icon — the same S and arrow — stands in. */}
+        {collapsed ? (
+          <img src="/salesly-icon-192.png" alt="Salesly" className="w-8 h-8 rounded-lg flex-shrink-0" />
+        ) : (
+          <SaleslyWordmark fontSize={20} />
+        )}
       </div>
 
       {/* Nav */}
@@ -69,6 +75,7 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
                 {visible.map((item) => {
                   const Icon = ICON_MAP[item.icon]
                   const count = badgeCount(item.badge)
+                  const online = item.badge === 'online-now'
                   return (
                     <NavLink
                       key={item.key}
@@ -76,7 +83,7 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
                       title={
                         collapsed
                           ? count > 0
-                            ? `${item.label} (${count} waiting)`
+                            ? `${item.label} (${count} ${online ? 'online' : 'waiting'})`
                             : item.label
                           : undefined
                       }
@@ -96,13 +103,31 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
                             fact that something is waiting still has to survive
                             — a dot on the icon says it without the width. */}
                         {collapsed && count > 0 && (
-                          <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-[var(--accent-amber)]" />
+                          <span
+                            className={[
+                              'absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full',
+                              online ? 'bg-emerald-500 ring-2 ring-[var(--bg-sidebar)]' : 'bg-[var(--accent-amber)]',
+                            ].join(' ')}
+                          />
                         )}
                       </span>
                       {!collapsed && <span className="truncate">{item.label}</span>}
-                      {!collapsed && count > 0 && (
+                      {!collapsed && count > 0 && !online && (
                         <span className="ml-auto rounded-full bg-[var(--accent-amber)]/20 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-[var(--accent-amber)]">
                           {count}
+                        </span>
+                      )}
+                      {/* Online is good news, not a queue: a solid green
+                          circle with a live pulse, rather than the amber pill
+                          the depot counts use for work waiting. */}
+                      {!collapsed && count > 0 && online && (
+                        <span
+                          data-testid="online-badge"
+                          aria-label={`${count} online now`}
+                          className="relative ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-bold tabular-nums text-white shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
+                        >
+                          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-40" />
+                          <span className="relative">{count}</span>
                         </span>
                       )}
                     </NavLink>
