@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Coins, Eye, MoreVertical, Pencil, Plus, Trash2, TrendingUp } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { currenciesExportDoc } from '../currencies-export'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { Button } from '@/shared/components/Button'
@@ -302,7 +302,7 @@ export function CurrenciesPage() {
         // third one up here would be ambiguous about which it adds to —
         // exporting the catalog is not, because there is only one catalog.
         actions={
-          <ExportPdfButton
+          <ExportButton
             variant="outline"
             disabled={isLoading || ratesLoading || isError}
             build={() => currenciesExportDoc(currencies, rates)}

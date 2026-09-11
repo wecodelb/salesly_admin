@@ -267,7 +267,7 @@ describe('without permission to manage preferences', () => {
     renderPage()
 
     expect(await screen.findByText('Damaged')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /export pdf/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /^export/i })).toBeEnabled()
   })
 })
 

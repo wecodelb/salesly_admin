@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { MoreVertical, Package, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { brandsExportDoc } from '../brands-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -160,7 +160,7 @@ export function BrandsPage() {
         subtitle="Brands label who makes a product, so the catalogue can be browsed and filtered by manufacturer."
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => brandsExportDoc(shownRows(), brands.length, search)}

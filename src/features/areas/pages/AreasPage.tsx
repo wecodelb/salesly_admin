@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { MapPinned, MoreVertical, Pencil, Plus, Trash2, Users } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { areasExportDoc } from '../areas-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -176,7 +176,7 @@ export function AreasPage() {
         subtitle="The sales territories your customers sit in — they drive route planning and how reporting is broken down."
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => areasExportDoc(shownRows(), areas.length, debouncedSearch)}

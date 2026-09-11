@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { FolderTree, MoreVertical, Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { categoriesExportDoc } from '../categories-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -165,7 +165,7 @@ export function CategoriesPage() {
         subtitle="Groupings that organise the product catalog — every product belongs to one."
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => categoriesExportDoc(shownRows(), categories.length, debouncedSearch)}
