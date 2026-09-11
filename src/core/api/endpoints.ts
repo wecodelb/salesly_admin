@@ -15,6 +15,16 @@ export const ENDPOINTS = {
   DASHBOARD_SUMMARY: '/dashboard/summary',
   ACTIVITY: '/activity',
 
+  // Reports, aggregated server-side over the whole book rather than over a
+  // page of it. Gated on reports.view. Sales analysis is one configurable
+  // engine (up to three group-by levels); the other three are stock reports.
+  REPORTS: {
+    SALES_ANALYSIS: '/reports/sales-analysis',
+    INVENTORY: '/reports/inventory',
+    LOADS: '/reports/loads',
+    UNLOADS: '/reports/unloads',
+  },
+
   // Inventory
   // GET/POST/PATCH/DELETE /api/v1/items, GET /{id}/distribution,
   // GET+POST /{id}/levels — the per-warehouse reorder points, read with

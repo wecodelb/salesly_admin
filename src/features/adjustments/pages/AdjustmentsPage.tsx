@@ -10,7 +10,7 @@ import {
   Warehouse as WarehouseIcon,
 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
@@ -261,7 +261,7 @@ export function AdjustmentsPage() {
         subtitle="Stock that moved without a sale behind it — and the paperwork saying why"
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() => adjustmentsExportDoc(shownRows(), adjustments.length, exportFilters)}

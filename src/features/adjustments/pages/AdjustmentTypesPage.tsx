@@ -10,7 +10,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
-import { ExportPdfButton } from '@/features/reports/components/ExportPdfButton'
+import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
 import { adjustmentTypesExportDoc } from '../adjustment-types-export'
 import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
@@ -265,7 +265,7 @@ export function AdjustmentTypesPage() {
         subtitle="The headings stock can be written off or written on under — and which way each one is allowed to move it."
         actions={
           <>
-            <ExportPdfButton
+            <ExportButton
               variant="outline"
               disabled={isLoading || isError}
               build={() =>

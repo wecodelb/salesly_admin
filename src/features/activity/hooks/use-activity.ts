@@ -31,3 +31,20 @@ export function useActivity(filters: ActivityFilters = {}) {
     placeholderData: (previous) => previous,
   })
 }
+
+/**
+ * How many of the team are online right now, for the sidebar.
+ *
+ * Asks for a single event: the online list rides along with every page of the
+ * feed, and the menu has no use for the events themselves. Only polled for
+ * somebody the server would let read the feed.
+ */
+export function useOnlineCount(enabled: boolean) {
+  return useQuery({
+    queryKey: [...ACTIVITY_KEY, 'online-count'],
+    queryFn: () => fetchActivity({ perPage: 1 }),
+    select: (feed) => feed.online.filter((u) => u.is_online).length,
+    enabled,
+    refetchInterval: 60_000,
+  })
+}
