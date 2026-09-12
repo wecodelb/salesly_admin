@@ -5,7 +5,12 @@ import type { Permission } from '@/core/auth/permissions'
  * because the number is fetched where it is rendered — nav-config is a static
  * description of the menu and has no business holding state.
  */
-export type NavBadge = 'pending-load-requests' | 'pending-unloads' | 'online-now'
+export type NavBadge =
+  | 'pending-load-requests'
+  | 'pending-unloads'
+  | 'online-now'
+  | 'new-invoices'
+  | 'new-returns'
 
 export interface NavItem {
   key: string
@@ -41,8 +46,9 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Sales',
     items: [
       { key: 'orders', label: 'Orders', icon: 'ShoppingCart', path: '/orders', permission: 'orders.view' },
-      { key: 'invoices', label: 'Invoices', icon: 'FileText', path: '/invoices', permission: 'invoices.view' },
-      { key: 'returns', label: 'Returns', icon: 'RotateCcw', path: '/returns', permission: 'returns.view' },
+      // Badged with what arrived since this screen was last opened here.
+      { key: 'invoices', label: 'Invoices', icon: 'FileText', path: '/invoices', permission: 'invoices.view', badge: 'new-invoices' },
+      { key: 'returns', label: 'Returns', icon: 'RotateCcw', path: '/returns', permission: 'returns.view', badge: 'new-returns' },
       { key: 'collections', label: 'Collections', icon: 'Banknote', path: '/collections', permission: 'collections.view' },
     ],
   },

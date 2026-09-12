@@ -41,6 +41,11 @@ async function fetchPage(filters: SalesReturnFilters = {}) {
   }
 }
 
+/** The newest returns, one page — what the sidebar counts "new" from. */
+export async function fetchLatestReturns(perPage = 50): Promise<SalesReturn[]> {
+  return (await fetchPage({ page: 1, perPage })).returns
+}
+
 /**
  * Every return matching the filters, across all pages.
  *

@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
 import { SaleslyWordmark } from '@/shared/components/SaleslyWordmark/SaleslyWordmark'
 import { NAV_GROUPS, type NavBadge } from './nav-config'
@@ -10,7 +11,20 @@ import {
   usePendingUnloadCount,
 } from '@/features/my-depot/hooks/use-my-depot'
 import { useOnlineCount } from '@/features/activity/hooks/use-activity'
+import { lastSeen, markSeen, useNewCount, type SeenKind } from './new-since'
 
+/**
+ * How each count is drawn. A solid circle for all of them; the colour says
+ * what kind of thing is waiting, and only "online" pulses — it is live, the
+ * others are a tally.
+ */
+const BADGE_LOOK: Record<NavBadge, { circle: string; dot: string; noun: string; pulse?: boolean }> = {
+  'new-invoices': { circle: 'bg-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]', dot: 'bg-blue-400', noun: 'new' },
+  'new-returns': { circle: 'bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.2)]', dot: 'bg-rose-400', noun: 'new' },
+  'pending-load-requests': { circle: 'bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.2)]', dot: 'bg-amber-400', noun: 'waiting' },
+  'pending-unloads': { circle: 'bg-violet-500 shadow-[0_0_0_3px_rgba(139,92,246,0.2)]', dot: 'bg-violet-400', noun: 'waiting' },
+  'online-now': { circle: 'bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.2)]', dot: 'bg-emerald-400', noun: 'online now', pulse: true },
+}
 
 interface Props {
   collapsed: boolean
@@ -27,14 +41,34 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
 
   const { data: onlineNow = 0 } = useOnlineCount(can(PERMISSIONS.ORDERS_VIEW))
 
-  const badgeCount = (badge?: NavBadge): number =>
-    badge === 'pending-load-requests'
-      ? pendingLoadRequests
-      : badge === 'pending-unloads'
-        ? pendingUnloads
-        : badge === 'online-now'
-          ? onlineNow
-          : 0
+  // When each screen was last opened here. Opening it is seeing what is on
+  // it, so arriving there moves the mark and the badge clears at once.
+  const { pathname } = useLocation()
+  const [seen, setSeen] = useState(() => ({
+    invoices: lastSeen('invoices'),
+    returns: lastSeen('returns'),
+  }))
+  useEffect(() => {
+    const kind: SeenKind | null = pathname.startsWith('/invoices')
+      ? 'invoices'
+      : pathname.startsWith('/returns')
+        ? 'returns'
+        : null
+    if (kind) setSeen((s) => ({ ...s, [kind]: markSeen(kind) }))
+  }, [pathname])
+
+  const { data: newInvoices = 0 } = useNewCount('invoices', seen.invoices, can(PERMISSIONS.INVOICES_VIEW))
+  const { data: newReturns = 0 } = useNewCount('returns', seen.returns, can(PERMISSIONS.RETURNS_VIEW))
+
+  const counts: Record<NavBadge, number> = {
+    'pending-load-requests': pendingLoadRequests,
+    'pending-unloads': pendingUnloads,
+    'online-now': onlineNow,
+    // The screen being read has nothing "new" on it — it is all in view.
+    'new-invoices': pathname.startsWith('/invoices') ? 0 : newInvoices,
+    'new-returns': pathname.startsWith('/returns') ? 0 : newReturns,
+  }
+  const badgeCount = (badge?: NavBadge): number => (badge ? counts[badge] : 0)
 
   return (
     <aside
@@ -75,15 +109,15 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
                 {visible.map((item) => {
                   const Icon = ICON_MAP[item.icon]
                   const count = badgeCount(item.badge)
-                  const online = item.badge === 'online-now'
+                  const look = item.badge ? BADGE_LOOK[item.badge] : null
                   return (
                     <NavLink
                       key={item.key}
                       to={item.path}
                       title={
                         collapsed
-                          ? count > 0
-                            ? `${item.label} (${count} ${online ? 'online' : 'waiting'})`
+                          ? count > 0 && look
+                            ? `${item.label} (${count} ${look.noun})`
                             : item.label
                           : undefined
                       }
@@ -102,32 +136,27 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
                         {/* Collapsed there is no room for the figure, but the
                             fact that something is waiting still has to survive
                             — a dot on the icon says it without the width. */}
-                        {collapsed && count > 0 && (
+                        {collapsed && count > 0 && look && (
                           <span
-                            className={[
-                              'absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full',
-                              online ? 'bg-emerald-500 ring-2 ring-[var(--bg-sidebar)]' : 'bg-[var(--accent-amber)]',
-                            ].join(' ')}
+                            className={`absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full ring-2 ring-[var(--bg-sidebar)] ${look.dot}`}
                           />
                         )}
                       </span>
                       {!collapsed && <span className="truncate">{item.label}</span>}
-                      {!collapsed && count > 0 && !online && (
-                        <span className="ml-auto rounded-full bg-[var(--accent-amber)]/20 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-[var(--accent-amber)]">
-                          {count}
-                        </span>
-                      )}
-                      {/* Online is good news, not a queue: a solid green
-                          circle with a live pulse, rather than the amber pill
-                          the depot counts use for work waiting. */}
-                      {!collapsed && count > 0 && online && (
+                      {/* One shape for every count, a colour for each kind, so
+                          the menu reads at a glance: blue new invoices, rose
+                          new returns, amber loads to answer, violet unloads
+                          to take back, green people online. */}
+                      {!collapsed && count > 0 && look && (
                         <span
-                          data-testid="online-badge"
-                          aria-label={`${count} online now`}
-                          className="relative ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-500 px-1 text-[11px] font-bold tabular-nums text-white shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
+                          data-testid={`badge-${item.badge}`}
+                          aria-label={`${count} ${look.noun}`}
+                          className={`relative ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold tabular-nums text-white ${look.circle}`}
                         >
-                          <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-40" />
-                          <span className="relative">{count}</span>
+                          {look.pulse && (
+                            <span className={`absolute inset-0 animate-ping rounded-full opacity-40 ${look.dot}`} />
+                          )}
+                          <span className="relative">{count > 99 ? '99+' : count}</span>
                         </span>
                       )}
                     </NavLink>
