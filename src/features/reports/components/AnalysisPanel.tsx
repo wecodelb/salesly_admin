@@ -218,7 +218,7 @@ export function AnalysisPanel() {
     })
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+    <div className="grid gap-5 lg:grid-cols-[200px_minmax(0,1fr)] 2xl:grid-cols-[230px_minmax(0,1fr)]">
       {/* The catalogue. */}
       <nav aria-label="Report catalogue" className="space-y-5 lg:sticky lg:top-4 lg:self-start">
         {SECTIONS.map((section) => (

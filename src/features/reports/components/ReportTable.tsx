@@ -134,7 +134,7 @@ export function ReportTable({ rows, levels, keyColumns, measures, groupHeading, 
         refreshing ? 'opacity-60' : '',
       ].join(' ')}
     >
-      <table className="w-full min-w-[720px] border-collapse text-sm">
+      <table className="w-full min-w-[680px] border-collapse text-[13px]">
         <thead>
           <tr className="border-b border-[var(--border-default)] bg-[var(--bg-surface-raised)]">
             {firstIsGroup && (
@@ -148,7 +148,7 @@ export function ReportTable({ rows, levels, keyColumns, measures, groupHeading, 
                   scope="col"
                   aria-sort={active ? (sort!.dir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   className={[
-                    'whitespace-nowrap px-3 py-3 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]',
+                    'whitespace-nowrap px-2.5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]',
                     numeric(col) ? 'text-right' : 'text-left',
                     i === 0 && !firstIsGroup ? 'pl-4' : '',
                   ].join(' ')}
@@ -189,7 +189,7 @@ export function ReportTable({ rows, levels, keyColumns, measures, groupHeading, 
                         {shut ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                       </button>
                     </td>
-                    <td colSpan={leafKeys.length} className="px-3 py-2.5">
+                    <td colSpan={leafKeys.length} className="px-2.5 py-2">
                       <span className="font-semibold text-[var(--text-primary)]">{group.label}</span>
                       <span className="ml-2 rounded-full bg-[var(--bg-surface-raised)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-muted)]">
                         {group.rows.length}
@@ -198,7 +198,7 @@ export function ReportTable({ rows, levels, keyColumns, measures, groupHeading, 
                     {measures.map((col) => (
                       <td
                         key={col.id}
-                        className="whitespace-nowrap px-3 py-2.5 text-right font-semibold tabular-nums text-[var(--text-primary)]"
+                        className="whitespace-nowrap px-2.5 py-2 text-right font-semibold tabular-nums text-[var(--text-primary)]"
                       >
                         {sumOf(group.rows, col)}
                       </td>
@@ -217,7 +217,7 @@ export function ReportTable({ rows, levels, keyColumns, measures, groupHeading, 
                         <td
                           key={col.id}
                           className={[
-                            'whitespace-nowrap px-3 py-2.5',
+                            'whitespace-nowrap px-2.5 py-2',
                             numeric(col)
                               ? 'text-right tabular-nums text-[var(--text-secondary)]'
                               : 'text-[var(--text-primary)]',
@@ -243,7 +243,7 @@ export function ReportTable({ rows, levels, keyColumns, measures, groupHeading, 
               <td
                 key={col.id}
                 className={[
-                  'whitespace-nowrap px-3 py-3 font-bold tabular-nums text-[var(--text-primary)]',
+                  'whitespace-nowrap px-2.5 py-2.5 font-bold tabular-nums text-[var(--text-primary)]',
                   numeric(col) ? 'text-right' : 'text-left',
                   i === 0 && !firstIsGroup ? 'pl-4' : '',
                 ].join(' ')}
