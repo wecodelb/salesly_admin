@@ -58,7 +58,7 @@ export function UnloadsPage() {
     return unloads.filter((unload) => {
       const matchesQuery =
         !q ||
-        unload.trs_number.toLowerCase().includes(q) ||
+        String(unload.trs_number).toLowerCase().includes(q) ||
         (unload.salesman?.name ?? '').toLowerCase().includes(q) ||
         (unload.source?.name ?? '').toLowerCase().includes(q)
 

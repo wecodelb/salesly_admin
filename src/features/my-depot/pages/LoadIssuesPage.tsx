@@ -64,7 +64,7 @@ export function LoadIssuesPage() {
     return issues.filter((issue) => {
       const matchesQuery =
         !q ||
-        issue.trs_number.toLowerCase().includes(q) ||
+        String(issue.trs_number).toLowerCase().includes(q) ||
         (issue.salesman?.name ?? '').toLowerCase().includes(q) ||
         (issue.destination?.name ?? '').toLowerCase().includes(q)
 

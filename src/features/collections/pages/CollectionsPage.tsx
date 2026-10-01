@@ -82,7 +82,7 @@ export function CollectionsPage() {
 
     return collections.filter(
       (c) =>
-        c.trs_number.toLowerCase().includes(q) ||
+        String(c.trs_number).toLowerCase().includes(q) ||
         c.customer.toLowerCase().includes(q) ||
         (c.salesman?.name ?? '').toLowerCase().includes(q),
     )

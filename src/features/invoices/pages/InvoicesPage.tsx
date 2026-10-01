@@ -63,7 +63,7 @@ export function InvoicesPage() {
     return invoices.filter((invoice) => {
       const matchesQuery =
         !q ||
-        invoice.trs_number.toLowerCase().includes(q) ||
+        String(invoice.trs_number).toLowerCase().includes(q) ||
         invoice.customer.toLowerCase().includes(q) ||
         (invoice.salesman?.name ?? '').toLowerCase().includes(q)
 

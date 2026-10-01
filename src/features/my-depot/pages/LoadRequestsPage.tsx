@@ -85,7 +85,7 @@ export function LoadRequestsPage() {
     return requests.filter((request) => {
       const matchesQuery =
         !q ||
-        request.trs_number.toLowerCase().includes(q) ||
+        String(request.trs_number).toLowerCase().includes(q) ||
         (request.salesman?.name ?? '').toLowerCase().includes(q) ||
         (request.source?.name ?? '').toLowerCase().includes(q)
 
