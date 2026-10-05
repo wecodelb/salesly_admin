@@ -1,21 +1,14 @@
 import { Bell, Search, Sun, Moon, LogOut, ChevronDown } from 'lucide-react'
 import { useThemeStore } from '@/core/theme/theme-store'
 import { useAuthStore } from '@/core/auth/auth-store'
-import { apiClient } from '@/core/api/client'
-import { ENDPOINTS } from '@/core/api/endpoints'
+import { signOut } from '@/core/auth/sign-out'
 import { Dropdown } from '@/shared/components/Dropdown/Dropdown'
 
 export function TopBar() {
   const { theme, toggle } = useThemeStore()
-  const { user, clearAuth } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
 
-  // Don't await the revoke call — if the backend is slow/unreachable, sign-out
-  // must still clear local state and redirect immediately rather than hang.
-  const handleLogout = () => {
-    apiClient.post(ENDPOINTS.AUTH.LOGOUT).catch(() => {})
-    clearAuth()
-    window.location.href = '/login'
-  }
+  const handleLogout = () => void signOut()
 
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
