@@ -12,6 +12,8 @@
  * nothing on this screen should imply otherwise.
  */
 
+import type { AdminItem } from '@/features/products/types'
+
 /** Which way stock may move under a type. A property of the type, not a default. */
 export type AdjustmentDirection = 'in' | 'out' | 'both'
 
@@ -305,4 +307,47 @@ export function totalsOf(adjustments: Adjustment[]): AdjustmentTotals {
     addedIn: Math.round(addedIn * 10000) / 10000,
     takenOut: Math.round(takenOut * 10000) / 10000,
   }
+}
+
+/**
+ * The units a row can be counted in: the product's base unit, then each
+ * packaging with its factor — "Box (24)".
+ *
+ * The value is the uom id, with the base unit as `''`, which the server reads
+ * as the base. Leaving it out used to be the only option, so a sheet counted
+ * in cases on the phone came back from an edit here counted in single bottles.
+ *
+ * `current` keeps a row's saved unit on offer even when the product no longer
+ * lists it (or hasn't loaded yet), so opening a sheet never silently re-reads
+ * its quantities in another unit.
+ */
+export function unitOptions(
+  product: Pick<AdminItem, 'uom' | 'uom_id' | 'uoms'> | undefined,
+  current?: { uomId: string; name: string },
+): { value: string; label: string }[] {
+  const options = [{ value: '', label: product?.uom ? `${product.uom} (base)` : 'Base unit' }]
+
+  for (const pack of product?.uoms ?? []) {
+    if (pack.is_base || pack.uom_id === product?.uom_id) continue
+    options.push({
+      value: String(pack.uom_id),
+      label: `${pack.uom?.name ?? `Unit #${pack.uom_id}`} (${pack.unit})`,
+    })
+  }
+
+  if (
+    current?.uomId &&
+    current.uomId !== String(product?.uom_id ?? '') &&
+    !options.some((o) => o.value === current.uomId)
+  ) {
+    options.push({ value: current.uomId, label: current.name || `Unit #${current.uomId}` })
+  }
+
+  return options
+}
+
+/** A date as the `<input type="date">` wants it, read in local time. */
+export function localDay(date: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
