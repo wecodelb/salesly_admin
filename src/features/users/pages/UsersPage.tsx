@@ -14,8 +14,10 @@ import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { usePermissions } from '@/core/auth/use-permissions'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { UserFormDrawer } from '../components/UserFormDrawer'
+import { memberLocks } from '../member-locks'
 import { useDeleteUser, useUpdateUser, useUsers } from '../hooks/use-users'
 import { ROLE_OPTIONS } from '../permission-catalog'
 import type { CompanyUser } from '../types'
@@ -34,9 +36,10 @@ const roleBadge: Record<string, string> = {
 
 export function UsersPage() {
   const { run } = useActionProgress()
-  const { can } = usePermissions()
+  const { can, isAdmin } = usePermissions()
   const canEdit = can(PERMISSIONS.USERS_EDIT)
   const canRemove = can(PERMISSIONS.USERS_REMOVE)
+  const editorId = useAuthStore((s) => s.user?.id)
   const { data: users = [], isLoading, isError, refetch } = useUsers()
   const updateUser = useUpdateUser()
   const deleteUser = useDeleteUser()
@@ -170,45 +173,54 @@ export function UsersPage() {
       key: 'actions',
       header: '',
       width: 'w-1',
-      render: (u) => (
-        <div className="flex items-center justify-end gap-1">
-          {canEdit && (
-            <button
-              title="Edit"
-              onClick={() => openEdit(u)}
-              className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer"
-            >
-              <Pencil size={15} />
-            </button>
-          )}
-          {canEdit && (u.status === 'active' ? (
-            <button
-              title="Deactivate"
-              onClick={() => setConfirm({ kind: 'suspend', user: u })}
-              className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-amber-600 hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer"
-            >
-              <Ban size={15} />
-            </button>
-          ) : (
-            <button
-              title="Reactivate"
-              onClick={() => reactivate(u)}
-              className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-green-600 hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer"
-            >
-              <CircleCheck size={15} />
-            </button>
-          ))}
-          {canRemove && (
-            <button
-              title="Remove from company"
-              onClick={() => setConfirm({ kind: 'delete', user: u })}
-              className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-[var(--accent-red)] hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer"
-            >
-              <Trash2 size={15} />
-            </button>
-          )}
-        </div>
-      ),
+      render: (u) => {
+        // Shown disabled rather than hidden, with the reason as its tooltip:
+        // a missing button reads as a bug, a refused one explains itself.
+        const locked = memberLocks(u, { id: editorId, isAdmin }).membership
+        return (
+          <div className="flex items-center justify-end gap-1">
+            {canEdit && (
+              <button
+                title="Edit"
+                onClick={() => openEdit(u)}
+                className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer"
+              >
+                <Pencil size={15} />
+              </button>
+            )}
+            {canEdit && (u.status === 'active' ? (
+              <button
+                title={locked ?? 'Deactivate'}
+                aria-label="Deactivate"
+                disabled={locked != null}
+                onClick={() => setConfirm({ kind: 'suspend', user: u })}
+                className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-amber-600 hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--text-muted)] disabled:hover:bg-transparent"
+              >
+                <Ban size={15} />
+              </button>
+            ) : (
+              <button
+                title="Reactivate"
+                onClick={() => reactivate(u)}
+                className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-green-600 hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer"
+              >
+                <CircleCheck size={15} />
+              </button>
+            ))}
+            {canRemove && (
+              <button
+                title={locked ?? 'Remove from company'}
+                aria-label="Remove from company"
+                disabled={locked != null}
+                onClick={() => setConfirm({ kind: 'delete', user: u })}
+                className="p-1.5 rounded-[var(--radius-btn)] text-[var(--text-muted)] hover:text-[var(--accent-red)] hover:bg-[var(--bg-surface-raised)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--text-muted)] disabled:hover:bg-transparent"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+          </div>
+        )
+      },
     },
   ]
 

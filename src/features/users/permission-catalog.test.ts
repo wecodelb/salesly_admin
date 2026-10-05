@@ -38,4 +38,15 @@ describe('permission catalog', () => {
     expect(ROLE_PRESETS.salesman).toContain(PERMISSIONS.CUSTOMERS_VIEW)
     expect(ROLE_PRESETS.salesman).toContain(PERMISSIONS.PRODUCTS_VIEW)
   })
+
+  it('matches the server on what a salesman may do with stock and rates', () => {
+    // The preset once granted both adjustment keys and withheld rate reading —
+    // the exact reverse of the backend's DEFAULTS_BY_ROLE['salesman'].
+    expect(ROLE_PRESETS.salesman).toContain(PERMISSIONS.ADJUSTMENTS_VIEW)
+    expect(ROLE_PRESETS.salesman).not.toContain(PERMISSIONS.ADJUSTMENTS_CREATE)
+    expect(ROLE_PRESETS.salesman).not.toContain(PERMISSIONS.ADJUSTMENTS_APPROVE)
+    expect(ROLE_PRESETS.salesman).toContain(PERMISSIONS.EXCHANGE_RATES_VIEW)
+    expect(ROLE_PRESETS.salesman).not.toContain(PERMISSIONS.EXCHANGE_RATES_MANAGE)
+    expect(ROLE_PRESETS.salesman).not.toContain(PERMISSIONS.DEPOT_ISSUE)
+  })
 })

@@ -138,29 +138,49 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
 // Every permission key, flat. Used for the admin/manager "grant everything" preset.
 const ALL_PERMISSIONS = Object.values(PERMISSIONS) as Permission[]
 
-// Permissions a salesman never gets by default — company-wide visibility
-// (reports) and the ability to manage other users' accounts.
-const SALESMAN_EXCLUDED: Permission[] = [
-  PERMISSIONS.REPORTS_VIEW,
-  PERMISSIONS.USERS_VIEW,
-  PERMISSIONS.USERS_EDIT,
-  PERMISSIONS.USERS_REMOVE,
-  // Reference data is shared across the whole company — a salesman reads it
-  // through the product/customer forms but shouldn't be able to reshape it.
-  PERMISSIONS.PREFERENCES_MANAGE,
-  // Removing a customer and approving one are both decisions about the
-  // company's book rather than about a salesman's own round: he may add and
-  // edit, and someone with the key signs the result off.
-  PERMISSIONS.CUSTOMERS_DELETE,
-  PERMISSIONS.CUSTOMERS_VERIFY,
-  // What a dollar is worth is a company-wide figure every price in the app
-  // reads from. A salesman quotes it; he does not set it.
-  PERMISSIONS.EXCHANGE_RATES_VIEW,
-  PERMISSIONS.EXCHANGE_RATES_MANAGE,
+// What a salesman starts with: the same keys, in the same order, as the
+// backend's App\Support\Permissions::DEFAULTS_BY_ROLE['salesman'].
+//
+// Written out rather than derived as "everything except…": that version handed
+// every newly added permission to salesmen by default, and had drifted into the
+// reverse of the server on two counts — it granted adjustments.create/approve
+// (a salesman approving his own shortfall) and withheld exchange_rates.view,
+// which the mobile collect screen reads. Everything left out is an office
+// decision: reports, removing or verifying customers, loading a depot,
+// reference data, setting rates, and managing users.
+const SALESMAN_DEFAULTS: Permission[] = [
+  PERMISSIONS.CUSTOMERS_VIEW,
+  PERMISSIONS.CUSTOMERS_CREATE,
+  PERMISSIONS.CUSTOMERS_EDIT,
+  PERMISSIONS.ORDERS_VIEW,
+  PERMISSIONS.ORDERS_CREATE,
+  PERMISSIONS.ORDERS_CONFIRM,
+  PERMISSIONS.INVOICES_VIEW,
+  PERMISSIONS.INVOICES_SEND,
+  PERMISSIONS.COLLECTIONS_VIEW,
+  PERMISSIONS.COLLECTIONS_COLLECT,
+  PERMISSIONS.RETURNS_VIEW,
+  PERMISSIONS.RETURNS_CREATE,
+  PERMISSIONS.ROUTE_VIEW,
+  PERMISSIONS.ROUTE_OPTIMIZE,
+  PERMISSIONS.VISITS_CHECKIN,
+  PERMISSIONS.TASKS_VIEW,
+  PERMISSIONS.TASKS_COMPLETE,
+  PERMISSIONS.CALENDAR_VIEW,
+  PERMISSIONS.CALENDAR_PLAN,
+  PERMISSIONS.LEADERBOARD_VIEW,
+  PERMISSIONS.PRODUCTS_VIEW,
+  // Reads adjustments and writes none: a van is not where stock gets written
+  // off the books.
+  PERMISSIONS.ADJUSTMENTS_VIEW,
   // He may ask for a load and sign for what turns up; deciding what leaves
-  // the warehouse is the warehouse's call. Sending his own unsold stock back
-  // still works without it — being assigned to the depot is the authority there.
-  PERMISSIONS.DEPOT_ISSUE,
+  // the warehouse is the warehouse's call.
+  PERMISSIONS.DEPOT_VIEW,
+  PERMISSIONS.DEPOT_REQUEST,
+  PERMISSIONS.DEPOT_ACCEPT,
+  // Reads the currency catalog so the collect screen can offer it; recording
+  // a rate stays with the office.
+  PERMISSIONS.EXCHANGE_RATES_VIEW,
 ]
 
 // Client-side mirror of the backend App\Support\Permissions::DEFAULTS_BY_ROLE.
@@ -169,7 +189,7 @@ const SALESMAN_EXCLUDED: Permission[] = [
 export const ROLE_PRESETS: Record<AssignableRole, Permission[]> = {
   admin: ALL_PERMISSIONS,
   manager: ALL_PERMISSIONS,
-  salesman: ALL_PERMISSIONS.filter((p) => !SALESMAN_EXCLUDED.includes(p)),
+  salesman: SALESMAN_DEFAULTS,
 }
 
 export const ROLE_OPTIONS: { value: AssignableRole; label: string }[] = [
