@@ -16,6 +16,7 @@ import { useCurrencies } from '@/features/currencies/hooks/use-currencies'
 import { usePriceLists } from '@/features/price-lists/hooks/use-price-lists'
 import {
   useAssignPriceList,
+  useUnassignPriceList,
   useCreateCustomer,
   useCustomer,
   useDeleteAttachment,
@@ -137,6 +138,7 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
   const uploadAttachments = useUploadAttachments()
   const deleteAttachment = useDeleteAttachment()
   const assignPriceList = useAssignPriceList()
+  const unassignPriceList = useUnassignPriceList()
 
   const [form, setForm] = useState<FormState>(EMPTY)
   const [files, setFiles] = useState<File[]>([])
@@ -342,16 +344,28 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
           }
         }
 
-        if (form.priceListId && form.priceListId !== savedPriceListId) {
+        // Assigning on the server adds to what the customer already has, so a
+        // change here is a swap: attach the new list, then detach the one it
+        // replaced. That order means a failure part-way leaves him on both
+        // lists — visible and fixable — never on neither.
+        if (form.priceListId !== savedPriceListId) {
           try {
-            await assignPriceList.mutateAsync({
-              customerId,
-              priceListId: Number(form.priceListId),
-            })
+            if (form.priceListId) {
+              await assignPriceList.mutateAsync({
+                customerId,
+                priceListId: Number(form.priceListId),
+              })
+            }
+            if (savedPriceListId) {
+              await unassignPriceList.mutateAsync({
+                customerId,
+                priceListId: Number(savedPriceListId),
+              })
+            }
           } catch (listErr) {
             toast.warning(
-              'Price list not assigned',
-              `${name} was saved, but the price list could not be attached: ${apiErrorMessage(listErr)}`,
+              'Price list not updated',
+              `${name} was saved, but the price list could not be changed: ${apiErrorMessage(listErr)}`,
             )
           }
         }
@@ -367,7 +381,8 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
     createCustomer.isPending ||
     updateCustomer.isPending ||
     uploadAttachments.isPending ||
-    assignPriceList.isPending
+    assignPriceList.isPending ||
+    unassignPriceList.isPending
 
   return (
     <SideDrawer
@@ -466,10 +481,15 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
                   label="Price list (optional)"
                   value={form.priceListId}
                   onChange={(v) => set('priceListId', v)}
-                  options={priceLists.map((l) => ({
-                    value: String(l.id),
-                    label: l.is_default ? `${l.name} (default)` : l.name,
-                  }))}
+                  // The empty choice is a real one: it is how a customer goes
+                  // back to the company default after being given a list.
+                  options={[
+                    { value: '', label: 'Company default list' },
+                    ...priceLists.map((l) => ({
+                      value: String(l.id),
+                      label: l.is_default ? `${l.name} (default)` : l.name,
+                    })),
+                  ]}
                   placeholder="Company default list"
                   searchPlaceholder="Search price lists…"
                 />

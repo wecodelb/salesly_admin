@@ -154,23 +154,46 @@ export function useAssignSalesman() {
   })
 }
 
+/**
+ * What the credit-limit shortcut writes.
+ *
+ * Setting a limit says the customer has credit, so an amount turns the flag on
+ * with it — otherwise the cap would sit on a cash-only shop, where the server
+ * refuses every unpaid invoice anyway, meaning nothing. Clearing the field only
+ * lifts the cap. It used to turn credit on as well, so saving an empty field
+ * on a cash-only shop quietly gave it unlimited credit.
+ */
+export function creditLimitPayload(creditLimit: number | null): UpdateCustomerPayload {
+  return creditLimit === null
+    ? { credit_limit: null }
+    : { credit_limit: creditLimit, allow_credit: true }
+}
+
 export function useSetCreditLimit() {
   const invalidate = useInvalidateCustomers()
   return useMutation({
     mutationFn: ({ id, creditLimit }: { id: number; creditLimit: number | null }) =>
       USE_MOCK_DATA
         ? mockSetCreditLimit(id, creditLimit)
-        : // Setting a limit says the customer has credit, so it turns the flag on
-          // with it. Otherwise this shortcut would write a cap onto a cash-only
-          // shop where the server refuses every unpaid invoice anyway, and the
-          // number would sit there meaning nothing.
-          updateCustomer(id, { credit_limit: creditLimit, allow_credit: true }),
+        : updateCustomer(id, creditLimitPayload(creditLimit)),
     onSuccess: invalidate,
   })
 }
 
+// A customer joining or leaving a list changes that list's membership too, and
+// the Price Lists screen reads it from its own query — refreshing only the
+// customer side left its "currently benefiting" list and counts stale.
+function useInvalidatePriceListMembership() {
+  const qc = useQueryClient()
+  const invalidateCustomers = useInvalidateCustomers()
+  return () => {
+    invalidateCustomers()
+    qc.invalidateQueries({ queryKey: ['admin-price-lists'] })
+  }
+}
+
 export function useAssignPriceList() {
-  const invalidate = useInvalidateCustomers()
+  const invalidate = useInvalidatePriceListMembership()
   return useMutation({
     mutationFn: ({ customerId, priceListId }: { customerId: number; priceListId: number }) =>
       assignPriceList(customerId, priceListId),
@@ -179,7 +202,7 @@ export function useAssignPriceList() {
 }
 
 export function useUnassignPriceList() {
-  const invalidate = useInvalidateCustomers()
+  const invalidate = useInvalidatePriceListMembership()
   return useMutation({
     mutationFn: ({ customerId, priceListId }: { customerId: number; priceListId: number }) =>
       unassignPriceList(customerId, priceListId),

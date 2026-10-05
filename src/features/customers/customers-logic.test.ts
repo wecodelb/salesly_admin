@@ -7,6 +7,7 @@ import {
   mockFetchSalesmen,
   mockSetCreditLimit,
 } from './mock-data'
+import { creditLimitPayload } from './hooks/use-customers'
 
 const customer = (over: Partial<AdminCustomer> = {}): AdminCustomer => ({
   id: 1,
@@ -147,5 +148,18 @@ describe('mock store', () => {
     const all = await mockFetchCustomers()
     expect(all.some((c) => c.salesman_id === null)).toBe(true)
     expect(all.some((c) => isOverLimit(c))).toBe(true)
+  })
+})
+
+describe('creditLimitPayload', () => {
+  it('turns credit on along with a real cap', () => {
+    expect(creditLimitPayload(2500)).toEqual({ credit_limit: 2500, allow_credit: true })
+  })
+
+  it('only lifts the cap when the field is cleared', () => {
+    // Clearing used to send allow_credit: true as well, so an empty save on a
+    // cash-only shop handed it unlimited credit.
+    expect(creditLimitPayload(null)).toEqual({ credit_limit: null })
+    expect(creditLimitPayload(null)).not.toHaveProperty('allow_credit')
   })
 })

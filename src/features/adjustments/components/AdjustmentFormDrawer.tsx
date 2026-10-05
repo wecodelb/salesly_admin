@@ -6,6 +6,8 @@ import { Select } from '@/shared/components/Select'
 import { SearchableSelect } from '@/shared/components/SearchableSelect/SearchableSelect'
 import { Button } from '@/shared/components/Button'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
+import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
+import { parseApiDate } from '@/features/reports/report-format'
 import { useProducts } from '@/features/products/hooks/use-products'
 import { useWarehouses } from '@/features/warehouses/hooks/use-warehouses'
 import {
@@ -15,7 +17,9 @@ import {
 } from '../hooks/use-adjustments'
 import {
   directionOptions,
+  localDay,
   rowsOf,
+  unitOptions,
   type Adjustment,
   type AdjustmentRowPayload,
   type AdjustmentType,
@@ -33,18 +37,22 @@ interface RowState {
   key: string
   typeId: string
   itemId: string
+  /** The packaging `qty` is counted in; `''` is the product's base unit. */
+  uomId: string
+  /** The saved unit's name, for when the product list can't name it. */
+  uomName: string
   qty: string
   direction: string
   memo: string
 }
-
-const today = () => new Date().toISOString().slice(0, 10)
 
 /** A blank row. Keyed by index so two identical blank rows stay distinct. */
 const blankRow = (seq: number): RowState => ({
   key: `row-${seq}`,
   typeId: '',
   itemId: '',
+  uomId: '',
+  uomName: '',
   qty: '',
   direction: '',
   memo: '',
@@ -76,7 +84,7 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
   const updateAdjustment = useUpdateAdjustment()
 
   const [warehouseId, setWarehouseId] = useState('')
-  const [adjustedAt, setAdjustedAt] = useState(today())
+  const [adjustedAt, setAdjustedAt] = useState(localDay())
   const [memo, setMemo] = useState('')
   const [rows, setRows] = useState<RowState[]>([blankRow(0)])
   const [seq, setSeq] = useState(1)
@@ -86,19 +94,30 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
     () => new Map(types.map((t) => [String(t.id), t] as const)),
     [types],
   )
+  const productById = useMemo(
+    () => new Map(products.map((p) => [String(p.id), p] as const)),
+    [products],
+  )
 
   useEffect(() => {
     if (!open) return
 
     if (adjustment) {
       setWarehouseId(String(adjustment.warehouse_id ?? ''))
+      // The sheet keeps its own date. Left at the create default, every edit
+      // quietly moved the sheet to today.
+      const dated = parseApiDate(adjustment.adjusted_at)
+      setAdjustedAt(dated ? localDay(dated) : '')
       setMemo(adjustment.memo ?? '')
       const existing = rowsOf(adjustment).map((row, i) => ({
         key: `row-${i}`,
         typeId: String(row.adjustment_type_id),
         itemId: String(row.item_id),
         // Shown in the packaging it was counted in, which is what somebody
-        // wrote down — not the base units it became.
+        // wrote down — not the base units it became. The unit travels with
+        // it, or saving would re-read "4" as four base units.
+        uomId: row.uom_id != null ? String(row.uom_id) : '',
+        uomName: row.uom_name ?? '',
         qty: String(row.trs_qty),
         direction: row.direction,
         memo: row.memo ?? '',
@@ -107,7 +126,7 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
       setSeq(existing.length || 1)
     } else {
       setWarehouseId(warehouses.find((w) => w.is_main)?.id?.toString() ?? '')
-      setAdjustedAt(today())
+      setAdjustedAt(localDay())
       setMemo('')
       setRows([blankRow(0)])
       setSeq(1)
@@ -165,7 +184,10 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
   }
 
   const submit = async () => {
-    if (!validate()) return
+    if (!validate()) {
+      reportInvalidForm()
+      return
+    }
 
     const payload = {
       warehouse_id: Number(warehouseId),
@@ -177,6 +199,7 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
         return {
           adjustment_type_id: Number(row.typeId),
           item_id: Number(row.itemId),
+          uom_id: row.uomId ? Number(row.uomId) : undefined,
           qty: Number(row.qty),
           // Sent only where the type leaves the choice open. Sending it for a
           // one-way type is a contradiction the server refuses.
@@ -186,7 +209,7 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
       }),
     }
 
-    await run(
+    const saved = await run(
       {
         label: editing ? 'Saving adjustment' : 'Writing adjustment',
         // Deliberately not "stock updated": whether it moves depends on whether
@@ -200,8 +223,12 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
           : createAdjustment.mutateAsync(payload),
     )
 
-    onClose()
+    // Only on success: a refused sheet stays open with every row still typed,
+    // so the server's complaint can be fixed rather than re-entered.
+    if (saved !== null) onClose()
   }
+
+  const saving = createAdjustment.isPending || updateAdjustment.isPending
 
   return (
     <SideDrawer
@@ -211,10 +238,12 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
       width="w-[680px]"
       footer={
         <div className="flex items-center justify-end gap-2">
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={submit}>{editing ? 'Save' : 'Write it down'}</Button>
+          <Button onClick={submit} loading={saving}>
+            {editing ? 'Save' : 'Write it down'}
+          </Button>
         </div>
       }
     >
@@ -318,11 +347,15 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
                     />
                   </div>
 
-                  <div className="col-span-12">
+                  <div className="col-span-8">
                     <SearchableSelect
                       label="Product"
                       value={row.itemId}
-                      onChange={(v) => setRow(row.key, { itemId: v })}
+                      // Another product has other packagings; its unit starts
+                      // back at the base rather than borrowing a stranger's.
+                      onChange={(v) =>
+                        setRow(row.key, v === row.itemId ? {} : { itemId: v, uomId: '', uomName: '' })
+                      }
                       error={errors[`${row.key}.item`]}
                       options={products.map((p) => ({
                         value: String(p.id),
@@ -330,6 +363,25 @@ export function AdjustmentFormDrawer({ open, onClose, adjustment }: Props) {
                       }))}
                       placeholder="Which product?"
                       searchPlaceholder="Search products…"
+                    />
+                  </div>
+
+                  <div className="col-span-4">
+                    <Select
+                      label="Counted in"
+                      // A row saved in the base unit comes back naming it by id;
+                      // that is the base option, not a second one.
+                      value={
+                        row.uomId === String(productById.get(row.itemId)?.uom_id ?? '')
+                          ? ''
+                          : row.uomId
+                      }
+                      onChange={(e) => setRow(row.key, { uomId: e.target.value })}
+                      disabled={!row.itemId}
+                      options={unitOptions(productById.get(row.itemId), {
+                        uomId: row.uomId,
+                        name: row.uomName,
+                      })}
                     />
                   </div>
 

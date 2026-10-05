@@ -18,6 +18,8 @@ export function CreditLimitModal({ customer, onClose }: Props) {
   const { run } = useActionProgress()
   const setLimit = useSetCreditLimit()
   const [value, setValue] = useState('')
+  // Absent on rows older than the column, and those customers have credit.
+  const cashOnly = customer?.allow_credit === false
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -40,9 +42,11 @@ export function CreditLimitModal({ customer, onClose }: Props) {
         label: 'Setting credit limit',
         detail: customer.name,
         success:
-          creditLimit === null
-            ? `${customer.name} has no credit limit now.`
-            : `${customer.name} is capped at ${formatMoney(creditLimit)}.`,
+          creditLimit !== null
+            ? `${customer.name} is capped at ${formatMoney(creditLimit)}.`
+            : cashOnly
+              ? `${customer.name} stays cash-only.`
+              : `${customer.name} has no credit limit now.`,
       },
       () => setLimit.mutateAsync({ id: customer.id, creditLimit }),
     )
@@ -74,6 +78,12 @@ export function CreditLimitModal({ customer, onClose }: Props) {
             {customer ? formatMoney(customer.balance) : '—'}
           </span>
         </p>
+        {cashOnly && (
+          <p className="text-sm text-[var(--accent-amber)]">
+            This customer is cash-only. Entering a limit turns credit on for them; leaving it empty
+            keeps them cash-only.
+          </p>
+        )}
         <Input
           label="Credit limit"
           type="number"
