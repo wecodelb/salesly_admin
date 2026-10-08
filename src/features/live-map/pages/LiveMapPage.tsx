@@ -169,7 +169,9 @@ export function LiveMapPage() {
               stops={stops}
               ghost={ghost}
               tileStyle={tileStyle}
-              fitKey={selected ? `trail-${selected.id}-${date}-${points.length > 0}` : 'team'}
+              // Re-framed when what is shown changes: one salesman's day, or
+              // the team as filtered — picking Idle should show where they are.
+              fitKey={selected ? `trail-${selected.id}-${date}-${points.length > 0}` : `team-${filter}-${showOffline}`}
             />
           )}
 
