@@ -5,6 +5,7 @@ import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
 import { useAuthStore } from '@/core/auth/auth-store'
 import type { Permission } from '@/core/auth/permissions'
+import type { Module } from '@/core/auth/modules'
 import { Input } from '@/shared/components/Input'
 import { Button } from '@/shared/components/Button'
 import { SaleslyWordmark } from '@/shared/components/SaleslyWordmark/SaleslyWordmark'
@@ -27,6 +28,7 @@ interface LoginResponse {
       companies: { id: number; name: string }[]
       role?: { name: string; permissions: Permission[] }
       permissions?: Permission[]
+      modules?: Module[]
     }
   }
 }
@@ -90,6 +92,8 @@ export function LoginPage() {
         },
         role,
         permissions,
+        // What the company bought: the menu hides what it has not.
+        Array.isArray(user.modules) ? user.modules : [],
       )
 
       // Show post-login splash before navigating

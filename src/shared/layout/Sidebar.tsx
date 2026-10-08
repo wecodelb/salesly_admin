@@ -5,6 +5,7 @@ import { SaleslyWordmark } from '@/shared/components/SaleslyWordmark/SaleslyWord
 import { NAV_GROUPS, type NavBadge } from './nav-config'
 import { ICON_MAP } from './nav-icons'
 import { usePermissions } from '@/core/auth/use-permissions'
+import { useModules } from '@/core/auth/use-modules'
 import { PERMISSIONS, type Permission } from '@/core/auth/permissions'
 import {
   usePendingLoadRequestCount,
@@ -33,6 +34,7 @@ interface Props {
 
 export function Sidebar({ collapsed, onCollapse }: Props) {
   const { can, role } = usePermissions()
+  const { has } = useModules()
   // Polled, and only for somebody who may read the feed it counts — the menu
   // renders for everyone, and asking on behalf of a user who would be refused
   // is a 403 every half-minute.
@@ -95,7 +97,10 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
           const visible = group.items.filter((item) => {
             const permOk = !item.permission || can(item.permission as Permission)
             const roleOk = !item.roles || (role != null && item.roles.includes(role))
-            return permOk && roleOk
+            // A module the company has not bought is hidden from everybody,
+            // admins included: the server refuses it to them too.
+            const moduleOk = !item.module || has(item.module)
+            return permOk && roleOk && moduleOk
           })
           if (visible.length === 0) return null
           return (

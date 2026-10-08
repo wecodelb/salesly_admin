@@ -70,6 +70,14 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     ],
   },
   {
+    // Its own row because it is its own trust: seeing where every van is,
+    // all day. Salesmen are not given it.
+    label: 'Live Map',
+    items: [
+      { key: PERMISSIONS.LIVE_MAP_VIEW, label: 'Watch the field team on the live map' },
+    ],
+  },
+  {
     label: 'Calendar',
     items: [
       { key: PERMISSIONS.CALENDAR_VIEW, label: 'View calendar' },

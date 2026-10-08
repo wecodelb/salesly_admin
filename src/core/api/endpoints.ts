@@ -15,6 +15,12 @@ export const ENDPOINTS = {
   DASHBOARD_SUMMARY: '/dashboard/summary',
   ACTIVITY: '/activity',
 
+  // The live map: the whole field team as it stands (GET, polled), and one
+  // salesman's day — path and calls — for the trail and its replay.
+  // Behind the live_map module and the live_map.view key.
+  LIVE_MAP: '/live-map',
+  LIVE_MAP_TRAIL: (userId: number) => `/live-map/${userId}/trail`,
+
   // Reports, aggregated server-side over the whole book rather than over a
   // page of it. Gated on reports.view. Sales analysis is one configurable
   // engine (up to three group-by levels); the other three are stock reports.

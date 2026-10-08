@@ -93,7 +93,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true,          Component: DashboardRedirect },
       { path: 'dashboard',    Component: makePage(DashboardPage) },
-      { path: 'live-map',     Component: makePage(LiveMapPage) },
+      { path: 'live-map',     Component: makePage(LiveMapPage, P.LIVE_MAP_VIEW) },
       { path: 'activity',     Component: makePage(ActivityPage) },
       { path: 'orders',       Component: makePage(OrdersPage, P.ORDERS_VIEW) },
       { path: 'invoices',     Component: makePage(InvoicesPage, P.INVOICES_VIEW) },

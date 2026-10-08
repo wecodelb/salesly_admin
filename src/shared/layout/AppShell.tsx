@@ -4,9 +4,11 @@ import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { ToastContainer } from '@/shared/components/Toast/Toast'
 import { ActionProgressDialog } from '@/shared/components/ActionProgress/ActionProgressDialog'
+import { useSessionRefresh } from '@/core/auth/use-session-refresh'
 
 export function AppShell() {
   const [collapsed, setCollapsed] = useState(false)
+  useSessionRefresh()
 
   return (
     <div className="min-h-screen bg-[var(--bg-app)]">

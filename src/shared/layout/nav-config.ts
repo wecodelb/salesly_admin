@@ -1,4 +1,5 @@
 import type { Permission } from '@/core/auth/permissions'
+import type { Module } from '@/core/auth/modules'
 
 /**
  * A live count the sidebar hangs off an entry. Named rather than numeric,
@@ -20,6 +21,8 @@ export interface NavItem {
   permission?: Permission
   /** Restrict to these roles (in addition to any permission check). */
   roles?: string[]
+  /** Only shown when the company bought this module. */
+  module?: Module
   group?: string
   /** Shown as a count beside the label while it is above zero. */
   badge?: NavBadge
@@ -35,7 +38,8 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Overview',
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', path: '/dashboard' },
-      { key: 'live-map', label: 'Live Map', icon: 'Map', path: '/live-map' },
+      // A module the company buys, and a key the person holds: both, or no entry.
+      { key: 'live-map', label: 'Live Map', icon: 'Map', path: '/live-map', permission: 'live_map.view', module: 'live_map' },
       // The badge is who the app has heard from in the last ten minutes, in
       // green: unlike the depot counts it is not something waiting on the
       // office, it is the team being out there.

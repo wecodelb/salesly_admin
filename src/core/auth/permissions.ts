@@ -50,6 +50,10 @@ export const PERMISSIONS = {
   EXCHANGE_RATES_MANAGE: 'exchange_rates.manage',
   /** Editing the shared reference data: categories, brands, areas, units. */
   PREFERENCES_MANAGE: 'preferences.manage',
+  /** Watching the field team on the live map: where each van is now and the
+   *  trail it drove. An office key — a salesman reports his own position and
+   *  never sees anybody else's. */
+  LIVE_MAP_VIEW: 'live_map.view',
   USERS_VIEW: 'users.view',
   USERS_EDIT: 'users.edit',
   USERS_REMOVE: 'users.remove',
@@ -91,6 +95,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.EXCHANGE_RATES_VIEW,
     PERMISSIONS.EXCHANGE_RATES_MANAGE,
     PERMISSIONS.PREFERENCES_MANAGE,
+    PERMISSIONS.LIVE_MAP_VIEW,
   ],
   supervisor: [
     PERMISSIONS.CUSTOMERS_VIEW,
