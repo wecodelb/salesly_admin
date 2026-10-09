@@ -6,9 +6,9 @@ const LIVE_MAP_KEY = ['live-map'] as const
 /**
  * The team, re-read every fifteen seconds.
  *
- * The phones report about once a minute, so polling faster would mostly fetch
- * the same answer; slower, and a van that has just stopped takes too long to
- * show it. Kept going in the background, because this is the screen a manager
+ * The phones report every fifteen seconds, so this asks as often: polling
+ * faster would mostly fetch the same answer, and slower would leave the map
+ * behind the vans. Kept going in the background, because this is the screen a manager
  * leaves open on a second monitor.
  */
 export function useFieldTeam(enabled = true) {
@@ -28,15 +28,16 @@ export function useFieldTeam(enabled = true) {
 }
 
 /**
- * One salesman's trail for a day. Today's keeps growing, so it is re-read every
- * minute; a past day's never changes, so it is read once.
+ * One salesman's trail for a day. Today's grows by a fix every fifteen seconds,
+ * so it is re-read as often and the line follows him; a past day's never
+ * changes, so it is read once.
  */
 export function useTrail(userId: number | null, date: string, isToday: boolean) {
   return useQuery({
     queryKey: [...LIVE_MAP_KEY, 'trail', userId, date],
     queryFn: () => fetchTrail(userId as number, date),
     enabled: userId != null,
-    refetchInterval: isToday ? 60_000 : false,
+    refetchInterval: isToday ? 15_000 : false,
     staleTime: isToday ? 0 : Infinity,
   })
 }
