@@ -31,6 +31,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
       { key: PERMISSIONS.ORDERS_VIEW, label: 'View orders' },
       { key: PERMISSIONS.ORDERS_CREATE, label: 'Create orders' },
       { key: PERMISSIONS.ORDERS_CONFIRM, label: 'Confirm orders' },
+      { key: PERMISSIONS.ORDERS_APPROVE, label: 'Approve or reject orders' },
     ],
   },
   {

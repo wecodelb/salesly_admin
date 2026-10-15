@@ -9,6 +9,9 @@
 export const MODULES = {
   /** Where the field team is, the trail each van drove, and its replay. */
   LIVE_MAP: 'live_map',
+  /** Orders taken now and delivered later: approval rules, customer visit
+   *  plans, and the daily loads that carry approved orders to the vans. */
+  ORDERS: 'orders',
 } as const
 
 export type Module = (typeof MODULES)[keyof typeof MODULES]

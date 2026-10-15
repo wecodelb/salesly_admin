@@ -49,7 +49,8 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Sales',
     items: [
-      { key: 'orders', label: 'Orders', icon: 'ShoppingCart', path: '/orders', permission: 'orders.view' },
+      // The orders module: taken in the field, approved here, delivered later.
+      { key: 'orders', label: 'Orders', icon: 'ShoppingCart', path: '/orders', permission: 'orders.view', module: 'orders' },
       // Badged with what arrived since this screen was last opened here.
       { key: 'invoices', label: 'Invoices', icon: 'FileText', path: '/invoices', permission: 'invoices.view', badge: 'new-invoices' },
       { key: 'returns', label: 'Returns', icon: 'RotateCcw', path: '/returns', permission: 'returns.view', badge: 'new-returns' },
@@ -60,7 +61,8 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Field',
     items: [
       { key: 'visits', label: 'Visits', icon: 'MapPin', path: '/visits', permission: 'visits.checkin' },
-      { key: 'routes', label: 'Routes', icon: 'Route', path: '/routes', permission: 'route.view' },
+      // Which customers each salesman visits on which days, and his day.
+      { key: 'routes', label: 'Routes', icon: 'Route', path: '/routes', permission: 'route.view', module: 'orders' },
       { key: 'tasks', label: 'Tasks', icon: 'CheckSquare', path: '/tasks', permission: 'tasks.view' },
     ],
   },

@@ -10,6 +10,9 @@ export const PERMISSIONS = {
   ORDERS_VIEW: 'orders.view',
   ORDERS_CREATE: 'orders.create',
   ORDERS_CONFIRM: 'orders.confirm',
+  /** Approving or rejecting an order the company's rules held back. An office
+   *  key: a salesman who could approve his own orders would have no rules. */
+  ORDERS_APPROVE: 'orders.approve',
   INVOICES_VIEW: 'invoices.view',
   INVOICES_SEND: 'invoices.send',
   COLLECTIONS_VIEW: 'collections.view',
@@ -72,6 +75,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     PERMISSIONS.ORDERS_VIEW,
     PERMISSIONS.ORDERS_CREATE,
     PERMISSIONS.ORDERS_CONFIRM,
+    PERMISSIONS.ORDERS_APPROVE,
     PERMISSIONS.INVOICES_VIEW,
     PERMISSIONS.INVOICES_SEND,
     PERMISSIONS.COLLECTIONS_VIEW,

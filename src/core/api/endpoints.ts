@@ -21,6 +21,17 @@ export const ENDPOINTS = {
   LIVE_MAP: '/live-map',
   LIVE_MAP_TRAIL: (userId: number) => `/live-map/${userId}/trail`,
 
+  // Orders: the list and one order (readable by every company), and what the
+  // orders module adds — approving, rejecting, cancelling, the company's
+  // approval rules, customer visit plans and a salesman's day.
+  ORDERS: '/orders',
+  ORDER_APPROVE: (id: number) => `/orders/${id}/approve`,
+  ORDER_REJECT: (id: number) => `/orders/${id}/reject`,
+  ORDER_CANCEL: (id: number) => `/orders/${id}/cancel`,
+  ORDER_SETTINGS: '/order-settings',
+  VISIT_PLANS: '/visit-plans',
+  ROUTE_DAY: '/route/day',
+
   // Reports, aggregated server-side over the whole book rather than over a
   // page of it. Gated on reports.view. Sales analysis is one configurable
   // engine (up to three group-by levels); the other three are stock reports.
