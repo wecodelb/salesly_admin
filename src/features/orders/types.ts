@@ -25,8 +25,11 @@ export interface OrderLine {
   /** Per base unit; the line total is qty × price. */
   price: number
   total: number
-  item?: { id: number; code: string | null; name: string } | null
-  uom?: { id: number; code: string | null; name: string | null } | null
+  item_code: string | null
+  item_name: string | null
+  /** The packaging it was sold in, and how many base units it holds. */
+  uom_name: string | null
+  unit: number
 }
 
 export interface Order {

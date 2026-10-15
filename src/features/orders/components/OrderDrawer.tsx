@@ -148,9 +148,9 @@ export function OrderDrawer({ orderId, onClose }: Props) {
                 {(order.rows ?? []).map((line) => (
                   <div key={line.id} className="flex items-center gap-3 px-3 py-2.5">
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm text-[var(--text-primary)]">{line.item?.name ?? `Item ${line.item_id}`}</div>
+                      <div className="truncate text-sm text-[var(--text-primary)]">{line.item_name ?? `Item ${line.item_id}`}</div>
                       <div className="text-xs text-[var(--text-muted)]">
-                        {line.trs_qty} {line.uom?.code ?? ''} · {formatMoney(line.price)} each
+                        {line.trs_qty} {line.uom_name ?? ''} · {formatMoney(line.price * (line.unit || 1))} each
                       </div>
                     </div>
                     <div className="font-mono text-sm tabular-nums text-[var(--text-primary)]">{formatMoney(line.total)}</div>

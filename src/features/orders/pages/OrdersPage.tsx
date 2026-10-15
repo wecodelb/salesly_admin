@@ -85,7 +85,7 @@ export function OrdersPage() {
       key: 'customer',
       header: 'Customer',
       render: (o) => (
-        <div className="min-w-0">
+        <div className="max-w-[300px] min-w-0">
           <div className="truncate font-medium text-[var(--text-primary)]">{o.customer.name ?? '—'}</div>
           {o.status === 'SUBMITTED' && o.hold_reasons.length > 0 && (
             <div className="truncate text-xs text-[var(--accent-amber)]">{o.hold_reasons[0].message}</div>
@@ -162,21 +162,25 @@ export function OrdersPage() {
           })
         }
         filters={
-          <>
-            <FilterSelect
-              label="Status"
-              value={status}
-              onChange={(v) => refilter(() => setStatus(v as OrderStatus | ''))}
-              options={STATUS_OPTIONS.filter((o) => o.value !== '').map((o) => ({ value: o.value, label: o.label }))}
-              allLabel="All statuses"
-            />
-            <FilterSelect
-              label="Salesman"
-              value={salesmanId}
-              onChange={(v) => refilter(() => setSalesmanId(v))}
-              options={(salesmen.data ?? []).map((s) => ({ value: String(s.id), label: s.name }))}
-              allLabel="All salesmen"
-            />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="w-56">
+              <FilterSelect
+                label="Status"
+                value={status}
+                onChange={(v) => refilter(() => setStatus(v as OrderStatus | ''))}
+                options={STATUS_OPTIONS.filter((o) => o.value !== '').map((o) => ({ value: o.value, label: o.label }))}
+                allLabel="All statuses"
+              />
+            </div>
+            <div className="w-56">
+              <FilterSelect
+                label="Salesman"
+                value={salesmanId}
+                onChange={(v) => refilter(() => setSalesmanId(v))}
+                options={(salesmen.data ?? []).map((s) => ({ value: String(s.id), label: s.name }))}
+                allLabel="All salesmen"
+              />
+            </div>
             <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
               Delivery on
               <input
@@ -187,7 +191,7 @@ export function OrdersPage() {
                 className="rounded-[var(--radius-btn)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-primary)]"
               />
             </label>
-          </>
+          </div>
         }
       />
 

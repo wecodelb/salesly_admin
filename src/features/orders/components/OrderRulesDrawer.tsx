@@ -15,7 +15,7 @@ interface Props {
  * reasons. Leaving a field empty switches that rule off.
  */
 export function OrderRulesDrawer({ open, onClose }: Props) {
-  const { data: rules } = useOrderRules(open)
+  const { data: rules, isLoading } = useOrderRules(open)
   const save = useSaveOrderRules()
   const toast = useToast()
 
@@ -24,11 +24,11 @@ export function OrderRulesDrawer({ open, onClose }: Props) {
   const [overdueDays, setOverdueDays] = useState('')
 
   useEffect(() => {
-    if (!rules) return
+    if (!open || !rules) return
     setAutoApprove(rules.auto_approve)
     setMaxTotal(rules.max_auto_approve_total == null ? '' : String(rules.max_auto_approve_total))
     setOverdueDays(rules.overdue_days == null ? '' : String(rules.overdue_days))
-  }, [rules])
+  }, [open, rules])
 
   const submit = async () => {
     try {
@@ -54,10 +54,13 @@ export function OrderRulesDrawer({ open, onClose }: Props) {
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>Close</Button>
-          <Button loading={save.isPending} onClick={submit}>Save rules</Button>
+          <Button loading={save.isPending} disabled={isLoading || !rules} onClick={submit}>Save rules</Button>
         </div>
       }
     >
+      {isLoading || !rules ? (
+        <p className="py-10 text-center text-sm text-[var(--text-muted)]">Loading…</p>
+      ) : (
       <div className="space-y-5 text-sm">
         <label className="flex items-start gap-3">
           <input
@@ -93,6 +96,7 @@ export function OrderRulesDrawer({ open, onClose }: Props) {
           and whether the warehouse has the stock.
         </p>
       </div>
+      )}
     </SideDrawer>
   )
 }

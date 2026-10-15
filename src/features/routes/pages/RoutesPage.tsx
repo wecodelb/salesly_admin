@@ -136,13 +136,15 @@ export function RoutesPage() {
 
       <FilterBar
         filters={
-          <FilterSelect
-            label="Salesman"
-            value={salesmanId}
-            onChange={setSalesmanId}
-            options={(salesmen.data ?? []).map((s) => ({ value: String(s.id), label: s.name }))}
-            allLabel="All salesmen"
-          />
+          <div className="w-56">
+            <FilterSelect
+              label="Salesman"
+              value={salesmanId}
+              onChange={setSalesmanId}
+              options={(salesmen.data ?? []).map((s) => ({ value: String(s.id), label: s.name }))}
+              allLabel="All salesmen"
+            />
+          </div>
         }
         activeCount={salesmanId ? 1 : 0}
         onClearFilters={() => setSalesmanId('')}
@@ -174,43 +176,49 @@ export function RoutesPage() {
             />
           </div>
 
-          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Visits · {visits.length}
-          </h3>
-          {visits.length === 0 ? (
-            <p className="mb-4 text-sm text-[var(--text-muted)]">No shop is due a visit this day.</p>
+          {day.isLoading ? (
+            <p className="py-6 text-center text-sm text-[var(--text-muted)]">Loading…</p>
           ) : (
-            <ul className="mb-4 space-y-1.5">
-              {visits.map((v) => (
-                <li key={v.plan_id} className="flex items-center gap-2 text-sm">
-                  {v.visited ? (
-                    <CheckCircle2 size={15} className="text-[var(--accent-green)]" />
-                  ) : (
-                    <Circle size={15} className="text-[var(--text-muted)]" />
-                  )}
-                  <span className="truncate text-[var(--text-primary)]">{v.customer.name}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+            <>
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Visits · {visits.length}
+              </h3>
+              {visits.length === 0 ? (
+                <p className="mb-4 text-sm text-[var(--text-muted)]">No shop is due a visit this day.</p>
+              ) : (
+                <ul className="mb-4 space-y-1.5">
+                  {visits.map((v) => (
+                    <li key={v.plan_id} className="flex items-center gap-2 text-sm">
+                      {v.visited ? (
+                        <CheckCircle2 size={15} className="text-[var(--accent-green)]" />
+                      ) : (
+                        <Circle size={15} className="text-[var(--text-muted)]" />
+                      )}
+                      <span className="truncate text-[var(--text-primary)]">{v.customer.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-            Deliveries · {deliveries.length}
-          </h3>
-          {deliveries.length === 0 ? (
-            <p className="text-sm text-[var(--text-muted)]">No approved order is due this day.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {deliveries.map((d) => (
-                <li key={d.order_id} className="flex items-center gap-2 text-sm">
-                  <Truck size={15} className="text-[var(--text-muted)]" />
-                  <span className="min-w-0 flex-1 truncate text-[var(--text-primary)]">
-                    #{d.trs_number} · {d.customer.name}
-                  </span>
-                  <span className="font-mono tabular-nums text-[var(--text-secondary)]">{formatMoney(d.total_price)}</span>
-                </li>
-              ))}
-            </ul>
+              <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                Deliveries · {deliveries.length}
+              </h3>
+              {deliveries.length === 0 ? (
+                <p className="text-sm text-[var(--text-muted)]">No approved order is due this day.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {deliveries.map((d) => (
+                    <li key={d.order_id} className="flex items-center gap-2 text-sm">
+                      <Truck size={15} className="text-[var(--text-muted)]" />
+                      <span className="min-w-0 flex-1 truncate text-[var(--text-primary)]">
+                        #{d.trs_number} · {d.customer.name}
+                      </span>
+                      <span className="font-mono tabular-nums text-[var(--text-secondary)]">{formatMoney(d.total_price)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
           )}
         </aside>
       </div>

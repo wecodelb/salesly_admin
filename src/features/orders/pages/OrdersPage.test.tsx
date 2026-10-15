@@ -38,8 +38,10 @@ function order(over: Partial<Order>): Order {
         qty: 60,
         price: 2,
         total: 120,
-        item: { id: 3, code: 'NES-1', name: 'Nescafé Classic 50g' },
-        uom: { id: 2, code: 'BOX', name: 'Box' },
+        item_code: 'NES-1',
+        item_name: 'Nescafé Classic 50g',
+        uom_name: 'Box',
+        unit: 12,
       },
     ],
     ...over,
@@ -96,6 +98,7 @@ describe('the orders page', () => {
     api.fetchOrder.mockReset().mockImplementation(async (id: number) => PAGE.orders.find((o) => o.id === id))
     api.approveOrder.mockReset().mockResolvedValue(order({ status: 'APPROVED' }))
     api.rejectOrder.mockReset().mockResolvedValue(order({ status: 'REJECTED' }))
+    api.fetchOrderRules.mockReset().mockResolvedValue({ auto_approve: true, max_auto_approve_total: 3000, overdue_days: 30 })
   })
 
   it('tells a company without the module that orders are not in its plan', async () => {
@@ -148,5 +151,24 @@ describe('the orders page', () => {
     expect(await screen.findByText('Nescafé Classic 50g')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Approve order/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Approval rules/ })).not.toBeInTheDocument()
+  })
+
+  it('opens the approval rules with the values the company saved', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
+    renderPage()
+
+    await userEvent.click(await screen.findByRole('button', { name: /Approval rules/ }))
+
+    expect(await screen.findByDisplayValue('3000')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('30')).toBeInTheDocument()
+  })
+
+  it('shows each line in the packaging it was sold in', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW])
+    renderPage()
+
+    await userEvent.click(await screen.findByText('#101'))
+
+    expect(await screen.findByText('5 Box · $24.00 each')).toBeInTheDocument()
   })
 })
