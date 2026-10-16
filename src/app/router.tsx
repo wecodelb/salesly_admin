@@ -14,6 +14,7 @@ const DashboardPage    = lazy(() => import('@/features/dashboard/pages/Dashboard
 const LiveMapPage      = lazy(() => import('@/features/live-map/pages/LiveMapPage').then(m => ({ default: m.LiveMapPage })))
 const ActivityPage     = lazy(() => import('@/features/activity/pages/ActivityPage').then(m => ({ default: m.ActivityPage })))
 const OrdersPage       = lazy(() => import('@/features/orders/pages/OrdersPage').then(m => ({ default: m.OrdersPage })))
+const OrderDetailPage  = lazy(() => import('@/features/orders/pages/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })))
 const InvoicesPage     = lazy(() => import('@/features/invoices/pages/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
 const ReturnsPage      = lazy(() => import('@/features/returns/pages/ReturnsPage').then(m => ({ default: m.ReturnsPage })))
 const CollectionsPage  = lazy(() => import('@/features/collections/pages/CollectionsPage').then(m => ({ default: m.CollectionsPage })))
@@ -96,6 +97,8 @@ export const router = createBrowserRouter([
       { path: 'live-map',     Component: makePage(LiveMapPage, P.LIVE_MAP_VIEW) },
       { path: 'activity',     Component: makePage(ActivityPage) },
       { path: 'orders',       Component: makePage(OrdersPage, P.ORDERS_VIEW) },
+      // One order on its own page, as a load request has one.
+      { path: 'orders/:id',   Component: makePage(OrderDetailPage, P.ORDERS_VIEW) },
       { path: 'invoices',     Component: makePage(InvoicesPage, P.INVOICES_VIEW) },
       // One invoice with its lines. Reading rides on the same key as the list;
       // nothing here writes, because an invoice exists because goods changed

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthStore } from '@/core/auth/auth-store'
@@ -99,7 +100,12 @@ function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <OrdersPage />
+      <MemoryRouter initialEntries={['/orders']}>
+        <Routes>
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/orders/:id" element={<p>order page {window.location.pathname}</p>} />
+        </Routes>
+      </MemoryRouter>
     </QueryClientProvider>,
   )
 }
@@ -218,10 +224,18 @@ describe('the orders page', () => {
     signIn(['orders'], [PERMISSIONS.ORDERS_VIEW])
     renderPage()
 
-    await userEvent.click(await screen.findByText('#101'))
-    expect(await screen.findByText('Nescafé Classic 50g')).toBeInTheDocument()
+    expect(await screen.findByText('#101')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Review & approve/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Approval rules/ })).not.toBeInTheDocument()
+  })
+
+  it('opens an order on a page of its own, as a load request does', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW])
+    renderPage()
+
+    await userEvent.click(await screen.findByText('#101'))
+
+    expect(await screen.findByText(/order page/)).toBeInTheDocument()
   })
 
   it('opens the approval rules with the values the company saved', async () => {
@@ -232,14 +246,5 @@ describe('the orders page', () => {
 
     expect(await screen.findByDisplayValue('3000')).toBeInTheDocument()
     expect(screen.getByDisplayValue('30')).toBeInTheDocument()
-  })
-
-  it('shows each line in the packaging it was sold in', async () => {
-    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW])
-    renderPage()
-
-    await userEvent.click(await screen.findByText('#101'))
-
-    expect(await screen.findByText('5 Box · $24.00 each')).toBeInTheDocument()
   })
 })

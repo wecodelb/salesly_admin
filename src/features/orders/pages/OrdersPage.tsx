@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ClipboardCheck, Lock, Settings2, ShoppingCart, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { EmptyState } from '@/shared/components/EmptyState/EmptyState'
@@ -14,7 +15,6 @@ import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { useSalesmen } from '@/features/customers/hooks/use-customers'
 import { useOrders } from '../hooks/use-orders'
-import { OrderDrawer } from '../components/OrderDrawer'
 import { OrderRulesDrawer } from '../components/OrderRulesDrawer'
 import { OrderApproveDrawer } from '../components/OrderApproveDrawer'
 import { RejectOrderModal } from '../components/RejectOrderModal'
@@ -41,7 +41,7 @@ export function OrdersPage() {
   const [search, setSearch] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
   const [page, setPage] = useState(1)
-  const [openId, setOpenId] = useState<number | null>(null)
+  const navigate = useNavigate()
   const [rulesOpen, setRulesOpen] = useState(false)
   const [reviewId, setReviewId] = useState<number | null>(null)
   const [rejecting, setRejecting] = useState<Order | null>(null)
@@ -228,7 +228,8 @@ export function OrdersPage() {
         data={list}
         keyField="id"
         loading={orders.isLoading}
-        onRowClick={(o) => setOpenId(o.id)}
+        // Opening a row opens the order's own page, as a load request does.
+        onRowClick={(o) => navigate(`/orders/${o.id}`)}
         emptyIcon={<ShoppingCart size={28} />}
         emptyMessage={filtersSet ? 'No order matches these filters' : 'No orders yet — they appear here as the field team takes them'}
       />
@@ -247,14 +248,6 @@ export function OrdersPage() {
         </div>
       )}
 
-      <OrderDrawer
-        orderId={openId}
-        onClose={() => setOpenId(null)}
-        onReview={() => {
-          setReviewId(openId)
-          setOpenId(null)
-        }}
-      />
       <OrderApproveDrawer orderId={reviewId} onClose={() => setReviewId(null)} />
       <RejectOrderModal order={rejecting} open={rejecting != null} onClose={() => setRejecting(null)} />
       <OrderRulesDrawer open={rulesOpen} onClose={() => setRulesOpen(false)} />
