@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ChevronRight } from 'lucide-react'
+import { ReloadButton } from './ReloadButton'
 
 interface BreadcrumbItem {
   label: string
@@ -11,9 +12,12 @@ interface Props {
   subtitle?: string
   breadcrumbs?: BreadcrumbItem[]
   actions?: ReactNode
+  /** A Reload button before the actions, on by default: every screen can be re-read
+   *  without reloading the console. Off where the page has a refresh of its own. */
+  reload?: boolean
 }
 
-export function PageHeader({ title, subtitle, breadcrumbs, actions }: Props) {
+export function PageHeader({ title, subtitle, breadcrumbs, actions, reload = true }: Props) {
   return (
     <div className="flex items-start justify-between gap-4 mb-6">
       <div className="min-w-0">
@@ -39,7 +43,12 @@ export function PageHeader({ title, subtitle, breadcrumbs, actions }: Props) {
           <p className="text-sm text-[var(--text-secondary)] mt-0.5">{subtitle}</p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
+      {(actions || reload) && (
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {reload && <ReloadButton />}
+          {actions}
+        </div>
+      )}
     </div>
   )
 }

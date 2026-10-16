@@ -149,6 +149,8 @@ export function DashboardPage() {
     <>
       <PageHeader
         title="Dashboard"
+        // Its own refresh, with the time the figures were read.
+        reload={false}
         subtitle="Your sales overview at a glance"
         actions={
           <button
