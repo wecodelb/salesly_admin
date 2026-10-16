@@ -2,6 +2,13 @@ import type { Order, OrderStatus } from './types'
 
 type PillStatus = 'pending' | 'success' | 'error' | 'inactive' | 'live'
 
+/** The server's own words for a refusal, whatever key they came under. */
+export function serverMessage(error: unknown): string {
+  const data = (error as { response?: { data?: { message?: string; data?: Record<string, string[]> } } })?.response?.data
+  const first = data?.data ? Object.values(data.data).flat()[0] : undefined
+  return first ?? data?.message ?? 'Something went wrong.'
+}
+
 /** How each status reads on a pill. */
 export function orderPill(status: OrderStatus): { status: PillStatus; label: string } {
   switch (status) {

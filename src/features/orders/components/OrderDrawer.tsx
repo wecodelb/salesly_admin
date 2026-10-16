@@ -1,25 +1,18 @@
 import { useState } from 'react'
 import { AlertTriangle, CheckCircle2, Store, Truck, XCircle } from 'lucide-react'
 import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
-import { Modal } from '@/shared/components/Modal/Modal'
 import { Button } from '@/shared/components/Button'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
 import { useToast } from '@/shared/hooks/use-toast'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { useOrder, useOrderActions } from '../hooks/use-orders'
-import { canCancel, canDecide, decidedBy, formatDay, formatLbp, formatMoney, orderPill } from '../orders-logic'
+import { canCancel, canDecide, decidedBy, formatDay, formatLbp, formatMoney, orderPill, serverMessage } from '../orders-logic'
+import { RejectOrderModal } from './RejectOrderModal'
 
 interface Props {
   orderId: number | null
   onClose: () => void
-}
-
-/** The server's validation message, whatever key it came under. */
-function messageOf(error: unknown): string {
-  const data = (error as { response?: { data?: { message?: string; data?: Record<string, string[]> } } })?.response?.data
-  const first = data?.data ? Object.values(data.data).flat()[0] : undefined
-  return first ?? data?.message ?? 'Something went wrong.'
 }
 
 /**
@@ -32,11 +25,10 @@ function messageOf(error: unknown): string {
  */
 export function OrderDrawer({ orderId, onClose }: Props) {
   const { data: order, isLoading } = useOrder(orderId)
-  const { approve, reject, cancel } = useOrderActions()
+  const { approve, cancel } = useOrderActions()
   const { can } = usePermissions()
   const toast = useToast()
   const [rejecting, setRejecting] = useState(false)
-  const [reason, setReason] = useState('')
 
   const mayApprove = can(PERMISSIONS.ORDERS_APPROVE)
   const mayCancel = can(PERMISSIONS.ORDERS_CONFIRM)
@@ -46,7 +38,7 @@ export function OrderDrawer({ orderId, onClose }: Props) {
       await action()
       toast.success(done)
     } catch (error) {
-      toast.error('Not done', messageOf(error))
+      toast.error('Not done', serverMessage(error))
     }
   }
 
@@ -190,42 +182,7 @@ export function OrderDrawer({ orderId, onClose }: Props) {
         )}
       </SideDrawer>
 
-      <Modal
-        open={rejecting}
-        onClose={() => setRejecting(false)}
-        title="Reject this order"
-        size="sm"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setRejecting(false)}>Back</Button>
-            <Button
-              variant="danger"
-              disabled={!reason.trim()}
-              loading={reject.isPending}
-              onClick={async () => {
-                if (!order) return
-                await run(() => reject.mutateAsync({ id: order.id, reason: reason.trim() }), `Order ${order.trs_number} rejected`)
-                setRejecting(false)
-                setReason('')
-              }}
-            >
-              Reject order
-            </Button>
-          </div>
-        }
-      >
-        <label className="block text-sm text-[var(--text-secondary)]">
-          The salesman reads this on his phone.
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            rows={3}
-            maxLength={500}
-            placeholder="e.g. The shop must pay its open invoices first."
-            className="mt-2 w-full rounded-[var(--radius-btn)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-2 text-sm text-[var(--text-primary)]"
-          />
-        </label>
-      </Modal>
+      <RejectOrderModal order={order ?? null} open={rejecting} onClose={() => setRejecting(false)} />
     </>
   )
 }
