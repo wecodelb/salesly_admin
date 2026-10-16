@@ -26,6 +26,8 @@ export const ENDPOINTS = {
   // approval rules, customer visit plans and a salesman's day.
   ORDERS: '/orders',
   ORDER_APPROVE: (id: number) => `/orders/${id}/approve`,
+  // The warehouse an order ships from, priced for the shop: the approve drawer's figures.
+  ORDER_STOCK: '/orders/stock',
   ORDER_REJECT: (id: number) => `/orders/${id}/reject`,
   ORDER_CANCEL: (id: number) => `/orders/${id}/cancel`,
   ORDER_SETTINGS: '/order-settings',

@@ -81,6 +81,24 @@ export interface OrderFilters {
   page?: number
 }
 
+/** What a manager may change as he approves: the load-request answer, for orders. */
+export interface OrderApproval {
+  rows?: { item_id: number; uom_id: number; qty: number }[]
+  warehouse_id?: number | null
+  deliverer_id?: number | null
+  delivery_date?: string | null
+  memo?: string
+}
+
+/** One product in the source warehouse, as the approve drawer weighs a line. */
+export interface OrderStockLine {
+  item_id: number
+  /** In base units, after what other approved orders already hold. */
+  available_qty: number
+  /** Per base unit, from the shop's own price list and promotions. */
+  price: number | null
+}
+
 export interface OrderRules {
   auto_approve: boolean
   max_auto_approve_total: number | null

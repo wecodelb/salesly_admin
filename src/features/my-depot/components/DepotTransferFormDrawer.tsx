@@ -10,6 +10,7 @@ import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
 import { useProducts } from '@/features/products/hooks/use-products'
 import { useSalesmen } from '@/features/customers/hooks/use-customers'
 import type { AdminItem } from '@/features/products/types'
+import { packagingsOf } from '@/features/products/packagings'
 import {
   useApproveLoadRequest,
   useCreateDepotTransfer,
@@ -56,30 +57,6 @@ interface Row {
 }
 
 const blankRow = (): Row => ({ itemId: '', uomId: '', qty: '' })
-
-/** How this product may be counted: its own base unit, plus every packaging
- *  declared for it. Anything else has no multiplier, so stock cannot move in
- *  it — the backend refuses the line rather than guessing. */
-function packagingsOf(item: AdminItem): { uomId: number; label: string; unit: number }[] {
-  const seen = new Set<number>()
-  const list: { uomId: number; label: string; unit: number }[] = []
-
-  for (const variant of item.uoms ?? []) {
-    if (!variant.uom_id || seen.has(variant.uom_id)) continue
-    seen.add(variant.uom_id)
-    list.push({
-      uomId: variant.uom_id,
-      label: variant.uom?.name ?? 'Unit',
-      unit: variant.unit || 1,
-    })
-  }
-
-  if (item.uom_id && !seen.has(item.uom_id)) {
-    list.unshift({ uomId: item.uom_id, label: item.uom ?? 'Base unit', unit: 1 })
-  }
-
-  return list
-}
 
 const HEADING = 'text-sm font-semibold tracking-wide text-[var(--heading-accent)]'
 const HEADING_GLOW = { textShadow: '0 0 14px var(--heading-glow)' }

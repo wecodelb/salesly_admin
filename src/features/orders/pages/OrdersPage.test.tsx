@@ -125,7 +125,7 @@ describe('the orders page', () => {
     await userEvent.click(await screen.findByText('#101'))
     await userEvent.click(await screen.findByRole('button', { name: /Approve order/ }))
 
-    expect(api.approveOrder).toHaveBeenCalledWith(1)
+    expect(api.approveOrder).toHaveBeenCalledWith(1, undefined)
   })
 
   it('will not reject without a reason the salesman can read', async () => {

@@ -4,11 +4,12 @@ import {
   cancelOrder,
   fetchOrder,
   fetchOrderRules,
+  fetchOrderStock,
   fetchOrders,
   rejectOrder,
   saveOrderRules,
 } from '../api/orders-api'
-import type { OrderFilters, OrderRules } from '../types'
+import type { OrderApproval, OrderFilters, OrderRules } from '../types'
 
 const ORDERS_KEY = ['orders'] as const
 
@@ -42,13 +43,25 @@ export function useOrderActions() {
   const refresh = () => client.invalidateQueries({ queryKey: ORDERS_KEY })
 
   return {
-    approve: useMutation({ mutationFn: (id: number) => approveOrder(id), onSuccess: refresh }),
+    approve: useMutation({
+      mutationFn: ({ id, changes }: { id: number; changes?: OrderApproval }) => approveOrder(id, changes),
+      onSuccess: refresh,
+    }),
     reject: useMutation({
       mutationFn: ({ id, reason }: { id: number; reason: string }) => rejectOrder(id, reason),
       onSuccess: refresh,
     }),
     cancel: useMutation({ mutationFn: (id: number) => cancelOrder(id), onSuccess: refresh }),
   }
+}
+
+/** The source warehouse's stock for a shop's order, priced for the shop. */
+export function useOrderStock(customerId: number | null, warehouseId: number | null) {
+  return useQuery({
+    queryKey: [...ORDERS_KEY, 'stock', customerId, warehouseId],
+    queryFn: () => fetchOrderStock(customerId as number, warehouseId),
+    enabled: customerId != null,
+  })
 }
 
 export function useOrderRules(enabled: boolean) {

@@ -1,6 +1,6 @@
 import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
-import type { Order, OrderFilters, OrderRules, OrdersPage } from '../types'
+import type { Order, OrderApproval, OrderFilters, OrderRules, OrderStockLine, OrdersPage } from '../types'
 
 // Backend envelope: { status, message, data }
 interface Envelope<T> {
@@ -49,9 +49,18 @@ interface WriteData {
   order: Order
 }
 
-export async function approveOrder(id: number): Promise<Order> {
-  const { data } = await apiClient.post<Envelope<WriteData>>(ENDPOINTS.ORDER_APPROVE(id))
+/** Approves, applying the manager's changes first when he made any. */
+export async function approveOrder(id: number, changes?: OrderApproval): Promise<Order> {
+  const { data } = await apiClient.post<Envelope<WriteData>>(ENDPOINTS.ORDER_APPROVE(id), changes ?? {})
   return data.data.order
+}
+
+/** What the warehouse has for a shop's order, priced for that shop. */
+export async function fetchOrderStock(customerId: number, warehouseId: number | null): Promise<OrderStockLine[]> {
+  const { data } = await apiClient.get<Envelope<{ items: OrderStockLine[] }>>(ENDPOINTS.ORDER_STOCK, {
+    params: { customer_id: customerId, ...(warehouseId ? { warehouse_id: warehouseId } : {}) },
+  })
+  return data.data.items ?? []
 }
 
 export async function rejectOrder(id: number, reason: string): Promise<Order> {

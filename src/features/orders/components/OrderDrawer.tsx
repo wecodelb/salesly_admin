@@ -71,7 +71,7 @@ export function OrderDrawer({ orderId, onClose }: Props) {
           </Button>
           <Button
             loading={approve.isPending}
-            onClick={() => run(() => approve.mutateAsync(order.id), `Order ${order.trs_number} approved`)}
+            onClick={() => run(() => approve.mutateAsync({ id: order.id }), `Order ${order.trs_number} approved`)}
           >
             <CheckCircle2 size={15} /> Approve order
           </Button>
