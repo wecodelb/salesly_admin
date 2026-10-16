@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, Ban, ClipboardCheck, ShoppingCart, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Ban, ClipboardCheck, Printer, ShoppingCart, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
@@ -9,6 +9,7 @@ import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
 import { Button } from '@/shared/components/Button'
 import { useToast } from '@/shared/hooks/use-toast'
 import { usePermissions } from '@/core/auth/use-permissions'
+import { useAuthStore } from '@/core/auth/auth-store'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { useOrder, useOrderActions } from '../hooks/use-orders'
 import { canCancel, canDecide, decidedBy, formatDay, formatLbp, formatMoney, orderPill, serverMessage } from '../orders-logic'
@@ -16,6 +17,7 @@ import { goodsStage } from '../order-stage'
 import { OrderApproveDrawer } from '../components/OrderApproveDrawer'
 import { RejectOrderModal } from '../components/RejectOrderModal'
 import { OrderStageTrack } from '../components/OrderStageTrack'
+import { OrderPrintSheet } from '../components/OrderPrintSheet'
 import type { OrderLine } from '../types'
 
 const HEADING = 'text-sm font-semibold tracking-wide text-[var(--heading-accent)] mb-3'
@@ -47,6 +49,7 @@ export function OrderDetailPage() {
   const { cancel } = useOrderActions()
   const { can } = usePermissions()
   const toast = useToast()
+  const company = useAuthStore((state) => state.user?.company)
   const [reviewing, setReviewing] = useState(false)
   const [rejecting, setRejecting] = useState(false)
 
@@ -115,6 +118,9 @@ export function OrderDetailPage() {
         actions={
           <div className="flex items-center gap-2">
             {back}
+            <Button variant="outline" icon={<Printer size={15} />} onClick={() => window.print()}>
+              Print order
+            </Button>
             {mayCancel && (
               <Button variant="outline" icon={<Ban size={15} />} loading={cancel.isPending} onClick={cancelOrder}>
                 Cancel order
@@ -192,6 +198,7 @@ export function OrderDetailPage() {
         </div>
       </section>
 
+      <OrderPrintSheet order={order} companyName={company || 'Salesly'} />
       <OrderApproveDrawer orderId={reviewing ? order.id : null} onClose={() => setReviewing(false)} />
       <RejectOrderModal order={order} open={rejecting} onClose={() => setRejecting(false)} />
     </>

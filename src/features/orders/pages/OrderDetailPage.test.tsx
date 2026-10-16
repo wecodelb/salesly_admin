@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -49,6 +50,8 @@ const api = vi.hoisted(() => ({ fetchOrder: vi.fn(), cancelOrder: vi.fn(), appro
 vi.mock('../api/orders-api', () => api)
 // The approve drawer is only opened from a waiting order; these tests never do.
 vi.mock('../components/OrderApproveDrawer', () => ({ OrderApproveDrawer: () => null }))
+// The paper copy has its own test; here the screen is read alone.
+vi.mock('../components/OrderPrintSheet', () => ({ OrderPrintSheet: () => null }))
 
 const { OrderDetailPage } = await import('./OrderDetailPage')
 
@@ -112,5 +115,16 @@ describe('an order\'s own page', () => {
     expect(await screen.findByRole('button', { name: /Review & approve/ })).toBeInTheDocument()
     expect(screen.getByText('Over the limit.')).toBeInTheDocument()
     expect(screen.getByText(/Nothing is held yet/)).toBeInTheDocument()
+  })
+
+  it('prints the order from its page', async () => {
+    api.fetchOrder.mockResolvedValue(ORDER)
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
+    renderPage([PERMISSIONS.ORDERS_VIEW])
+
+    await userEvent.click(await screen.findByRole('button', { name: /Print order/ }))
+
+    expect(print).toHaveBeenCalledOnce()
+    print.mockRestore()
   })
 })
