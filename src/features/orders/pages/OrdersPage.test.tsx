@@ -63,11 +63,34 @@ const api = vi.hoisted(() => ({
   cancelOrder: vi.fn(),
   fetchOrderRules: vi.fn(),
   saveOrderRules: vi.fn(),
+  fetchOrderStock: vi.fn(),
 }))
+
+// The catalogue the drawer's pickers are built from: a jar sold by the piece
+// or in boxes of twelve.
+const PRODUCTS = [
+  {
+    id: 3,
+    code: 'NES-1',
+    name: 'Nescafé Classic 50g',
+    uom_id: 1,
+    uom: 'Piece',
+    uoms: [
+      { uom_id: 1, unit: 1, uom: { id: 1, code: 'PCS', name: 'Piece' } },
+      { uom_id: 2, unit: 12, uom: { id: 2, code: 'BOX', name: 'Box' } },
+    ],
+  },
+]
 
 vi.mock('../api/orders-api', () => api)
 vi.mock('@/features/customers/hooks/use-customers', () => ({
   useSalesmen: () => ({ data: [{ id: 4, name: 'Ahmad Khalil' }] }),
+}))
+vi.mock('@/features/products/hooks/use-products', () => ({
+  useProducts: () => ({ data: PRODUCTS, isLoading: false }),
+}))
+vi.mock('@/features/warehouses/hooks/use-warehouses', () => ({
+  useWarehouses: () => ({ data: [{ id: 1, name: 'Main warehouse', is_depot: false }] }),
 }))
 
 const { OrdersPage } = await import('./OrdersPage')
@@ -98,6 +121,8 @@ describe('the orders page', () => {
     api.fetchOrder.mockReset().mockImplementation(async (id: number) => PAGE.orders.find((o) => o.id === id))
     api.approveOrder.mockReset().mockResolvedValue(order({ status: 'APPROVED' }))
     api.rejectOrder.mockReset().mockResolvedValue(order({ status: 'REJECTED' }))
+    // 600 jars in the warehouse, at $2 a jar for this shop.
+    api.fetchOrderStock.mockReset().mockResolvedValue([{ item_id: 3, available_qty: 600, price: 2 }])
     api.fetchOrderRules.mockReset().mockResolvedValue({ auto_approve: true, max_auto_approve_total: 3000, overdue_days: 30 })
   })
 
@@ -118,21 +143,67 @@ describe('the orders page', () => {
     expect(screen.getByText('1 order is waiting for approval')).toBeInTheDocument()
   })
 
-  it('approves a waiting order from its drawer', async () => {
+  it('opens a waiting order to review with its lines ready to adjust, like a load request', async () => {
     signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
     renderPage()
 
-    await userEvent.click(await screen.findByText('#101'))
-    await userEvent.click(await screen.findByRole('button', { name: /Approve order/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /Review & approve/ }))
 
-    expect(api.approveOrder).toHaveBeenCalledWith(1, undefined)
+    expect(await screen.findByText('Approve order #101')).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('5')).toBeInTheDocument()
+    expect(await screen.findByText('600 available')).toBeInTheDocument()
+    expect(screen.getByText('$24.00 each · $120.00')).toBeInTheDocument()
   })
 
-  it('will not reject without a reason the salesman can read', async () => {
+  it('approves the order as the manager adjusted it', async () => {
     signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
     renderPage()
 
-    await userEvent.click(await screen.findByText('#101'))
+    await userEvent.click(await screen.findByRole('button', { name: /Review & approve/ }))
+    const quantity = await screen.findByDisplayValue('5')
+    await userEvent.clear(quantity)
+    await userEvent.type(quantity, '3')
+    await userEvent.click(screen.getByRole('button', { name: /Approve order/ }))
+
+    expect(api.approveOrder).toHaveBeenCalledWith(1, {
+      rows: [{ item_id: 3, uom_id: 2, qty: 3 }],
+      warehouse_id: 1,
+      deliverer_id: 4,
+      delivery_date: '2026-10-16',
+      memo: '',
+    })
+  })
+
+  it('stops a line the warehouse cannot fill before it is sent', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
+    renderPage()
+
+    await userEvent.click(await screen.findByRole('button', { name: /Review & approve/ }))
+    const quantity = await screen.findByDisplayValue('5')
+    await userEvent.clear(quantity)
+    await userEvent.type(quantity, '60')
+    await userEvent.click(screen.getByRole('button', { name: /Approve order/ }))
+
+    expect(await screen.findByText('Only 600 available')).toBeInTheDocument()
+    expect(api.approveOrder).not.toHaveBeenCalled()
+  })
+
+  it('will not approve an order with every product taken off', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
+    renderPage()
+
+    await userEvent.click(await screen.findByRole('button', { name: /Review & approve/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Remove product 1' }))
+    await userEvent.click(screen.getByRole('button', { name: /Approve order/ }))
+
+    expect(await screen.findByText('An order needs at least one product')).toBeInTheDocument()
+    expect(api.approveOrder).not.toHaveBeenCalled()
+  })
+
+  it('rejects from the row, and only with a reason the salesman can read', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
+    renderPage()
+
     await userEvent.click(await screen.findByRole('button', { name: /^Reject$/ }))
     const confirm = await screen.findByRole('button', { name: 'Reject order' })
     expect(confirm).toBeDisabled()
@@ -149,7 +220,7 @@ describe('the orders page', () => {
 
     await userEvent.click(await screen.findByText('#101'))
     expect(await screen.findByText('Nescafé Classic 50g')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Approve order/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Review & approve/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Approval rules/ })).not.toBeInTheDocument()
   })
 

@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { AlertTriangle, CheckCircle2, Store, Truck, XCircle } from 'lucide-react'
+import { AlertTriangle, ClipboardCheck, Store, Truck } from 'lucide-react'
 import { SideDrawer } from '@/shared/components/SideDrawer/SideDrawer'
 import { Button } from '@/shared/components/Button'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
@@ -8,27 +7,25 @@ import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { useOrder, useOrderActions } from '../hooks/use-orders'
 import { canCancel, canDecide, decidedBy, formatDay, formatLbp, formatMoney, orderPill, serverMessage } from '../orders-logic'
-import { RejectOrderModal } from './RejectOrderModal'
 
 interface Props {
   orderId: number | null
   onClose: () => void
+  /** Opens the approve drawer, where a waiting order is adjusted and decided. */
+  onReview?: () => void
 }
 
 /**
- * One order, opened from the list: who it is for, what is on it, why it waits,
- * and the decision.
- *
- * Approving overrides the company's rules but not the stock — the server
- * refuses goods the warehouse does not have, and says which item is short.
- * Rejecting needs a reason: it is what the salesman reads on his phone.
+ * One order, opened from the list: who it is for, what is on it, why it
+ * waits, and how it was decided. Reading only — a waiting order is decided in
+ * the approve drawer, where its lines can be adjusted the way a load request's
+ * are; Review & approve opens it.
  */
-export function OrderDrawer({ orderId, onClose }: Props) {
+export function OrderDrawer({ orderId, onClose, onReview }: Props) {
   const { data: order, isLoading } = useOrder(orderId)
-  const { approve, cancel } = useOrderActions()
+  const { cancel } = useOrderActions()
   const { can } = usePermissions()
   const toast = useToast()
-  const [rejecting, setRejecting] = useState(false)
 
   const mayApprove = can(PERMISSIONS.ORDERS_APPROVE)
   const mayCancel = can(PERMISSIONS.ORDERS_CONFIRM)
@@ -56,18 +53,10 @@ export function OrderDrawer({ orderId, onClose }: Props) {
           Cancel order
         </Button>
       )}
-      {mayApprove && canDecide(order) && (
-        <>
-          <Button variant="outline" onClick={() => setRejecting(true)}>
-            <XCircle size={15} /> Reject
-          </Button>
-          <Button
-            loading={approve.isPending}
-            onClick={() => run(() => approve.mutateAsync({ id: order.id }), `Order ${order.trs_number} approved`)}
-          >
-            <CheckCircle2 size={15} /> Approve order
-          </Button>
-        </>
+      {mayApprove && canDecide(order) && onReview && (
+        <Button onClick={onReview}>
+          <ClipboardCheck size={15} /> Review &amp; approve
+        </Button>
       )}
     </div>
   )
@@ -182,7 +171,6 @@ export function OrderDrawer({ orderId, onClose }: Props) {
         )}
       </SideDrawer>
 
-      <RejectOrderModal order={order ?? null} open={rejecting} onClose={() => setRejecting(false)} />
     </>
   )
 }

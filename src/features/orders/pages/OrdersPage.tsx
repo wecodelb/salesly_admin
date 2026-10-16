@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Lock, Settings2, ShoppingCart } from 'lucide-react'
+import { ClipboardCheck, Lock, Settings2, ShoppingCart, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { EmptyState } from '@/shared/components/EmptyState/EmptyState'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
@@ -16,7 +16,9 @@ import { useSalesmen } from '@/features/customers/hooks/use-customers'
 import { useOrders } from '../hooks/use-orders'
 import { OrderDrawer } from '../components/OrderDrawer'
 import { OrderRulesDrawer } from '../components/OrderRulesDrawer'
-import { STATUS_OPTIONS, formatDay, formatMoney, orderPill } from '../orders-logic'
+import { OrderApproveDrawer } from '../components/OrderApproveDrawer'
+import { RejectOrderModal } from '../components/RejectOrderModal'
+import { STATUS_OPTIONS, canDecide, formatDay, formatMoney, orderPill } from '../orders-logic'
 import type { Order, OrderStatus } from '../types'
 
 type Row = Order & Record<string, unknown>
@@ -41,6 +43,8 @@ export function OrdersPage() {
   const [page, setPage] = useState(1)
   const [openId, setOpenId] = useState<number | null>(null)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [reviewId, setReviewId] = useState<number | null>(null)
+  const [rejecting, setRejecting] = useState<Order | null>(null)
 
   const orders = useOrders({
     status,
@@ -119,6 +123,30 @@ export function OrdersPage() {
         return <StatusPill status={pill.status} label={pill.label} />
       },
     },
+    // The row's two answers, as on a load request: turn it down, or open it to
+    // adjust and approve.
+    ...(mayApprove
+      ? [
+          {
+            key: 'actions',
+            header: '',
+            width: 'w-[17rem]',
+            render: (o: Row) =>
+              canDecide(o) ? (
+                <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                  <Button variant="outline" icon={<X size={15} />} onClick={() => setRejecting(o)}>
+                    Reject
+                  </Button>
+                  <Button icon={<ClipboardCheck size={15} />} onClick={() => setReviewId(o.id)}>
+                    Review &amp; approve
+                  </Button>
+                </div>
+              ) : (
+                <span className="text-xs text-[var(--text-muted)]">—</span>
+              ),
+          } as Column<Row>,
+        ]
+      : []),
   ]
 
   return (
@@ -219,7 +247,16 @@ export function OrdersPage() {
         </div>
       )}
 
-      <OrderDrawer orderId={openId} onClose={() => setOpenId(null)} />
+      <OrderDrawer
+        orderId={openId}
+        onClose={() => setOpenId(null)}
+        onReview={() => {
+          setReviewId(openId)
+          setOpenId(null)
+        }}
+      />
+      <OrderApproveDrawer orderId={reviewId} onClose={() => setReviewId(null)} />
+      <RejectOrderModal order={rejecting} open={rejecting != null} onClose={() => setRejecting(null)} />
       <OrderRulesDrawer open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </>
   )
