@@ -9,6 +9,9 @@ import { FilterBar } from '@/shared/components/FilterBar/FilterBar'
 import { FilterSelect } from '@/shared/components/FilterSelect/FilterSelect'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
 import { Button } from '@/shared/components/Button'
+import { ExportButton } from '@/features/reports/components/ExportButton'
+import { useShownRows } from '@/features/reports/use-shown-rows'
+import { rangeLabel } from '@/features/reports/report-format'
 import { useModules } from '@/core/auth/use-modules'
 import { MODULES } from '@/core/auth/modules'
 import { usePermissions } from '@/core/auth/use-permissions'
@@ -19,6 +22,7 @@ import { OrderRulesDrawer } from '../components/OrderRulesDrawer'
 import { OrderApproveDrawer } from '../components/OrderApproveDrawer'
 import { RejectOrderModal } from '../components/RejectOrderModal'
 import { DateRangeFilter } from '../components/DateRangeFilter'
+import { ordersExportDoc } from '../orders-export'
 import { STATUS_OPTIONS, canDecide, formatDay, formatMoney, orderPill } from '../orders-logic'
 import type { Order, OrderStatus } from '../types'
 
@@ -62,6 +66,7 @@ export function OrdersPage() {
   }, bought)
   const salesmen = useSalesmen()
   const customers = useCustomers()
+  const { rows: shownRows, onVisibleRows } = useShownRows((orders.data?.orders ?? []) as Row[])
 
   if (!bought) {
     return (
@@ -79,6 +84,16 @@ export function OrdersPage() {
   const list = (orders.data?.orders ?? []) as Row[]
   const pending = orders.data?.pendingApproval ?? 0
   const lastPage = orders.data?.lastPage ?? 1
+
+  // Written under the printed title, so a filtered page never reads as the whole book.
+  const exportFilters = [
+    status && `Status: ${STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}`,
+    customerId && `Customer: ${customers.data?.find((c) => String(c.id) === customerId)?.name ?? customerId}`,
+    salesmanId && `Salesman: ${salesmen.data?.find((s) => String(s.id) === salesmanId)?.name ?? salesmanId}`,
+    search.trim() && `Search “${search.trim()}”`,
+    (taken.from || taken.to) && `Taken ${rangeLabel(taken.from, taken.to)}`,
+    (delivery.from || delivery.to) && `Delivery ${rangeLabel(delivery.from, delivery.to)}`,
+  ]
 
   const filtersSet = [status, salesmanId, customerId, search, taken.from || taken.to, delivery.from || delivery.to].filter(Boolean).length
   // Any change of filter starts again from the first page.
@@ -163,11 +178,18 @@ export function OrdersPage() {
         title="Orders"
         subtitle="Orders taken in the field, and the ones waiting for your approval"
         actions={
-          mayApprove ? (
-            <Button variant="secondary" onClick={() => setRulesOpen(true)}>
-              <Settings2 size={15} /> Approval rules
-            </Button>
-          ) : undefined
+          <>
+            <ExportButton
+              variant="outline"
+              disabled={orders.isLoading}
+              build={() => ordersExportDoc(shownRows(), orders.data?.total ?? 0, exportFilters)}
+            />
+            {mayApprove && (
+              <Button variant="secondary" onClick={() => setRulesOpen(true)}>
+                <Settings2 size={15} /> Approval rules
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -246,6 +268,7 @@ export function OrdersPage() {
         data={list}
         keyField="id"
         loading={orders.isLoading}
+        onVisibleRows={onVisibleRows}
         // Opening a row opens the order's own page, as a load request does.
         onRowClick={(o) => navigate(`/orders/${o.id}`)}
         emptyIcon={<ShoppingCart size={28} />}
