@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -86,6 +86,7 @@ const PRODUCTS = [
 vi.mock('../api/orders-api', () => api)
 vi.mock('@/features/customers/hooks/use-customers', () => ({
   useSalesmen: () => ({ data: [{ id: 4, name: 'Ahmad Khalil' }] }),
+  useCustomers: () => ({ data: [{ id: 9, name: 'Al Watan Grocery' }] }),
 }))
 vi.mock('@/features/products/hooks/use-products', () => ({
   useProducts: () => ({ data: PRODUCTS, isLoading: false }),
@@ -236,6 +237,22 @@ describe('the orders page', () => {
     await userEvent.click(await screen.findByText('#101'))
 
     expect(await screen.findByText(/order page/)).toBeInTheDocument()
+  })
+
+  it('narrows the list by customer and by the days it was taken', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW])
+    renderPage()
+    await screen.findByText('#101')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Customer: All customers' }))
+    await userEvent.click(screen.getByRole('option', { name: /Al Watan Grocery/ }))
+    fireEvent.change(screen.getByLabelText('Taken from'), { target: { value: '2026-10-01' } })
+
+    await vi.waitFor(() =>
+      expect(api.fetchOrders).toHaveBeenLastCalledWith(
+        expect.objectContaining({ customerId: 9, dateFrom: '2026-10-01', dateTo: '', page: 1 }),
+      ),
+    )
   })
 
   it('opens the approval rules with the values the company saved', async () => {

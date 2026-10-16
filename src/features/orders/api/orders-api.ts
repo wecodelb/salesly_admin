@@ -25,7 +25,11 @@ export async function fetchOrders(filters: OrderFilters = {}): Promise<OrdersPag
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.salesmanId ? { salesman_id: filters.salesmanId } : {}),
       ...(filters.search?.trim() ? { search: filters.search.trim() } : {}),
-      ...(filters.deliveryDate ? { delivery_from: filters.deliveryDate, delivery_to: filters.deliveryDate } : {}),
+      ...(filters.customerId ? { customer_id: filters.customerId } : {}),
+      ...(filters.dateFrom ? { date_from: filters.dateFrom } : {}),
+      ...(filters.dateTo ? { date_to: filters.dateTo } : {}),
+      ...(filters.deliveryFrom ? { delivery_from: filters.deliveryFrom } : {}),
+      ...(filters.deliveryTo ? { delivery_to: filters.deliveryTo } : {}),
     },
   })
   const body = data?.data

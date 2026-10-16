@@ -77,7 +77,13 @@ export interface OrderFilters {
   status?: OrderStatus | ''
   salesmanId?: number | null
   search?: string
-  deliveryDate?: string
+  customerId?: number | null
+  /** The day it was taken, either end open. */
+  dateFrom?: string
+  dateTo?: string
+  /** The day it is due, either end open. */
+  deliveryFrom?: string
+  deliveryTo?: string
   page?: number
 }
 

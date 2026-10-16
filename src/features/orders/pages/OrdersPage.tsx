@@ -13,11 +13,12 @@ import { useModules } from '@/core/auth/use-modules'
 import { MODULES } from '@/core/auth/modules'
 import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
-import { useSalesmen } from '@/features/customers/hooks/use-customers'
+import { useCustomers, useSalesmen } from '@/features/customers/hooks/use-customers'
 import { useOrders } from '../hooks/use-orders'
 import { OrderRulesDrawer } from '../components/OrderRulesDrawer'
 import { OrderApproveDrawer } from '../components/OrderApproveDrawer'
 import { RejectOrderModal } from '../components/RejectOrderModal'
+import { DateRangeFilter } from '../components/DateRangeFilter'
 import { STATUS_OPTIONS, canDecide, formatDay, formatMoney, orderPill } from '../orders-logic'
 import type { Order, OrderStatus } from '../types'
 
@@ -39,7 +40,9 @@ export function OrdersPage() {
   const [status, setStatus] = useState<OrderStatus | ''>('')
   const [salesmanId, setSalesmanId] = useState('')
   const [search, setSearch] = useState('')
-  const [deliveryDate, setDeliveryDate] = useState('')
+  const [customerId, setCustomerId] = useState('')
+  const [taken, setTaken] = useState({ from: '', to: '' })
+  const [delivery, setDelivery] = useState({ from: '', to: '' })
   const [page, setPage] = useState(1)
   const navigate = useNavigate()
   const [rulesOpen, setRulesOpen] = useState(false)
@@ -49,11 +52,16 @@ export function OrdersPage() {
   const orders = useOrders({
     status,
     salesmanId: salesmanId ? Number(salesmanId) : null,
+    customerId: customerId ? Number(customerId) : null,
     search,
-    deliveryDate,
+    dateFrom: taken.from,
+    dateTo: taken.to,
+    deliveryFrom: delivery.from,
+    deliveryTo: delivery.to,
     page,
   }, bought)
   const salesmen = useSalesmen()
+  const customers = useCustomers()
 
   if (!bought) {
     return (
@@ -72,7 +80,7 @@ export function OrdersPage() {
   const pending = orders.data?.pendingApproval ?? 0
   const lastPage = orders.data?.lastPage ?? 1
 
-  const filtersSet = [status, salesmanId, search, deliveryDate].filter(Boolean).length
+  const filtersSet = [status, salesmanId, customerId, search, taken.from || taken.to, delivery.from || delivery.to].filter(Boolean).length
   // Any change of filter starts again from the first page.
   const refilter = (apply: () => void) => {
     apply()
@@ -185,8 +193,10 @@ export function OrdersPage() {
           refilter(() => {
             setStatus('')
             setSalesmanId('')
+            setCustomerId('')
             setSearch('')
-            setDeliveryDate('')
+            setTaken({ from: '', to: '' })
+            setDelivery({ from: '', to: '' })
           })
         }
         filters={
@@ -209,16 +219,24 @@ export function OrdersPage() {
                 allLabel="All salesmen"
               />
             </div>
-            <label className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-              Delivery on
-              <input
-                type="date"
-                aria-label="Delivery on"
-                value={deliveryDate}
-                onChange={(e) => refilter(() => setDeliveryDate(e.target.value))}
-                className="rounded-[var(--radius-btn)] border border-[var(--border-default)] bg-[var(--bg-surface)] px-2 py-1.5 text-sm text-[var(--text-primary)]"
+            <div className="w-56">
+              <FilterSelect
+                label="Customer"
+                value={customerId}
+                onChange={(v) => refilter(() => setCustomerId(v))}
+                options={(customers.data ?? []).map((c) => ({ value: String(c.id), label: c.name }))}
+                allLabel="All customers"
+                searchable
+                searchPlaceholder="Search customers…"
               />
-            </label>
+            </div>
+            <DateRangeFilter label="Taken" from={taken.from} to={taken.to} onChange={(r) => refilter(() => setTaken(r))} />
+            <DateRangeFilter
+              label="Delivery"
+              from={delivery.from}
+              to={delivery.to}
+              onChange={(r) => refilter(() => setDelivery(r))}
+            />
           </div>
         }
       />
