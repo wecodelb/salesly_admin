@@ -84,7 +84,12 @@ export function SearchableSelect({
             error ? 'border-[var(--accent-red)]' : '',
           ].join(' ')}
         >
-          <span className={selected ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
+          {/* One line, whatever the label's length: the button is a fixed height,
+              and a long product name wrapping inside it spilled over the field. */}
+          <span
+            title={selected?.label}
+            className={['min-w-0 truncate', selected ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'].join(' ')}
+          >
             {selected ? selected.label : placeholder}
           </span>
           <ChevronDown size={15} className="text-[var(--text-muted)] flex-shrink-0" />

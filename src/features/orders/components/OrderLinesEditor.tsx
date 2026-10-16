@@ -64,7 +64,7 @@ export function OrderLinesEditor({ rows, onChange, products, productsById, stock
 
         return (
           <div key={i} className="flex flex-wrap items-end gap-3">
-            <div className="min-w-[14rem] flex-1">
+            <div className="min-w-[12rem] flex-1">
               <SearchableSelect
                 label={i === 0 ? 'Product' : undefined}
                 value={row.itemId}
@@ -100,7 +100,7 @@ export function OrderLinesEditor({ rows, onChange, products, productsById, stock
                 aria-label={`Quantity ${i + 1}`}
               />
             </div>
-            <div className="mb-2.5 w-40 text-xs">
+            <div className="mb-2.5 w-36 text-xs">
               {figures ? (
                 <>
                   <div className={figures.short ? 'font-medium text-[var(--accent-red)]' : 'text-[var(--text-secondary)]'}>
