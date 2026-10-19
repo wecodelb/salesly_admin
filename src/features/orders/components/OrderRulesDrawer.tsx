@@ -92,8 +92,8 @@ export function OrderRulesDrawer({ open, onClose }: Props) {
         </label>
 
         <p className="rounded-[var(--radius-card)] bg-[var(--bg-surface-raised)] p-3 text-xs text-[var(--text-muted)]">
-          Always checked as well: the customer's credit limit (counting their other approved orders not yet delivered)
-          and whether the warehouse has the stock.
+          Always checked as well: whether the warehouse has the stock. The credit limit is not an approval rule — an
+          order is a promise, not a debt. It is checked at delivery, when the salesman puts part of the invoice on account.
         </p>
       </div>
       )}
