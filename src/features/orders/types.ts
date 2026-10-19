@@ -48,6 +48,8 @@ export interface Order {
   salesman: { id: number | null; name: string | null }
   warehouse: { id: number | null; name: string | null }
   delivery_date: string | null
+  /** When the salesman signed for it on his van; null while it is in the warehouse. */
+  loaded_at?: string | null
   deliverer: { id: number | null; name: string | null }
   submitted_at: string | null
   decided_at: string | null

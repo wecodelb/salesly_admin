@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { goodsStage } from './order-stage'
 
-const order = (status: string, invoice: { id: number; trs_number: number; trs_date: string } | null = null) => ({
+const order = (
+  status: string,
+  invoice: { id: number; trs_number: number; trs_date: string } | null = null,
+  loaded_at: string | null = null,
+) => ({
   status: status as never,
   warehouse: { id: 1, name: 'Main Warehouse' },
   deliverer: { id: 7, name: 'Ahmad Khalil' },
   invoice,
+  loaded_at,
 })
 
 describe('where an order\'s goods are', () => {
@@ -18,6 +23,14 @@ describe('where an order\'s goods are', () => {
     expect(stage).toMatchObject({ key: 'held', reached: 2 })
     expect(stage.sentence).toBe(
       "Held for this order in Main Warehouse — still in the warehouse. They move to Ahmad Khalil's van only when he signs for them on his load.",
+    )
+  })
+
+  it('reads an order the salesman has signed for as on his van', () => {
+    const stage = goodsStage(order('APPROVED', null, '19/10/2026 09:30'))
+    expect(stage).toMatchObject({ key: 'onVan', reached: 3 })
+    expect(stage.sentence).toBe(
+      "On Ahmad Khalil's van since 19/10/2026 09:30 — signed for on his load and held there for this shop until he delivers it.",
     )
   })
 

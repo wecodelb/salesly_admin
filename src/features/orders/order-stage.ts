@@ -1,6 +1,6 @@
 import type { Order } from './types'
 
-export type GoodsStageKey = 'waiting' | 'held' | 'delivered' | 'ended'
+export type GoodsStageKey = 'waiting' | 'held' | 'onVan' | 'delivered' | 'ended'
 
 export interface GoodsStage {
   key: GoodsStageKey
@@ -18,7 +18,7 @@ export interface GoodsStage {
  * anyone else — until the salesman signs for them on his load. Only delivery
  * takes them out for good.
  */
-export function goodsStage(order: Pick<Order, 'status' | 'warehouse' | 'deliverer' | 'invoice'>): GoodsStage {
+export function goodsStage(order: Pick<Order, 'status' | 'warehouse' | 'deliverer' | 'invoice' | 'loaded_at'>): GoodsStage {
   const warehouse = order.warehouse.name ?? 'the warehouse'
   const deliverer = order.deliverer.name ?? 'the salesman'
 
@@ -31,6 +31,15 @@ export function goodsStage(order: Pick<Order, 'status' | 'warehouse' | 'delivere
       }
     case 'APPROVED':
     case 'DRAFT':
+      // Signed for on his load: off the warehouse's books, on the van, and held
+      // there for this shop until he hands it over.
+      if (order.loaded_at) {
+        return {
+          key: 'onVan',
+          reached: 3,
+          sentence: `On ${deliverer}'s van since ${order.loaded_at} — signed for on his load and held there for this shop until he delivers it.`,
+        }
+      }
       return {
         key: 'held',
         reached: 2,
