@@ -95,6 +95,8 @@ export function CreditLimitModal({ customer, onClose }: Props) {
             setError('')
           }}
           leftIcon={<DollarSign size={15} />}
+          // Amounts read from the right, as on the invoice.
+          className="text-right"
           placeholder="No limit"
           error={error || undefined}
         />

@@ -191,6 +191,17 @@ describe('financial section', () => {
     expect(api.createCustomer.mock.calls[0][0]).toMatchObject({ price_level: 'retail' })
   })
 
+  it('starts a new customer in the company base currency', async () => {
+    const user = await openDrawer()
+
+    await user.type(screen.getByLabelText('Code'), 'CUST-912')
+    await user.type(screen.getByLabelText('Name'), 'Base Shop')
+    await user.click(screen.getByRole('button', { name: 'Create customer' }))
+
+    await waitFor(() => expect(api.createCustomer).toHaveBeenCalledTimes(1))
+    expect(api.createCustomer.mock.calls[0][0]).toMatchObject({ currency_id: 1 })
+  })
+
   it('sends the picked level, and the group under its own key', async () => {
     const user = await openDrawer()
 

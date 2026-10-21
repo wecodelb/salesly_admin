@@ -148,6 +148,7 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
   /** Guards the detail seed: it must run once, or a refetch (an attachment
    *  delete invalidates the query) would wipe addresses typed since. */
   const [seeded, setSeeded] = useState(false)
+  const baseCurrencyId = currencies.find((c) => c.is_base)?.id
 
   useEffect(() => {
     if (!open) return
@@ -180,6 +181,14 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
     setFiles([])
     setErrors({})
   }, [open, customer])
+
+  // A new customer starts in the company's base currency, chosen rather than
+  // left blank — what nearly every shop pays in. Waits for the currencies to
+  // arrive, and leaves alone a choice already made.
+  useEffect(() => {
+    if (!open || customer || baseCurrencyId == null) return
+    setForm((f) => (f.currencyId === '' ? { ...f, currencyId: String(baseCurrencyId) } : f))
+  }, [open, customer, baseCurrencyId])
 
   useEffect(() => {
     if (!open || seeded || !detail?.addresses) return
@@ -551,6 +560,8 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
                     onChange={(e) => set('creditLimit', e.target.value)}
                     error={errors.creditLimit}
                     placeholder="No cap"
+                    // Amounts read from the right, as on the invoice.
+                    className="text-right"
                   />
                 ) : null}
               </div>
