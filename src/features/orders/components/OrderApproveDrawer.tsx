@@ -34,7 +34,9 @@ const HEADING = 'text-sm font-semibold tracking-wide text-[var(--heading-accent)
 export function OrderApproveDrawer({ orderId, onClose }: Props) {
   const open = orderId != null
   const { data: order } = useOrder(orderId)
-  const { data: products = [] } = useProducts()
+  // The whole catalogue, page by page: until it is in, the lines cannot be
+  // read or priced, so the editor waits and Approve with it.
+  const { data: products = [], isLoading: productsLoading } = useProducts()
   const { data: salesmen = [] } = useSalesmen()
   const { data: warehouses = [] } = useWarehouses()
   const { approve } = useOrderActions()
@@ -134,7 +136,7 @@ export function OrderApproveDrawer({ orderId, onClose }: Props) {
             <Button variant="outline" onClick={() => setRejecting(true)} disabled={!order || approve.isPending}>
               <XCircle size={15} /> Reject
             </Button>
-            <Button onClick={submit} loading={approve.isPending} disabled={!order}>
+            <Button onClick={submit} loading={approve.isPending} disabled={!order || productsLoading}>
               <CheckCircle2 size={15} /> Approve order
             </Button>
           </>
@@ -197,14 +199,18 @@ export function OrderApproveDrawer({ orderId, onClose }: Props) {
             </section>
 
             <section className="border-t border-[var(--border-default)] pt-6">
-              <OrderLinesEditor
-                rows={rows}
-                onChange={setRows}
-                products={products}
-                productsById={productsById}
-                stock={stock}
-                errors={errors}
-              />
+              {productsLoading ? (
+                <p className="py-6 text-center text-sm text-[var(--text-muted)]">Loading products…</p>
+              ) : (
+                <OrderLinesEditor
+                  rows={rows}
+                  onChange={setRows}
+                  products={products}
+                  productsById={productsById}
+                  stock={stock}
+                  errors={errors}
+                />
+              )}
               <div className="mt-4 flex items-baseline justify-between rounded-[var(--radius-card)] border border-[var(--border-subtle)] px-4 py-3">
                 <span className="text-xs uppercase tracking-wide text-[var(--text-muted)]">This order, priced for the shop</span>
                 <span className="font-mono text-lg font-bold tabular-nums text-[var(--text-primary)]">{formatMoney(total)}</span>

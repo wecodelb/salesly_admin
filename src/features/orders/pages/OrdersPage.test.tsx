@@ -88,8 +88,9 @@ vi.mock('@/features/customers/hooks/use-customers', () => ({
   useSalesmen: () => ({ data: [{ id: 4, name: 'Ahmad Khalil' }] }),
   useCustomers: () => ({ data: [{ id: 9, name: 'Al Watan Grocery' }] }),
 }))
+const catalogue = vi.hoisted(() => ({ loading: false }))
 vi.mock('@/features/products/hooks/use-products', () => ({
-  useProducts: () => ({ data: PRODUCTS, isLoading: false }),
+  useProducts: () => (catalogue.loading ? { data: undefined, isLoading: true } : { data: PRODUCTS, isLoading: false }),
 }))
 vi.mock('@/features/warehouses/hooks/use-warehouses', () => ({
   useWarehouses: () => ({ data: [{ id: 1, name: 'Main warehouse', is_depot: false }] }),
@@ -124,6 +125,7 @@ function signIn(modules: string[], permissions: string[]) {
 
 describe('the orders page', () => {
   beforeEach(() => {
+    catalogue.loading = false
     api.fetchOrders.mockReset().mockResolvedValue(PAGE)
     api.fetchOrder.mockReset().mockImplementation(async (id: number) => PAGE.orders.find((o) => o.id === id))
     api.approveOrder.mockReset().mockResolvedValue(order({ status: 'APPROVED' }))
@@ -160,6 +162,17 @@ describe('the orders page', () => {
     expect(await screen.findByDisplayValue('5')).toBeInTheDocument()
     expect(await screen.findByText('600 available')).toBeInTheDocument()
     expect(screen.getByText('$24.00 each · $120.00')).toBeInTheDocument()
+  })
+
+  it('waits for the products before showing the lines or letting the order be approved', async () => {
+    catalogue.loading = true
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
+    renderPage()
+
+    await userEvent.click(await screen.findByRole('button', { name: /Review & approve/ }))
+
+    expect(await screen.findByText('Loading products…')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Approve order/ })).toBeDisabled()
   })
 
   it('approves the order as the manager adjusted it', async () => {
