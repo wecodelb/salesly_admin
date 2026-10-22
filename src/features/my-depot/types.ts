@@ -104,6 +104,11 @@ export interface DepotTransfer {
   src_id: number | null
   source_document?: DepotSourceDocument | null
   acceptance?: DepotAcceptanceRef | null
+  /**
+   * Detail of a request only: the load raised against it. Null on an approved
+   * request whose load never came — approving and loading are two calls.
+   */
+  raised_load?: { id: number; trs_number: string; status: string | null } | null
   memo: string | null
   created_at: string | null
   updated_at: string | null
@@ -545,10 +550,13 @@ export function depotUtilisation(
  * untouched: DRAFT is still DRAFT everywhere it is sent, filtered or stored.
  */
 export function transferPill(
-  t: Pick<DepotTransfer, 'trs_type' | 'status'>,
+  t: Pick<DepotTransfer, 'trs_type' | 'status'> & Pick<Partial<DepotTransfer>, 'raised_load'>,
 ): { status: string; label: string } {
   if (t.trs_type === 'LR') {
     if (t.status === 'DRAFT') return { status: 'pending', label: 'Requested' }
+    // Known only on the request's own page: approved, and the load that should
+    // have followed never came. Saying "Load issued" there would hide the gap.
+    if (t.status === 'CONFIRMED' && t.raised_load === null) return { status: 'pending', label: 'Approved · no load yet' }
     // Deliberately not "Approved" and deliberately not "Load created". Answering
     // a request means building the load in the same drawer, so by the time anyone
     // reads this a load exists and is on its way — which is what the salesman's

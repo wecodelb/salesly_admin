@@ -191,6 +191,15 @@ describe('transferPill', () => {
     expect(transferPill(doc('LI', 'CONFIRMED')).label).toBe('Load issued')
   })
 
+  it('says so when a request was approved and its load never came', () => {
+    // Approving and raising the load are two calls; when the second is lost the
+    // request must not claim a load that does not exist.
+    expect(transferPill({ ...doc('LR', 'CONFIRMED'), raised_load: null }).label).toBe('Approved · no load yet')
+    expect(
+      transferPill({ ...doc('LR', 'CONFIRMED'), raised_load: { id: 7, trs_number: 'LI-7', status: 'CONFIRMED' } }).label,
+    ).toBe('Load issued')
+  })
+
   it('reads a cancelled request as rejected', () => {
     expect(transferPill(doc('LR', 'CANCELED')).label).toBe('Rejected')
   })

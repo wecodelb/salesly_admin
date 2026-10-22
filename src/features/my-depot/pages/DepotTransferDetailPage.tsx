@@ -46,6 +46,7 @@ import {
   isAcceptable,
   isEditableDraft,
   isPendingRequest,
+  isApprovedRequest,
   lineTotal,
   sourceAvailability,
   transferPill,
@@ -143,6 +144,9 @@ export function DepotTransferDetailPage() {
   // this page — and a reviewer who had to go back to the list to say yes would
   // be answering from memory of what he just read.
   const answerable = isPendingRequest(transfer)
+  // Approved, with no load behind it: the second half of answering never
+  // landed, so the load can still be raised from here.
+  const awaitingLoad = isApprovedRequest(transfer) && transfer.raised_load === null
   const rows = transfer.rows ?? []
   // An acceptance carries what actually landed; the other two carry what was
   // asked for or picked. Only the first has anything to compare against.
@@ -405,6 +409,16 @@ export function DepotTransferDetailPage() {
                   Create load
                 </Button>
               </>
+            )}
+            {canIssue && awaitingLoad && (
+              <Button icon={<PackagePlus size={15} />} onClick={handleCreateLoad}>
+                Create load
+              </Button>
+            )}
+            {transfer.raised_load && (
+              <Button variant="outline" onClick={() => navigate(`/load-issues/${transfer.raised_load!.id}`)}>
+                Open load {transfer.raised_load.trs_number}
+              </Button>
             )}
             {canAccept && acceptable && (
               <Button icon={<FileCheck2 size={15} />} onClick={() => setAccepting(true)}>
