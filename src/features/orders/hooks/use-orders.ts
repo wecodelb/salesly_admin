@@ -3,13 +3,11 @@ import {
   approveOrder,
   cancelOrder,
   fetchOrder,
-  fetchOrderRules,
   fetchOrderStock,
   fetchOrders,
   rejectOrder,
-  saveOrderRules,
 } from '../api/orders-api'
-import type { OrderApproval, OrderFilters, OrderRules } from '../types'
+import type { OrderApproval, OrderFilters } from '../types'
 
 const ORDERS_KEY = ['orders'] as const
 
@@ -76,17 +74,5 @@ export function useOrderStock(customerId: number | null, warehouseId: number | n
     queryKey: [...ORDERS_KEY, 'stock', customerId, warehouseId],
     queryFn: () => fetchOrderStock(customerId as number, warehouseId),
     enabled: customerId != null,
-  })
-}
-
-export function useOrderRules(enabled: boolean) {
-  return useQuery({ queryKey: [...ORDERS_KEY, 'rules'], queryFn: fetchOrderRules, enabled })
-}
-
-export function useSaveOrderRules() {
-  const client = useQueryClient()
-  return useMutation({
-    mutationFn: (rules: OrderRules) => saveOrderRules(rules),
-    onSuccess: () => client.invalidateQueries({ queryKey: [...ORDERS_KEY, 'rules'] }),
   })
 }

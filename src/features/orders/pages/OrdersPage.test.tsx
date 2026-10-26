@@ -62,8 +62,6 @@ const api = vi.hoisted(() => ({
   approveOrder: vi.fn(),
   rejectOrder: vi.fn(),
   cancelOrder: vi.fn(),
-  fetchOrderRules: vi.fn(),
-  saveOrderRules: vi.fn(),
   fetchOrderStock: vi.fn(),
 }))
 
@@ -133,7 +131,6 @@ describe('the orders page', () => {
     api.rejectOrder.mockReset().mockResolvedValue(order({ status: 'REJECTED' }))
     // 600 jars in the warehouse, at $2 a jar for this shop.
     api.fetchOrderStock.mockReset().mockResolvedValue([{ item_id: 3, available_qty: 600, price: 2 }])
-    api.fetchOrderRules.mockReset().mockResolvedValue({ auto_approve: true, max_auto_approve_total: 3000, overdue_days: 30 })
   })
 
   it('tells a company without the module that orders are not in its plan', async () => {

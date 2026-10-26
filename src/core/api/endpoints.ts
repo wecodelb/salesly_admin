@@ -30,7 +30,6 @@ export const ENDPOINTS = {
   ORDER_STOCK: '/orders/stock',
   ORDER_REJECT: (id: number) => `/orders/${id}/reject`,
   ORDER_CANCEL: (id: number) => `/orders/${id}/cancel`,
-  ORDER_SETTINGS: '/order-settings',
   VISIT_PLANS: '/visit-plans',
   ROUTE_DAY: '/route/day',
 

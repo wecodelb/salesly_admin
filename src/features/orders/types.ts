@@ -122,9 +122,3 @@ export interface OrderStockLine {
   /** Per base unit, from the shop's own price list and promotions. */
   price: number | null
 }
-
-export interface OrderRules {
-  auto_approve: boolean
-  max_auto_approve_total: number | null
-  overdue_days: number | null
-}

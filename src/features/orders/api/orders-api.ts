@@ -1,6 +1,6 @@
 import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
-import type { Order, OrderApproval, OrderFilters, OrderRules, OrderStockLine, OrdersPage } from '../types'
+import type { Order, OrderApproval, OrderFilters, OrderStockLine, OrdersPage } from '../types'
 
 // Backend envelope: { status, message, data }
 interface Envelope<T> {
@@ -75,14 +75,4 @@ export async function rejectOrder(id: number, reason: string): Promise<Order> {
 export async function cancelOrder(id: number): Promise<Order> {
   const { data } = await apiClient.post<Envelope<WriteData>>(ENDPOINTS.ORDER_CANCEL(id))
   return data.data.order
-}
-
-export async function fetchOrderRules(): Promise<OrderRules> {
-  const { data } = await apiClient.get<Envelope<{ data: OrderRules }>>(ENDPOINTS.ORDER_SETTINGS)
-  return data.data.data
-}
-
-export async function saveOrderRules(rules: OrderRules): Promise<OrderRules> {
-  const { data } = await apiClient.post<Envelope<{ data: OrderRules }>>(ENDPOINTS.ORDER_SETTINGS, rules)
-  return data.data.data
 }
