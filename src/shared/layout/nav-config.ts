@@ -7,6 +7,7 @@ import type { Module } from '@/core/auth/modules'
  * description of the menu and has no business holding state.
  */
 export type NavBadge =
+  | 'pending-orders'
   | 'pending-load-requests'
   | 'pending-unloads'
   | 'online-now'
@@ -49,8 +50,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Sales',
     items: [
-      // The orders module: taken in the field, approved here, delivered later.
-      { key: 'orders', label: 'Orders', icon: 'ShoppingCart', path: '/orders', permission: 'orders.view', module: 'orders' },
+      // The orders module, in the order it happens, as the loads are: what the
+      // field asked for, badged while it waits, then what the office approved.
+      { key: 'order-requests', label: 'Order Requests', icon: 'Inbox', path: '/order-requests', permission: 'orders.view', module: 'orders', badge: 'pending-orders' },
+      { key: 'orders', label: 'Approved Orders', icon: 'ShoppingCart', path: '/orders', permission: 'orders.view', module: 'orders' },
       // Badged with what arrived since this screen was last opened here.
       { key: 'invoices', label: 'Invoices', icon: 'FileText', path: '/invoices', permission: 'invoices.view', badge: 'new-invoices' },
       { key: 'returns', label: 'Returns', icon: 'RotateCcw', path: '/returns', permission: 'returns.view', badge: 'new-returns' },

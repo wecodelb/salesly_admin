@@ -14,6 +14,7 @@ const DashboardPage    = lazy(() => import('@/features/dashboard/pages/Dashboard
 const LiveMapPage      = lazy(() => import('@/features/live-map/pages/LiveMapPage').then(m => ({ default: m.LiveMapPage })))
 const ActivityPage     = lazy(() => import('@/features/activity/pages/ActivityPage').then(m => ({ default: m.ActivityPage })))
 const OrdersPage       = lazy(() => import('@/features/orders/pages/OrdersPage').then(m => ({ default: m.OrdersPage })))
+const OrderRequestsPage = lazy(() => import('@/features/orders/pages/OrdersPage').then(m => ({ default: m.OrderRequestsPage })))
 const OrderDetailPage  = lazy(() => import('@/features/orders/pages/OrderDetailPage').then(m => ({ default: m.OrderDetailPage })))
 const InvoicesPage     = lazy(() => import('@/features/invoices/pages/InvoicesPage').then(m => ({ default: m.InvoicesPage })))
 const ReturnsPage      = lazy(() => import('@/features/returns/pages/ReturnsPage').then(m => ({ default: m.ReturnsPage })))
@@ -96,6 +97,7 @@ export const router = createBrowserRouter([
       { path: 'dashboard',    Component: makePage(DashboardPage) },
       { path: 'live-map',     Component: makePage(LiveMapPage, P.LIVE_MAP_VIEW) },
       { path: 'activity',     Component: makePage(ActivityPage) },
+      { path: 'order-requests', Component: makePage(OrderRequestsPage, P.ORDERS_VIEW) },
       { path: 'orders',       Component: makePage(OrdersPage, P.ORDERS_VIEW) },
       // One order on its own page, as a load request has one.
       { path: 'orders/:id',   Component: makePage(OrderDetailPage, P.ORDERS_VIEW) },

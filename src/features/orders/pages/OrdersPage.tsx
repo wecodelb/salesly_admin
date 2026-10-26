@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ClipboardCheck, Lock, Settings2, ShoppingCart, X } from 'lucide-react'
+import { ClipboardCheck, Lock, ShoppingCart, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { EmptyState } from '@/shared/components/EmptyState/EmptyState'
 import { ErrorState } from '@/shared/components/ErrorState/ErrorState'
@@ -18,7 +18,6 @@ import { usePermissions } from '@/core/auth/use-permissions'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { useCustomers, useSalesmen } from '@/features/customers/hooks/use-customers'
 import { useOrders } from '../hooks/use-orders'
-import { OrderRulesDrawer } from '../components/OrderRulesDrawer'
 import { OrderApproveDrawer } from '../components/OrderApproveDrawer'
 import { RejectOrderModal } from '../components/RejectOrderModal'
 import { DateRangeFilter } from '../components/DateRangeFilter'
@@ -29,13 +28,19 @@ import type { Order, OrderStatus } from '../types'
 type Row = Order & Record<string, unknown>
 
 /**
- * The orders the field team took, and the queue of ones waiting for approval.
- *
- * Most orders never need the office: the company's rules approve them as they
- * are taken. The ones that broke a rule wait here with the reason beside them,
- * and a banner over the list says how many there are.
+ * Orders work like loads. A salesman's order arrives as a request; the office
+ * answers it — approved as asked, or as it edits it — and only then is it an
+ * approved order the warehouse holds goods for. Two screens, as for loads: the
+ * requests waiting, and the orders the office has answered.
  */
-export function OrdersPage() {
+export type OrdersScope = 'requests' | 'decided'
+
+export function OrderRequestsPage() {
+  return <OrdersPage scope="requests" />
+}
+
+export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
+  const requests = scope === 'requests'
   const { has } = useModules()
   const bought = has(MODULES.ORDERS)
   const { can } = usePermissions()
@@ -49,12 +54,11 @@ export function OrdersPage() {
   const [delivery, setDelivery] = useState({ from: '', to: '' })
   const [page, setPage] = useState(1)
   const navigate = useNavigate()
-  const [rulesOpen, setRulesOpen] = useState(false)
   const [reviewId, setReviewId] = useState<number | null>(null)
   const [rejecting, setRejecting] = useState<Order | null>(null)
 
   const orders = useOrders({
-    status,
+    status: requests ? 'SUBMITTED' : status || 'decided',
     salesmanId: salesmanId ? Number(salesmanId) : null,
     customerId: customerId ? Number(customerId) : null,
     search,
@@ -87,7 +91,7 @@ export function OrdersPage() {
 
   // Written under the printed title, so a filtered page never reads as the whole book.
   const exportFilters = [
-    status && `Status: ${STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}`,
+    requests ? 'Waiting for approval' : status && `Status: ${STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}`,
     customerId && `Customer: ${customers.data?.find((c) => String(c.id) === customerId)?.name ?? customerId}`,
     salesmanId && `Salesman: ${salesmen.data?.find((s) => String(s.id) === salesmanId)?.name ?? salesmanId}`,
     search.trim() && `Search “${search.trim()}”`,
@@ -106,7 +110,17 @@ export function OrdersPage() {
     {
       key: 'trs_number',
       header: 'Order',
-      render: (o) => <span className="font-mono text-[var(--text-primary)]">#{o.trs_number}</span>,
+      render: (o) => (
+        <span className="flex items-center gap-2">
+          <span className="font-mono text-[var(--text-primary)]">#{o.trs_number}</span>
+          {/* Approved as adjusted, not as asked: worth seeing from the list. */}
+          {o.requested_rows && (
+            <span className="rounded-full bg-[var(--accent-amber)]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent-amber)]">
+              Adjusted
+            </span>
+          )}
+        </span>
+      ),
     },
     {
       key: 'customer',
@@ -175,8 +189,12 @@ export function OrdersPage() {
   return (
     <>
       <PageHeader
-        title="Orders"
-        subtitle="Orders taken in the field, and the ones waiting for your approval"
+        title={requests ? 'Order requests' : 'Approved orders'}
+        subtitle={
+          requests
+            ? 'What the salesmen asked for. Approve an order as asked, or adjust it first — as with a load request.'
+            : 'Orders the office has answered: approved as asked or as adjusted, delivered, rejected or cancelled.'
+        }
         actions={
           <>
             <ExportButton
@@ -184,19 +202,14 @@ export function OrdersPage() {
               disabled={orders.isLoading}
               build={() => ordersExportDoc(shownRows(), orders.data?.total ?? 0, exportFilters)}
             />
-            {mayApprove && (
-              <Button variant="secondary" onClick={() => setRulesOpen(true)}>
-                <Settings2 size={15} /> Approval rules
-              </Button>
-            )}
           </>
         }
       />
 
-      {pending > 0 && status !== 'SUBMITTED' && (
+      {pending > 0 && !requests && (
         <button
           type="button"
-          onClick={() => refilter(() => setStatus('SUBMITTED'))}
+          onClick={() => navigate('/order-requests')}
           className="mb-4 flex w-full items-center justify-between rounded-[var(--radius-card)] border border-[var(--accent-amber)]/40 bg-[var(--accent-amber)]/8 px-4 py-3 text-left text-sm"
         >
           <span className="font-semibold text-[var(--accent-amber)]">
@@ -223,15 +236,17 @@ export function OrdersPage() {
         }
         filters={
           <div className="flex flex-wrap items-center gap-3">
-            <div className="w-56">
-              <FilterSelect
-                label="Status"
-                value={status}
-                onChange={(v) => refilter(() => setStatus(v as OrderStatus | ''))}
-                options={STATUS_OPTIONS.filter((o) => o.value !== '').map((o) => ({ value: o.value, label: o.label }))}
-                allLabel="All statuses"
-              />
-            </div>
+            {!requests && (
+              <div className="w-56">
+                <FilterSelect
+                  label="Status"
+                  value={status}
+                  onChange={(v) => refilter(() => setStatus(v as OrderStatus | ''))}
+                  options={STATUS_OPTIONS.filter((o) => o.value !== '' && o.value !== 'SUBMITTED').map((o) => ({ value: o.value, label: o.label }))}
+                  allLabel="All statuses"
+                />
+              </div>
+            )}
             <div className="w-56">
               <FilterSelect
                 label="Salesman"
@@ -272,7 +287,13 @@ export function OrdersPage() {
         // Opening a row opens the order's own page, as a load request does.
         onRowClick={(o) => navigate(`/orders/${o.id}`)}
         emptyIcon={<ShoppingCart size={28} />}
-        emptyMessage={filtersSet ? 'No order matches these filters' : 'No orders yet — they appear here as the field team takes them'}
+        emptyMessage={
+          filtersSet
+            ? 'No order matches these filters'
+            : requests
+              ? 'No order is waiting — new ones from the field appear here'
+              : 'No answered orders yet'
+        }
       />
 
       {lastPage > 1 && (
@@ -291,7 +312,6 @@ export function OrdersPage() {
 
       <OrderApproveDrawer orderId={reviewId} onClose={() => setReviewId(null)} />
       <RejectOrderModal order={rejecting} open={rejecting != null} onClose={() => setRejecting(null)} />
-      <OrderRulesDrawer open={rulesOpen} onClose={() => setRulesOpen(false)} />
     </>
   )
 }

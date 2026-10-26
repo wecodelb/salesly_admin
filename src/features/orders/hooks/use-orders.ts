@@ -17,6 +17,21 @@ const ORDERS_KEY = ['orders'] as const
  * The order list. Re-read every half minute: orders arrive from the field all
  * day, and the queue of ones waiting for approval is what the office works.
  */
+/**
+ * How many orders wait for the office, for the menu's badge. Polled like the
+ * load requests: a salesman's order sits still until somebody here answers it.
+ */
+export function usePendingOrderCount(enabled = true) {
+  return useQuery({
+    queryKey: ['orders', 'pending-count'],
+    queryFn: async () => (await fetchOrders({ status: 'SUBMITTED' })).pendingApproval,
+    enabled,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+  })
+}
+
 export function useOrders(filters: OrderFilters, enabled = true) {
   return useQuery({
     queryKey: [...ORDERS_KEY, 'list', filters],

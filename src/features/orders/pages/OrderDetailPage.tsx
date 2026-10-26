@@ -54,7 +54,11 @@ export function OrderDetailPage() {
   const [rejecting, setRejecting] = useState(false)
 
   const back = (
-    <Button variant="ghost" icon={<ArrowLeft size={15} />} onClick={() => navigate('/orders')}>
+    <Button
+      variant="ghost"
+      icon={<ArrowLeft size={15} />}
+      onClick={() => navigate(order?.status === 'SUBMITTED' ? '/order-requests' : '/orders')}
+    >
       Back
     </Button>
   )
@@ -197,6 +201,38 @@ export function OrderDetailPage() {
           <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{formatLbp(order.total_price_lbp)}</span>
         </div>
       </section>
+
+      {/* What the salesman asked for, beside what the office approved — the
+          way a load issue sits beside its request. */}
+      {order.requested_rows && (
+        <section className="mt-8">
+          <h3 className={HEADING}>Asked for by the salesman</h3>
+          <p className="mb-3 text-xs text-[var(--text-muted)]">
+            The office adjusted this order when approving it. These are the lines as they were requested.
+          </p>
+          <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--border-subtle)]">
+            {order.requested_rows.map((line, i) => (
+              <div
+                key={`${line.item_id}-${i}`}
+                className="flex items-center justify-between gap-4 border-b border-[var(--border-subtle)] px-4 py-2.5 text-sm last:border-b-0"
+              >
+                <span className="min-w-0 truncate text-[var(--text-primary)]">
+                  {line.item_name ?? '—'} <span className="font-mono text-xs text-[var(--text-muted)]">{line.item_code}</span>
+                </span>
+                <span className="font-mono tabular-nums text-[var(--text-muted)]">
+                  {line.trs_qty} {line.uom_name ?? ''}
+                </span>
+              </div>
+            ))}
+          </div>
+          {order.requested_total != null && (
+            <div className="mt-3 flex items-baseline justify-end gap-4">
+              <span className="text-sm text-[var(--text-muted)]">Asked total</span>
+              <span className="font-mono text-sm tabular-nums text-[var(--text-muted)]">{formatMoney(order.requested_total)}</span>
+            </div>
+          )}
+        </section>
+      )}
 
       <OrderPrintSheet order={order} companyName={company || 'Salesly'} />
       <OrderApproveDrawer orderId={reviewing ? order.id : null} onClose={() => setReviewing(false)} />

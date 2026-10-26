@@ -12,6 +12,8 @@ import {
   usePendingUnloadCount,
 } from '@/features/my-depot/hooks/use-my-depot'
 import { useOnlineCount } from '@/features/activity/hooks/use-activity'
+import { usePendingOrderCount } from '@/features/orders/hooks/use-orders'
+import { MODULES } from '@/core/auth/modules'
 import { lastSeen, markSeen, useNewCount, type SeenKind } from './new-since'
 
 /**
@@ -20,6 +22,7 @@ import { lastSeen, markSeen, useNewCount, type SeenKind } from './new-since'
  * others are a tally.
  */
 const BADGE_LOOK: Record<NavBadge, { circle: string; dot: string; noun: string; pulse?: boolean }> = {
+  'pending-orders': { circle: 'bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.2)]', dot: 'bg-amber-400', noun: 'waiting' },
   'new-invoices': { circle: 'bg-blue-500 shadow-[0_0_0_3px_rgba(59,130,246,0.2)]', dot: 'bg-blue-400', noun: 'new' },
   'new-returns': { circle: 'bg-rose-500 shadow-[0_0_0_3px_rgba(244,63,94,0.2)]', dot: 'bg-rose-400', noun: 'new' },
   'pending-load-requests': { circle: 'bg-amber-500 shadow-[0_0_0_3px_rgba(245,158,11,0.2)]', dot: 'bg-amber-400', noun: 'waiting' },
@@ -40,6 +43,7 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
   // is a 403 every half-minute.
   const { data: pendingLoadRequests = 0 } = usePendingLoadRequestCount(can(PERMISSIONS.DEPOT_VIEW))
   const { data: pendingUnloads = 0 } = usePendingUnloadCount(can(PERMISSIONS.DEPOT_VIEW))
+  const { data: pendingOrders = 0 } = usePendingOrderCount(can(PERMISSIONS.ORDERS_VIEW) && has(MODULES.ORDERS))
 
   const { data: onlineNow = 0 } = useOnlineCount(can(PERMISSIONS.ORDERS_VIEW))
 
@@ -63,6 +67,7 @@ export function Sidebar({ collapsed, onCollapse }: Props) {
   const { data: newReturns = 0 } = useNewCount('returns', seen.returns, can(PERMISSIONS.RETURNS_VIEW))
 
   const counts: Record<NavBadge, number> = {
+    'pending-orders': pendingOrders,
     'pending-load-requests': pendingLoadRequests,
     'pending-unloads': pendingUnloads,
     'online-now': onlineNow,

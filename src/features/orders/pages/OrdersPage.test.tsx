@@ -96,15 +96,16 @@ vi.mock('@/features/warehouses/hooks/use-warehouses', () => ({
   useWarehouses: () => ({ data: [{ id: 1, name: 'Main warehouse', is_depot: false }] }),
 }))
 
-const { OrdersPage } = await import('./OrdersPage')
+const { OrdersPage, OrderRequestsPage } = await import('./OrdersPage')
 
-function renderPage() {
+function renderPage(path = '/orders') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/orders']}>
+      <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/order-requests" element={<OrderRequestsPage />} />
           <Route path="/orders/:id" element={<p>order page {window.location.pathname}</p>} />
         </Routes>
       </MemoryRouter>
@@ -268,13 +269,20 @@ describe('the orders page', () => {
     )
   })
 
-  it('opens the approval rules with the values the company saved', async () => {
+  it('lists what the salesmen asked for on the requests screen, and nothing else', async () => {
+    signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
+    renderPage('/order-requests')
+
+    expect(await screen.findByText('Order requests')).toBeInTheDocument()
+    expect(api.fetchOrders.mock.calls[0][0]).toMatchObject({ status: 'SUBMITTED' })
+  })
+
+  it('lists the answered orders on the approved screen, with no approval rules any more', async () => {
     signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
     renderPage()
 
-    await userEvent.click(await screen.findByRole('button', { name: /Approval rules/ }))
-
-    expect(await screen.findByDisplayValue('3000')).toBeInTheDocument()
-    expect(screen.getByDisplayValue('30')).toBeInTheDocument()
+    expect(await screen.findByText('Approved orders')).toBeInTheDocument()
+    expect(api.fetchOrders.mock.calls[0][0]).toMatchObject({ status: 'decided' })
+    expect(screen.queryByRole('button', { name: /Approval rules/ })).not.toBeInTheDocument()
   })
 })

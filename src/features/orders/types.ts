@@ -65,6 +65,21 @@ export interface Order {
   memo: string | null
   invoice?: { id: number; trs_number: number | string; trs_date: string | null } | null
   rows?: OrderLine[]
+  /** What the salesman asked for, when the office changed it on approval. */
+  requested_rows?: RequestedLine[] | null
+  requested_total?: number | null
+}
+
+/** One line as the salesman asked for it, before the office's edit. */
+export interface RequestedLine {
+  item_id: number
+  item_code: string | null
+  item_name: string | null
+  uom_id: number | null
+  uom_name: string | null
+  trs_qty: number
+  qty: number
+  price: number
 }
 
 export interface OrdersPage {
@@ -76,7 +91,8 @@ export interface OrdersPage {
 }
 
 export interface OrderFilters {
-  status?: OrderStatus | ''
+  /** 'decided' is every order the office has answered. */
+  status?: OrderStatus | '' | 'decided'
   salesmanId?: number | null
   search?: string
   customerId?: number | null
