@@ -92,7 +92,7 @@ export interface OrdersPage {
 
 export interface OrderFilters {
   /** 'decided' is every order the office has answered. */
-  status?: OrderStatus | '' | 'decided'
+  status?: OrderStatus | '' | 'decided' | 'issued'
   salesmanId?: number | null
   search?: string
   customerId?: number | null

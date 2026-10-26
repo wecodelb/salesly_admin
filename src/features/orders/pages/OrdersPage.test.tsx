@@ -266,20 +266,22 @@ describe('the orders page', () => {
     )
   })
 
-  it('lists what the salesmen asked for on the requests screen, and nothing else', async () => {
+  it('lists every order the salesmen sent on the requests screen, whatever became of it', async () => {
     signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
     renderPage('/order-requests')
 
     expect(await screen.findByText('Order requests')).toBeInTheDocument()
-    expect(api.fetchOrders.mock.calls[0][0]).toMatchObject({ status: 'SUBMITTED' })
+    expect(api.fetchOrders.mock.calls[0][0]).toMatchObject({ status: '' })
+    expect(screen.getByText('Asked total')).toBeInTheDocument()
   })
 
-  it('lists the answered orders on the approved screen, with no approval rules any more', async () => {
+  it('lists what the office issued on the issues screen, with no approval rules any more', async () => {
     signIn(['orders'], [PERMISSIONS.ORDERS_VIEW, PERMISSIONS.ORDERS_APPROVE])
     renderPage()
 
-    expect(await screen.findByText('Approved orders')).toBeInTheDocument()
-    expect(api.fetchOrders.mock.calls[0][0]).toMatchObject({ status: 'decided' })
+    expect(await screen.findByText('Order issues')).toBeInTheDocument()
+    expect(api.fetchOrders.mock.calls[0][0]).toMatchObject({ status: 'issued' })
+    expect(screen.getByText('Approved total')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Approval rules/ })).not.toBeInTheDocument()
   })
 })

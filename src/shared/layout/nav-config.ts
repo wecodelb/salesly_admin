@@ -53,7 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
       // The orders module, in the order it happens, as the loads are: what the
       // field asked for, badged while it waits, then what the office approved.
       { key: 'order-requests', label: 'Order Requests', icon: 'Inbox', path: '/order-requests', permission: 'orders.view', module: 'orders', badge: 'pending-orders' },
-      { key: 'orders', label: 'Approved Orders', icon: 'ShoppingCart', path: '/orders', permission: 'orders.view', module: 'orders' },
+      { key: 'orders', label: 'Order Issues', icon: 'ShoppingCart', path: '/orders', permission: 'orders.view', module: 'orders' },
       // Badged with what arrived since this screen was last opened here.
       { key: 'invoices', label: 'Invoices', icon: 'FileText', path: '/invoices', permission: 'invoices.view', badge: 'new-invoices' },
       { key: 'returns', label: 'Returns', icon: 'RotateCcw', path: '/returns', permission: 'returns.view', badge: 'new-returns' },

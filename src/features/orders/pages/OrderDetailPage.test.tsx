@@ -53,9 +53,9 @@ vi.mock('../components/OrderApproveDrawer', () => ({ OrderApproveDrawer: () => n
 // The paper copy has its own test; here the screen is read alone.
 vi.mock('../components/OrderPrintSheet', () => ({ OrderPrintSheet: () => null }))
 
-const { OrderDetailPage } = await import('./OrderDetailPage')
+const { OrderDetailPage, OrderRequestDetailPage } = await import('./OrderDetailPage')
 
-function renderPage(permissions: string[]) {
+function renderPage(permissions: string[], path = '/orders/1') {
   useAuthStore.setState({
     token: 't',
     role: 'manager',
@@ -67,9 +67,10 @@ function renderPage(permissions: string[]) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/orders/1']}>
+      <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/orders/:id" element={<OrderDetailPage />} />
+          <Route path="/order-requests/:id" element={<OrderRequestDetailPage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -83,7 +84,7 @@ describe('an order\'s own page', () => {
     api.fetchOrder.mockResolvedValue(ORDER)
     renderPage([PERMISSIONS.ORDERS_VIEW])
 
-    expect(await screen.findByText('Order #101')).toBeInTheDocument()
+    expect(await screen.findByText('Order issue #101')).toBeInTheDocument()
     expect(
       screen.getByText(
         "Held for this order in Main Warehouse — still in the warehouse. They move to Ahmad Khalil's van only when he signs for them on his load.",
@@ -91,6 +92,31 @@ describe('an order\'s own page', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('Approved by Rania Khoury')).toBeInTheDocument()
     expect(screen.getByRole('listitem', { current: 'step' })).toHaveTextContent('Approved')
+  })
+
+  it('shows the request as the salesman asked it, and the issue as the office approved it', async () => {
+    const adjusted: Order = {
+      ...ORDER,
+      requested_rows: [
+        { item_id: 3, item_code: 'NES-1', item_name: 'Nescafé Classic 50g', uom_id: 2, uom_name: 'Box', trs_qty: 8, qty: 96, price: 2 },
+      ],
+      requested_total: 192,
+    }
+    api.fetchOrder.mockResolvedValue(adjusted)
+
+    renderPage([PERMISSIONS.ORDERS_VIEW], '/order-requests/1')
+    expect(await screen.findByText('Order request #101')).toBeInTheDocument()
+    expect(screen.getByText('8 Box')).toBeInTheDocument()
+    // The line and the total, both as asked.
+    expect(screen.getAllByText('$192.00')).toHaveLength(2)
+    expect(screen.getByText(/Issued as order #101 · adjusted by the office/)).toBeInTheDocument()
+  })
+
+  it('an issue that was never issued points back to its request', async () => {
+    api.fetchOrder.mockResolvedValue({ ...ORDER, status: 'SUBMITTED', decided_at: null, decided_by: null, decided_by_name: null })
+    renderPage([PERMISSIONS.ORDERS_VIEW])
+
+    expect(await screen.findByText('This order has not been issued.')).toBeInTheDocument()
   })
 
   it('lists each line in the packaging it was ordered in, priced per packaging', async () => {

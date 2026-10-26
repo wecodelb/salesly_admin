@@ -12,7 +12,7 @@ import { usePermissions } from '@/core/auth/use-permissions'
 import { useAuthStore } from '@/core/auth/auth-store'
 import { PERMISSIONS } from '@/core/auth/permissions'
 import { useOrder, useOrderActions } from '../hooks/use-orders'
-import { canCancel, canDecide, decidedBy, formatDay, formatLbp, formatMoney, orderPill, serverMessage } from '../orders-logic'
+import { canCancel, canDecide, decidedBy, formatDay, formatLbp, formatMoney, isIssued, orderPill, serverMessage } from '../orders-logic'
 import { goodsStage } from '../order-stage'
 import { OrderApproveDrawer } from '../components/OrderApproveDrawer'
 import { RejectOrderModal } from '../components/RejectOrderModal'
@@ -41,7 +41,16 @@ type Row = OrderLine & Record<string, unknown>
  * warehouse for the order; nothing moves to the salesman until he signs for
  * them on his load, so the page says which side of that line the order is on.
  */
-export function OrderDetailPage() {
+export function OrderRequestDetailPage() {
+  return <OrderDetailPage view="request" />
+}
+
+/**
+ * The same order read two ways, as loads are: the request — what the salesman
+ * asked for, kept as he asked it — and the issue — what the office approved.
+ */
+export function OrderDetailPage({ view = 'issue' }: { view?: 'request' | 'issue' }) {
+  const isRequest = view === 'request'
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const orderId = Number(id)
@@ -57,7 +66,7 @@ export function OrderDetailPage() {
     <Button
       variant="ghost"
       icon={<ArrowLeft size={15} />}
-      onClick={() => navigate(order?.status === 'SUBMITTED' ? '/order-requests' : '/orders')}
+      onClick={() => navigate(isRequest ? '/order-requests' : '/orders')}
     >
       Back
     </Button>
@@ -75,8 +84,19 @@ export function OrderDetailPage() {
 
   const pill = orderPill(order.status)
   const stage = goodsStage(order)
+  const issued = isIssued(order)
   const mayDecide = can(PERMISSIONS.ORDERS_APPROVE) && canDecide(order)
-  const mayCancel = can(PERMISSIONS.ORDERS_CONFIRM) && canCancel(order)
+  const mayCancel = !isRequest && can(PERMISSIONS.ORDERS_CONFIRM) && canCancel(order)
+  // The request shows the lines as asked; the issue, as approved.
+  const lines: Row[] = isRequest && order.requested_rows
+    ? order.requested_rows.map((r, i) => ({
+        ...r,
+        id: -1 - i,
+        unit: r.trs_qty > 0 ? r.qty / r.trs_qty : 1,
+        total: Math.round(r.qty * r.price * 100) / 100,
+      }) as unknown as Row)
+    : ((order.rows ?? []) as Row[])
+  const shownTotal = isRequest ? (order.requested_total ?? order.total_price) : order.total_price
 
   const cancelOrder = async () => {
     try {
@@ -117,7 +137,7 @@ export function OrderDetailPage() {
   return (
     <>
       <PageHeader
-        title={`Order #${order.trs_number}`}
+        title={isRequest ? `Order request #${order.trs_number}` : `Order issue #${order.trs_number}`}
         subtitle={`${order.customer.name ?? '—'} · taken ${order.trs_date ?? '—'}`}
         actions={
           <div className="flex items-center gap-2">
@@ -150,6 +170,30 @@ export function OrderDetailPage() {
       </div>
 
       <OrderStageTrack order={order} />
+
+      {/* The two documents point at each other, as a load request and its issue do. */}
+      {isRequest && issued && (
+        <button
+          type="button"
+          onClick={() => navigate(`/orders/${order.id}`)}
+          className="mb-6 flex w-full items-center justify-between rounded-[var(--radius-card)] border border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/6 px-4 py-3 text-left text-sm"
+        >
+          <span className="font-semibold text-[var(--accent-primary)]">
+            Issued as order #{order.trs_number}{order.requested_rows ? ' · adjusted by the office' : ' · as asked'}
+          </span>
+          <span className="text-xs text-[var(--text-muted)]">Open the issue →</span>
+        </button>
+      )}
+      {!isRequest && !issued && (
+        <button
+          type="button"
+          onClick={() => navigate(`/order-requests/${order.id}`)}
+          className="mb-6 flex w-full items-center justify-between rounded-[var(--radius-card)] border border-[var(--border-default)] px-4 py-3 text-left text-sm"
+        >
+          <span className="text-[var(--text-secondary)]">This order has not been issued.</span>
+          <span className="text-xs text-[var(--text-muted)]">Open the request →</span>
+        </button>
+      )}
 
       {order.status === 'SUBMITTED' && order.hold_reasons.length > 0 && (
         <section className="mb-6 rounded-[var(--radius-card)] border border-[var(--accent-amber)]/40 bg-[var(--accent-amber)]/8 p-4">
@@ -187,24 +231,24 @@ export function OrderDetailPage() {
       </section>
 
       <section>
-        <h3 className={HEADING}>Products</h3>
+        <h3 className={HEADING}>{isRequest ? 'Asked for by the salesman' : issued ? 'Approved by the office' : 'Products'}</h3>
         <DataTable
           columns={columns}
-          data={(order.rows ?? []) as Row[]}
+          data={lines}
           keyField="id"
           emptyIcon={<ShoppingCart size={30} />}
           emptyMessage="This order has no products."
         />
         <div className="mt-3 flex items-baseline justify-end gap-4">
           <span className="text-sm text-[var(--text-muted)]">Total</span>
-          <span className="font-mono text-lg font-bold tabular-nums text-[var(--text-primary)]">{formatMoney(order.total_price)}</span>
-          <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{formatLbp(order.total_price_lbp)}</span>
+          <span className="font-mono text-lg font-bold tabular-nums text-[var(--text-primary)]">{formatMoney(shownTotal)}</span>
+          {!isRequest && <span className="font-mono text-xs tabular-nums text-[var(--text-muted)]">{formatLbp(order.total_price_lbp)}</span>}
         </div>
       </section>
 
       {/* What the salesman asked for, beside what the office approved — the
           way a load issue sits beside its request. */}
-      {order.requested_rows && (
+      {!isRequest && order.requested_rows && (
         <section className="mt-8">
           <h3 className={HEADING}>Asked for by the salesman</h3>
           <p className="mb-3 text-xs text-[var(--text-muted)]">

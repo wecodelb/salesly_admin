@@ -39,6 +39,15 @@ export const STATUS_OPTIONS: { value: OrderStatus | ''; label: string }[] = [
   { value: 'CANCELED', label: 'Cancelled' },
 ]
 
+/**
+ * The office issued it, as a load issue answers a load request: approved,
+ * delivered since, or cancelled after it was approved. A rejected order, or one
+ * still waiting, was never issued.
+ */
+export function isIssued(order: Pick<Order, 'status' | 'decided_at'>): boolean {
+  return order.status === 'APPROVED' || order.status === 'COMPLETED' || (order.status === 'CANCELED' && order.decided_at != null)
+}
+
 /** Only an order still waiting can be approved or rejected. */
 export function canDecide(order: Pick<Order, 'status'>): boolean {
   return order.status === 'SUBMITTED'

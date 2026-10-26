@@ -33,13 +33,13 @@ type Row = Order & Record<string, unknown>
  * approved order the warehouse holds goods for. Two screens, as for loads: the
  * requests waiting, and the orders the office has answered.
  */
-export type OrdersScope = 'requests' | 'decided'
+export type OrdersScope = 'requests' | 'issued'
 
 export function OrderRequestsPage() {
   return <OrdersPage scope="requests" />
 }
 
-export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
+export function OrdersPage({ scope = 'issued' }: { scope?: OrdersScope }) {
   const requests = scope === 'requests'
   const { has } = useModules()
   const bought = has(MODULES.ORDERS)
@@ -58,7 +58,9 @@ export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
   const [rejecting, setRejecting] = useState<Order | null>(null)
 
   const orders = useOrders({
-    status: requests ? 'SUBMITTED' : status || 'decided',
+    // Requests: every order as the salesman sent it, whatever became of it.
+    // Issues: what the office issued.
+    status: status || (requests ? '' : 'issued'),
     salesmanId: salesmanId ? Number(salesmanId) : null,
     customerId: customerId ? Number(customerId) : null,
     search,
@@ -91,7 +93,7 @@ export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
 
   // Written under the printed title, so a filtered page never reads as the whole book.
   const exportFilters = [
-    requests ? 'Waiting for approval' : status && `Status: ${STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}`,
+    status && `Status: ${STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}`,
     customerId && `Customer: ${customers.data?.find((c) => String(c.id) === customerId)?.name ?? customerId}`,
     salesmanId && `Salesman: ${salesmen.data?.find((s) => String(s.id) === salesmanId)?.name ?? salesmanId}`,
     search.trim() && `Search “${search.trim()}”`,
@@ -114,7 +116,7 @@ export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
         <span className="flex items-center gap-2">
           <span className="font-mono text-[var(--text-primary)]">#{o.trs_number}</span>
           {/* Approved as adjusted, not as asked: worth seeing from the list. */}
-          {o.requested_rows && (
+          {!requests && o.requested_rows && (
             <span className="rounded-full bg-[var(--accent-amber)]/12 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent-amber)]">
               Adjusted
             </span>
@@ -148,9 +150,11 @@ export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
     },
     {
       key: 'total_price',
-      header: 'Total',
+      header: requests ? 'Asked total' : 'Approved total',
       align: 'right',
-      render: (o) => <span className="font-mono tabular-nums">{formatMoney(o.total_price)}</span>,
+      render: (o) => (
+        <span className="font-mono tabular-nums">{formatMoney(requests ? (o.requested_total ?? o.total_price) : o.total_price)}</span>
+      ),
     },
     {
       key: 'status',
@@ -189,11 +193,11 @@ export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
   return (
     <>
       <PageHeader
-        title={requests ? 'Order requests' : 'Approved orders'}
+        title={requests ? 'Order requests' : 'Order issues'}
         subtitle={
           requests
-            ? 'What the salesmen asked for. Approve an order as asked, or adjust it first — as with a load request.'
-            : 'Orders the office has answered: approved as asked or as adjusted, delivered, rejected or cancelled.'
+            ? 'What the salesmen asked for, as they asked it. Approve one as asked, or adjust it first — as with a load request.'
+            : 'What the office issued: approved as asked or as adjusted, then delivered or cancelled.'
         }
         actions={
           <>
@@ -236,17 +240,17 @@ export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
         }
         filters={
           <div className="flex flex-wrap items-center gap-3">
-            {!requests && (
-              <div className="w-56">
-                <FilterSelect
-                  label="Status"
-                  value={status}
-                  onChange={(v) => refilter(() => setStatus(v as OrderStatus | ''))}
-                  options={STATUS_OPTIONS.filter((o) => o.value !== '' && o.value !== 'SUBMITTED').map((o) => ({ value: o.value, label: o.label }))}
-                  allLabel="All statuses"
-                />
-              </div>
-            )}
+            <div className="w-56">
+              <FilterSelect
+                label="Status"
+                value={status}
+                onChange={(v) => refilter(() => setStatus(v as OrderStatus | ''))}
+                options={STATUS_OPTIONS.filter((o) =>
+                  o.value !== '' && (requests || ['APPROVED', 'COMPLETED', 'CANCELED'].includes(o.value)),
+                ).map((o) => ({ value: o.value, label: o.label }))}
+                allLabel="All statuses"
+              />
+            </div>
             <div className="w-56">
               <FilterSelect
                 label="Salesman"
@@ -285,14 +289,14 @@ export function OrdersPage({ scope = 'decided' }: { scope?: OrdersScope }) {
         loading={orders.isLoading}
         onVisibleRows={onVisibleRows}
         // Opening a row opens the order's own page, as a load request does.
-        onRowClick={(o) => navigate(`/orders/${o.id}`)}
+        onRowClick={(o) => navigate(requests ? `/order-requests/${o.id}` : `/orders/${o.id}`)}
         emptyIcon={<ShoppingCart size={28} />}
         emptyMessage={
           filtersSet
             ? 'No order matches these filters'
             : requests
-              ? 'No order is waiting — new ones from the field appear here'
-              : 'No answered orders yet'
+              ? 'No order requests yet — they appear here as the field team sends them'
+              : 'Nothing issued yet'
         }
       />
 
