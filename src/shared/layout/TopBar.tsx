@@ -1,4 +1,5 @@
-import { Bell, Search, Sun, Moon, LogOut, ChevronDown } from 'lucide-react'
+import { Search, Sun, Moon, LogOut, ChevronDown } from 'lucide-react'
+import { NotificationBell } from '@/features/notifications/NotificationBell'
 import { useThemeStore } from '@/core/theme/theme-store'
 import { useAuthStore } from '@/core/auth/auth-store'
 import { signOut } from '@/core/auth/sign-out'
@@ -38,10 +39,7 @@ export function TopBar() {
         </button>
 
         {/* Notifications */}
-        <button className="relative w-9 h-9 flex items-center justify-center rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-raised)] transition-colors">
-          <Bell size={16} />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--accent-red)]" />
-        </button>
+        <NotificationBell />
 
         {/* User menu */}
         <Dropdown

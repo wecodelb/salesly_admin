@@ -169,10 +169,10 @@ describe('failed validation', () => {
     useToastStore.setState({ toasts: [] })
     const user = await openDrawer()
 
-    // Nothing typed: Code and Name are both required.
+    // Nothing typed: Name is required; a blank code is numbered by the server.
     await user.click(screen.getByRole('button', { name: 'Create customer' }))
 
-    await waitFor(() => expect(screen.getByLabelText('Code')).toHaveFocus())
+    await waitFor(() => expect(screen.getByLabelText('Name')).toHaveFocus())
     expect(useToastStore.getState().toasts).toHaveLength(1)
     expect(useToastStore.getState().toasts[0]).toMatchObject({ type: 'warning' })
     expect(api.createCustomer).not.toHaveBeenCalled()
@@ -379,8 +379,7 @@ describe('validation', () => {
 
     await user.click(screen.getByRole('button', { name: 'Create customer' }))
 
-    expect(await screen.findByText('Code is required')).toBeInTheDocument()
-    expect(screen.getByText('Name is required')).toBeInTheDocument()
+    expect(await screen.findByText('Name is required')).toBeInTheDocument()
     expect(api.createCustomer).not.toHaveBeenCalled()
     expect(api.updateCustomer).not.toHaveBeenCalled()
   })

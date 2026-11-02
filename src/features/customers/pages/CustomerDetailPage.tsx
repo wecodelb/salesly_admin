@@ -24,12 +24,22 @@ import { PERMISSIONS } from '@/core/auth/permissions'
 import { CustomerFormDrawer } from '../components/CustomerFormDrawer'
 import { useCustomer } from '../hooks/use-customers'
 import { formatBytes, formatMoney, isOverLimit } from '../types'
+import { ean13Svg } from '@/shared/utils/ean13'
 
 /**
  * One customer, on its own page rather than in the list's drawer — so it can
  * be linked to and reloaded directly. Order history is stubbed until the
  * transactions endpoint exists.
  */
+/** The customer's card, in a window of its own, ready for the printer. */
+function printBarcode(name: string, barcode: string) {
+  const win = window.open('', '_blank', 'width=320,height=220')
+  if (!win) return
+  win.document.title = name
+  win.document.body.innerHTML = `<div style="text-align:center;font-family:sans-serif"><p>${name.replace(/</g, '&lt;')}</p>${ean13Svg(barcode)}</div>`
+  win.print()
+}
+
 export function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -72,10 +82,15 @@ export function CustomerDetailPage() {
     <>
       <PageHeader
         title={customer.name}
-        subtitle={`${customer.code}${customer.area_name ? ` · ${customer.area_name}` : ''}`}
+        subtitle={`${customer.code}${customer.barcode ? ` · ${customer.barcode}` : ''}${customer.area_name ? ` · ${customer.area_name}` : ''}`}
         actions={
           <div className="flex items-center gap-2">
             {back}
+            {customer.barcode && (
+              <Button variant="secondary" onClick={() => printBarcode(customer.name, customer.barcode as string)}>
+                Print barcode
+              </Button>
+            )}
             {canEdit && (
               <Button icon={<Pencil size={15} />} onClick={() => setEditing(true)}>
                 Edit

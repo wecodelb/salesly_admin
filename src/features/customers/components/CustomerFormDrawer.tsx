@@ -226,7 +226,6 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
   const validate = (): boolean => {
     const e: Record<string, string> = {}
     // Editable on edit too — the backend allows changing it — but never blank.
-    if (!form.code.trim()) e.code = 'Code is required'
     if (!form.name.trim()) e.name = 'Name is required'
     if (form.email.trim() && !EMAIL_RE.test(form.email.trim())) e.email = 'Enter a valid email'
 
@@ -296,7 +295,8 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
     }
 
     const base = {
-      code: form.code.trim(),
+      // Blank: the server numbers the customer itself.
+      ...(form.code.trim() ? { code: form.code.trim() } : {}),
       name: form.name.trim(),
       phone1: form.phone1.trim(),
       phone2: form.phone2.trim(),

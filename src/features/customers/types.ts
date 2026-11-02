@@ -30,6 +30,7 @@ export interface CustomerAttachment {
 export interface AdminCustomer {
   id: number
   code: string
+  barcode?: string | null
   name: string
   phone1: string
   phone2: string
