@@ -1,5 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, MapPin, PenLine, Printer } from 'lucide-react'
+import { ArrowLeft, MapPin, PenLine, Printer, Trash2 } from 'lucide-react'
+import { confirmAndDeleteTransaction } from '@/features/settings/testing-tools'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { Button } from '@/shared/components/Button'
 import { StatusPill } from '@/shared/components/StatusPill/StatusPill'
@@ -32,9 +33,20 @@ export function InvoiceDetailPage() {
   const company = useAuthStore((state) => state.user?.company)
 
   const back = (
-    <Button variant="ghost" icon={<ArrowLeft size={15} />} onClick={() => navigate('/invoices')}>
-      Back
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button variant="ghost" icon={<ArrowLeft size={15} />} onClick={() => navigate('/invoices')}>
+        Back
+      </Button>
+      <Button
+        variant="danger"
+        icon={<Trash2 size={15} />}
+        onClick={async () => {
+          if (id && (await confirmAndDeleteTransaction(id))) navigate('/invoices')
+        }}
+      >
+        Delete (test)
+      </Button>
+    </div>
   )
 
   if (isError) {

@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/core/api/client'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
+import { Button } from '@/shared/components/Button'
+import { clearCompanyData } from '../testing-tools'
 
 interface CompanySettings {
   checkin_requires_barcode: boolean
@@ -23,6 +25,7 @@ export function SettingsPage() {
     mutationFn: saveSettings,
     onSuccess: (saved) => client.setQueryData(['company-settings'], saved),
   })
+  const clear = useMutation({ mutationFn: clearCompanyData, onSuccess: () => client.invalidateQueries() })
 
   return (
     <>
@@ -43,6 +46,28 @@ export function SettingsPage() {
           </span>
         </span>
       </label>
+
+      {/* Testing only: wipes documents, money, visits and stock; customers,
+          products and people stay. Only the company owner may do it. */}
+      <div className="mt-6 flex max-w-xl items-center justify-between gap-3 rounded-xl border border-[var(--accent-red)] p-4">
+        <span>
+          <span className="block text-sm font-medium">Clear data (testing)</span>
+          <span className="block text-xs text-[var(--text-muted)]">
+            Deletes every invoice, order, return, collection, visit and stock level. Customers, products and users stay.
+          </span>
+        </span>
+        <Button
+          variant="danger"
+          disabled={clear.isPending}
+          onClick={() => {
+            if (window.confirm('Are you sure you want to clear all the data? This cannot be undone.')) clear.mutate()
+          }}
+        >
+          Clear data
+        </Button>
+      </div>
+      {clear.isSuccess && <p className="mt-2 text-sm text-[var(--accent-green)]">The data was cleared.</p>}
+      {clear.isError && <p className="mt-2 text-sm text-[var(--accent-red)]">Only the company owner can clear the data.</p>}
     </>
   )
 }

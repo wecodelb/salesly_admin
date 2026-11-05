@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Trash2 } from 'lucide-react'
+import { confirmAndDeleteTransaction } from '@/features/settings/testing-tools'
 import { AlertTriangle, ArrowLeft, Ban, ClipboardCheck, Printer, ShoppingCart, X } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { DataTable, type Column } from '@/shared/components/DataTable/DataTable'
@@ -63,13 +65,24 @@ export function OrderDetailPage({ view = 'issue' }: { view?: 'request' | 'issue'
   const [rejecting, setRejecting] = useState(false)
 
   const back = (
-    <Button
-      variant="ghost"
-      icon={<ArrowLeft size={15} />}
-      onClick={() => navigate(isRequest ? '/order-requests' : '/orders')}
-    >
-      Back
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button
+        variant="ghost"
+        icon={<ArrowLeft size={15} />}
+        onClick={() => navigate(isRequest ? '/order-requests' : '/orders')}
+      >
+        Back
+      </Button>
+      <Button
+        variant="danger"
+        icon={<Trash2 size={15} />}
+        onClick={async () => {
+          if (id && (await confirmAndDeleteTransaction(id))) navigate('/orders')
+        }}
+      >
+        Delete (test)
+      </Button>
+    </div>
   )
 
   if (isLoading) return <LoadingSkeleton />
