@@ -428,20 +428,20 @@ describe('primary address', () => {
 })
 
 describe('attachment ceiling', () => {
-  it('flags a file over the 2 MB cap and blocks the save', async () => {
+  it('flags a file over the 1 MB cap and blocks the save', async () => {
     const user = await openDrawer()
 
     await user.type(screen.getByLabelText('Code'), 'CUST-905')
     await user.type(screen.getByLabelText('Name'), 'Heavy Files Ltd')
     await user.type(addressBoxes()[0], 'Dock 9')
 
-    const big = new File([new ArrayBuffer(3 * 1024 * 1024)], 'big.pdf')
+    const big = new File([new ArrayBuffer(2 * 1024 * 1024)], 'big.pdf')
     await user.upload(filePicker(), big)
 
     expect(await screen.findByText('big.pdf')).toBeInTheDocument()
-    expect(screen.getByText(/3\.00 MB of 2\.00 MB used/)).toBeInTheDocument()
+    expect(screen.getByText(/2\.00 MB of 1\.00 MB used/)).toBeInTheDocument()
     expect(
-      screen.getByText(/1\.00 MB over the 2\.00 MB a customer may hold/),
+      screen.getByText(/1\.00 MB over the 1\.00 MB a customer may hold/),
     ).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Create customer' }))

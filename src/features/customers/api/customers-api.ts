@@ -105,7 +105,7 @@ export async function verifyCustomer(id: number): Promise<void> {
 
 /**
  * POST /customers/{id}/attachments — multipart. The backend caps the total at
- * 2 MB per customer and answers 422 with a message naming the headroom left.
+ * 1 MB per customer and answers 422 with a message naming the headroom left.
  */
 export async function uploadAttachments(
   customerId: number,

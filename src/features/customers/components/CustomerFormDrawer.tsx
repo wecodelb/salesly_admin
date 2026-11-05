@@ -6,6 +6,8 @@ import { PhoneInput } from '@/shared/components/PhoneInput/PhoneInput'
 import { Select } from '@/shared/components/Select'
 import { SearchableSelect } from '@/shared/components/SearchableSelect/SearchableSelect'
 import { Button } from '@/shared/components/Button'
+import { useQuery } from '@tanstack/react-query'
+import { fetchPaymentTerms } from '@/features/payment-terms/payment-terms-api'
 import { useToast } from '@/shared/hooks/use-toast'
 import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { reportInvalidForm } from '@/shared/lib/report-invalid-form'
@@ -67,6 +69,7 @@ interface FormState {
    *  offering "On account" at all. */
   allowCredit: boolean
   creditLimit: string
+  paymentTermId: string
   phone1: string
   phone2: string
   email: string
@@ -93,6 +96,7 @@ const EMPTY: FormState = {
   // Most trade customers get credit; the box is there to say which ones don't.
   allowCredit: true,
   creditLimit: '',
+  paymentTermId: '',
   phone1: '',
   phone2: '',
   email: '',
@@ -141,6 +145,7 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
   const unassignPriceList = useUnassignPriceList()
 
   const [form, setForm] = useState<FormState>(EMPTY)
+  const { data: paymentTerms = [] } = useQuery({ queryKey: ['payment-terms'], queryFn: fetchPaymentTerms })
   const [files, setFiles] = useState<File[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
   /** Which list the server already has, so edit only re-assigns on a change. */
@@ -166,6 +171,7 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
         // have credit — the same default the API resource reports.
         allowCredit: customer.allow_credit ?? true,
         creditLimit: customer.credit_limit != null ? String(customer.credit_limit) : '',
+        paymentTermId: customer.payment_term_id != null ? String(customer.payment_term_id) : '',
         phone1: customer.phone1 ?? '',
         phone2: customer.phone2 ?? '',
         email: customer.email ?? '',
@@ -311,6 +317,8 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
       // is switched on again.
       credit_limit:
         !form.allowCredit || form.creditLimit.trim() === '' ? null : Number(form.creditLimit),
+      // Left blank on a new customer, the server gives him the default terms.
+      ...(form.paymentTermId === '' ? {} : { payment_term_id: Number(form.paymentTermId) }),
     }
     // `addresses` replaces the whole set, so it only goes out once this drawer
     // actually knows what the set is — omitting it leaves the server's alone.
@@ -564,6 +572,13 @@ export function CustomerFormDrawer({ open, onClose, customer }: Props) {
                     className="text-right"
                   />
                 ) : null}
+                <Select
+                  label="Payment terms"
+                  value={form.paymentTermId}
+                  onChange={(e) => set('paymentTermId', e.target.value)}
+                  placeholder="Company default"
+                  options={paymentTerms.map((t) => ({ value: String(t.id), label: `${t.name} (${t.days} days)` }))}
+                />
               </div>
             </div>
           </section>

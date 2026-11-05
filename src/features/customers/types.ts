@@ -31,6 +31,8 @@ export interface AdminCustomer {
   id: number
   code: string
   barcode?: string | null
+  payment_term_id?: number | null
+  payment_term_name?: string | null
   name: string
   phone1: string
   phone2: string
@@ -125,7 +127,7 @@ export type UpdateCustomerPayload = Partial<CreateCustomerPayload> & {
 }
 
 /** Everything one customer's attachments may occupy — mirrors the backend. */
-export const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024
+export const MAX_ATTACHMENT_BYTES = 1 * 1024 * 1024
 
 export function formatBytes(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(2)} MB`
