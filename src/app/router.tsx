@@ -40,6 +40,7 @@ const CurrenciesPage = lazy(() => import('@/features/currencies/pages/Currencies
 const CustomerDetailPage = lazy(() => import('@/features/customers/pages/CustomerDetailPage').then(m => ({ default: m.CustomerDetailPage })))
 const ProductDetailPage  = lazy(() => import('@/features/products/pages/ProductDetailPage').then(m => ({ default: m.ProductDetailPage })))
 const InvoiceDetailPage = lazy(() => import('@/features/invoices/pages/InvoiceDetailPage').then(m => ({ default: m.InvoiceDetailPage })))
+const PaymentTermsPage = lazy(() => import('@/features/payment-terms/PaymentTermsPage').then(m => ({ default: m.PaymentTermsPage })))
 const CategoriesPage   = lazy(() => import('@/features/categories/pages/CategoriesPage').then(m => ({ default: m.CategoriesPage })))
 const BrandsPage       = lazy(() => import('@/features/brands/pages/BrandsPage').then(m => ({ default: m.BrandsPage })))
 const AreasPage        = lazy(() => import('@/features/areas/pages/AreasPage').then(m => ({ default: m.AreasPage })))
@@ -155,6 +156,7 @@ export const router = createBrowserRouter([
       { path: 'categories',   Component: makePage(CategoriesPage, P.PRODUCTS_VIEW) },
       { path: 'brands',       Component: makePage(BrandsPage, P.PRODUCTS_VIEW) },
       { path: 'areas',        Component: makePage(AreasPage, P.CUSTOMERS_VIEW) },
+      { path: 'payment-terms', Component: makePage(PaymentTermsPage, P.CUSTOMERS_VIEW) },
       { path: 'customer-groups', Component: makePage(CustomerGroupsPage, P.CUSTOMERS_VIEW) },
       { path: 'uoms',         Component: makePage(UomsPage, P.PRODUCTS_VIEW) },
       // A sibling of /adjustments rather than a child, so it can never be

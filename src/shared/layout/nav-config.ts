@@ -113,6 +113,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { key: 'categories', label: 'Categories', icon: 'FolderTree', path: '/categories', permission: 'products.view' },
       { key: 'brands', label: 'Brands', icon: 'Tag', path: '/brands', permission: 'products.view' },
       { key: 'areas', label: 'Areas', icon: 'MapPinned', path: '/areas', permission: 'customers.view' },
+      { key: 'payment-terms', label: 'Payment Terms', icon: 'Banknote', path: '/payment-terms', permission: 'customers.view' },
       { key: 'customer-groups', label: 'Customer Groups', icon: 'BadgeCheck', path: '/customer-groups', permission: 'customers.view' },
       { key: 'uoms', label: 'Units', icon: 'Ruler', path: '/uoms', permission: 'products.view' },
       // Beside the other reference lists rather than under Depot with the
