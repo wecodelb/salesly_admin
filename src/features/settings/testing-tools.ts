@@ -15,6 +15,13 @@ export async function confirmAndDeleteTransaction(id: number | string): Promise<
   if (!window.confirm('Delete this document? Its goods go back to stock and the customer no longer owes it. (Testing only)')) {
     return false
   }
-  await deleteTransaction(id)
+  try {
+    await deleteTransaction(id)
+  } catch (e) {
+    // Said out loud: a refused delete must not look like nothing happened.
+    const msg = (e as { response?: { data?: { message?: string } } }).response?.data?.message
+    window.alert(msg ?? 'The document could not be deleted.')
+    return false
+  }
   return true
 }
