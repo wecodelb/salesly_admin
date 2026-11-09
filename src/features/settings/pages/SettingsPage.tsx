@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/core/api/client'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { Button } from '@/shared/components/Button'
-import { clearCompanyData } from '../testing-tools'
+import { clearCompanyData, clearTransactions } from '../testing-tools'
 
 interface CompanySettings {
   checkin_requires_barcode: boolean
@@ -26,6 +26,7 @@ export function SettingsPage() {
     onSuccess: (saved) => client.setQueryData(['company-settings'], saved),
   })
   const clear = useMutation({ mutationFn: clearCompanyData, onSuccess: () => client.invalidateQueries() })
+  const clearDocs = useMutation({ mutationFn: clearTransactions, onSuccess: () => client.invalidateQueries() })
 
   return (
     <>
@@ -46,6 +47,33 @@ export function SettingsPage() {
           </span>
         </span>
       </label>
+
+      {/* Starting for real on the stock already counted: every transaction
+          goes, and users, customers, products, warehouses and stock stay. */}
+      <div className="mt-6 flex max-w-xl items-center justify-between gap-3 rounded-xl border border-[var(--accent-red)] p-4">
+        <span>
+          <span className="block text-sm font-medium">Clear transactions</span>
+          <span className="block text-xs text-[var(--text-muted)]">
+            Deletes every invoice, order, return, load, collection, adjustment and visit, and puts customer balances
+            back at zero. Users, customers, products, warehouses and the stock in them stay as they are.
+          </span>
+        </span>
+        <Button
+          variant="danger"
+          disabled={clearDocs.isPending}
+          onClick={() => {
+            if (window.confirm('Clear every transaction and keep the stock? This cannot be undone.')) clearDocs.mutate()
+          }}
+        >
+          Clear transactions
+        </Button>
+      </div>
+      {clearDocs.isSuccess && (
+        <p className="mt-2 text-sm text-[var(--accent-green)]">The transactions were cleared. The stock is as it was.</p>
+      )}
+      {clearDocs.isError && (
+        <p className="mt-2 text-sm text-[var(--accent-red)]">Only the company owner can clear the transactions.</p>
+      )}
 
       {/* Testing only: wipes documents, money, visits and stock; customers,
           products and people stay. Only the company owner may do it. */}

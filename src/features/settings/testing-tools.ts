@@ -5,6 +5,15 @@ export async function clearCompanyData(): Promise<void> {
   await apiClient.post('/testing/reset-data', { confirm: 'yes' })
 }
 
+/**
+ * Clears every transaction (invoices, orders, returns, loads, collections,
+ * adjustments, visits) and keeps users, customers, products, warehouses and
+ * the stock in them, with every customer balance back at zero.
+ */
+export async function clearTransactions(): Promise<void> {
+  await apiClient.post('/testing/reset-data', { confirm: 'yes', keep_stock: true })
+}
+
 /** Testing only: takes back one invoice or order; its goods return to stock. */
 export async function deleteTransaction(id: number | string): Promise<void> {
   await apiClient.delete(`/testing/transactions/${id}`)
