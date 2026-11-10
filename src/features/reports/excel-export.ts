@@ -472,7 +472,7 @@ export async function writeWorkbook(model: SheetModel): Promise<ArrayBuffer> {
 
 export const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
-function save(buffer: ArrayBuffer, fileName: string): void {
+export function save(buffer: ArrayBuffer, fileName: string): void {
   const url = URL.createObjectURL(new Blob([buffer], { type: XLSX_MIME }))
   const link = document.createElement('a')
   link.href = url
