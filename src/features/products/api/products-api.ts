@@ -1,5 +1,6 @@
 import { apiClient } from '@/core/api/client'
 import { ENDPOINTS } from '@/core/api/endpoints'
+import type { ImportRow } from '../product-import'
 import type {
   AdjustStockPayload,
   AdminItem,
@@ -139,6 +140,23 @@ export async function createItem(payload: CreateItemPayload): Promise<void> {
 
 export async function updateItem(id: number, payload: UpdateItemPayload): Promise<void> {
   await apiClient.post(`${ENDPOINTS.ITEMS}/${id}`, payload)
+}
+
+/** What an import did. `new` names the categories, brands and units it had to create. */
+export interface ImportResult {
+  created: number
+  updated: number
+  unchanged: number
+  new: { categories: string[]; brands: string[]; units: string[] }
+}
+
+/**
+ * A filled-in product sheet, already read into rows. All or nothing: a 422
+ * carries every problem keyed `rows.<index>.<field>` and nothing is written.
+ */
+export async function importItems(rows: ImportRow[]): Promise<ImportResult> {
+  const res = await apiClient.post<Envelope<{ data: ImportResult }>>(`${ENDPOINTS.ITEMS}/import`, { rows })
+  return res.data.data.data
 }
 
 export async function deleteItem(id: number): Promise<void> {

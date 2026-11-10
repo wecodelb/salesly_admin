@@ -12,6 +12,7 @@ import {
   fetchProduct,
   fetchProducts,
   fetchUoms,
+  importItems,
   adjustItemStock,
   saveItemLevel,
   updateItem,
@@ -22,6 +23,7 @@ import type {
   SaveItemLevelPayload,
   UpdateItemPayload,
 } from '../types'
+import type { ImportRow } from '../product-import'
 
 const PRODUCTS_KEY = ['admin-products'] as const
 const CATEGORIES_KEY = ['admin-categories'] as const
@@ -130,6 +132,23 @@ export function useUpdateItem() {
     mutationFn: ({ id, payload }: { id: number; payload: UpdateItemPayload }) =>
       updateItem(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCTS_KEY }),
+  })
+}
+
+/**
+ * Loading a product sheet can create categories, brands and units as well as
+ * products, so every list those pickers read is refreshed with the catalogue.
+ */
+export function useImportItems() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (rows: ImportRow[]) => importItems(rows),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PRODUCTS_KEY })
+      qc.invalidateQueries({ queryKey: CATEGORIES_KEY })
+      qc.invalidateQueries({ queryKey: BRANDS_KEY })
+      qc.invalidateQueries({ queryKey: UOMS_KEY })
+    },
   })
 }
 
