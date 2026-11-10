@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Boxes, Eye, FolderTree, Gauge, MoreVertical, Package, PackageCheck, PackageX, Percent, Pencil, Plus, Tag, Trash2 } from 'lucide-react'
+import { Boxes, Eye, FolderTree, Gauge, MoreVertical, Package, PackageCheck, PackageX, Percent, Pencil, Plus, Tag, Trash2, Upload } from 'lucide-react'
 import { PageHeader } from '@/shared/components/PageHeader/PageHeader'
 import { ExportButton } from '@/features/reports/components/ExportButton'
 import { useShownRows } from '@/features/reports/use-shown-rows'
@@ -19,6 +19,7 @@ import { useActionProgress } from '@/shared/hooks/use-action-progress'
 import { ItemFormDrawer } from '../components/ItemFormDrawer'
 import { ItemLevelsDrawer } from '../components/ItemLevelsDrawer'
 import { StockCountDrawer } from '../components/StockCountDrawer'
+import { ProductImportModal } from '../components/ProductImportModal'
 import { useBrands, useCategories, useDeleteItem, useProducts } from '../hooks/use-products'
 import { effectiveUsd, formatLbp, formatUsd, type AdminItem } from '../types'
 
@@ -42,6 +43,7 @@ export function ProductsPage() {
   const [deleting, setDeleting] = useState<AdminItem | null>(null)
   const [leveling, setLeveling] = useState<AdminItem | null>(null)
   const [counting, setCounting] = useState<AdminItem | null>(null)
+  const [importing, setImporting] = useState(false)
 
   const debouncedSearch = useDebounce(search, 250)
 
@@ -306,6 +308,14 @@ export function ProductsPage() {
                 productsExportDoc(shownRows(), products.length, exportFilters, exportGrouping)
               }
             />
+            <Button
+              variant="outline"
+              icon={<Upload size={16} />}
+              disabled={isLoading}
+              onClick={() => setImporting(true)}
+            >
+              Import products
+            </Button>
             <Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
               New product
             </Button>
@@ -412,6 +422,7 @@ export function ProductsPage() {
       <ItemFormDrawer open={!!editing} onClose={() => setEditing(null)} item={editing} />
       <ItemLevelsDrawer open={!!leveling} onClose={() => setLeveling(null)} item={leveling} />
       <StockCountDrawer open={!!counting} onClose={() => setCounting(null)} item={counting} />
+      <ProductImportModal open={importing} onClose={() => setImporting(false)} products={products} />
 
       <Modal
         open={!!deleting}
